@@ -1,773 +1,1102 @@
-# =========================================================
-# 🏗️ RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
-# RL Cities + Architecture + Eurocodes + Agents + Memory
-# =========================================================
+=========================================================
+
+
+🏗️ RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
+
+
+RL Cities + Architecture + Eurocodes + Agents + Memory
+
+
+=========================================================
+
 
 import streamlit as st
+
 import numpy as np
+
 import matplotlib.pyplot as plt
+
 import random
+
 import time
+
 import os
+
 import sys
+
 import traceback
+
 from mpl_toolkits.mplot3d import Axes3D
 
-# =========================================================
-# PATH SETUP
-# =========================================================
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+=========================================================
+
+
+PATH SETUP
+
+
+=========================================================
+
+
+ROOT_DIR = os.path.dirname(os.path.abspath(file))
+
 sys.path.append(ROOT_DIR)
 
-# =========================================================
-# CORE BOOTSTRAP
-# =========================================================
+
+=========================================================
+
+
+CORE BOOTSTRAP
+
+
+=========================================================
+
+
 from core.bootstrap import bootstrap
+
 bootstrap()
 
+
 from core.registry import (
-    run_pipeline,
-    REGISTRIES
+
+run_pipeline,
+
+REGISTRIES
+
 )
 
+
 from core.event_bus import event_bus
+
 from core.safe_execution import safe_execute
 
 
-# =========================================================
-# 🧠 APP CONFIG
-# =========================================================
+=========================================================
+
+
+🧠 APP CONFIG
+
+
+=========================================================
+
+
 st.set_page_config(
-    page_title="Random AI Civilization OS",
-    layout="wide"
+
+page_title="Random AI Civilization OS",
+
+layout="wide"
+
 )
+
 
 st.title("🏗️ RANDOM AI — Civilization Operating System")
 
 
-# =========================================================
-# 🧠 SESSION STATE
-# =========================================================
+=========================================================
+
+
+🧠 SESSION STATE
+
+
+=========================================================
+
+
 DEFAULTS = {
-    "result": None,
-    "intent_text": "",
-    "site_area": 1000.0,
-    "civil_history": [],
-    "brain_logs": [],
-    "city_memory": [],
-    "events": [],
-    "active_agents": [],
+
+"result": None,
+
+"intent_text": "",
+
+"site_area": 1000.0,
+
+"civil_history": [],
+
+"brain_logs": [],
+
+"city_memory": [],
+
+"events": [],
+
+"active_agents": [],
+
 }
 
+
 for k, v in DEFAULTS.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+
+if k not in st.session_state:
+
+st.session_state[k] = v
 
 
-# =========================================================
-# 🛡️ SAFE LOGGER
-# =========================================================
+=========================================================
+
+
+🛡️ SAFE LOGGER
+
+
+=========================================================
+
+
 def log(message):
-    st.session_state.brain_logs.append(message)
+
+st.session_state.brain_logs.append(message)
 
 
-# =========================================================
-# 🧠 RANDOM BRAIN
-# =========================================================
+=========================================================
+
+
+🧠 RANDOM BRAIN
+
+
+=========================================================
+
+
 class RandomBrain:
 
-    def __init__(self):
-        self.state = {
-            "awareness": random.random(),
-            "stability": 1.0,
-            "intelligence": random.random(),
-            "adaptation": random.random(),
-        }
 
-    def think(self, text):
-        log(f"Brain analyzing intent: {text}")
+def __init__(self):  
+    self.state = {  
+        "awareness": random.random(),  
+        "stability": 1.0,  
+        "intelligence": random.random(),  
+        "adaptation": random.random(),  
+    }  
 
-        return {
-            "intent": text,
-            "complexity": len(text.split()),
-            "priority": random.choice([
-                "housing",
-                "industry",
-                "transport",
-                "mixed_use"
-            ])
-        }
+def think(self, text):  
+    log(f"Brain analyzing intent: {text}")  
 
-    def evolve(self):
-        self.state["awareness"] += random.uniform(-0.05, 0.05)
-        self.state["intelligence"] += random.uniform(-0.05, 0.05)
+    return {  
+        "intent": text,  
+        "complexity": len(text.split()),  
+        "priority": random.choice([  
+            "housing",  
+            "industry",  
+            "transport",  
+            "mixed_use"  
+        ])  
+    }  
 
-        self.state["awareness"] = np.clip(
-            self.state["awareness"],
-            0,
-            1
-        )
+def evolve(self):  
+    self.state["awareness"] += random.uniform(-0.05, 0.05)  
+    self.state["intelligence"] += random.uniform(-0.05, 0.05)  
 
-        self.state["intelligence"] = np.clip(
-            self.state["intelligence"],
-            0,
-            1
-        )
+    self.state["awareness"] = np.clip(  
+        self.state["awareness"],  
+        0,  
+        1  
+    )  
 
-    def delegate(self, task):
-        log(f"Delegating task: {task}")
+    self.state["intelligence"] = np.clip(  
+        self.state["intelligence"],  
+        0,  
+        1  
+    )  
 
-    def summary(self):
-        return self.state
+def delegate(self, task):  
+    log(f"Delegating task: {task}")  
+
+def summary(self):  
+    return self.state  
+
 
 
 brain = RandomBrain()
 
 
-# =========================================================
-# 🌐 EVENT BUS
-# =========================================================
+=========================================================
+
+
+🌐 EVENT BUS
+
+
+=========================================================
+
+
 class EventBus:
 
-    def __init__(self):
-        self.listeners = {}
 
-    def subscribe(self, event, callback):
+def __init__(self):  
+    self.listeners = {}  
 
-        if event not in self.listeners:
-            self.listeners[event] = []
+def subscribe(self, event, callback):  
 
-        self.listeners[event].append(callback)
+    if event not in self.listeners:  
+        self.listeners[event] = []  
 
-    def emit(self, event, data=None):
+    self.listeners[event].append(callback)  
 
-        st.session_state.events.append({
-            "event": event,
-            "data": str(data)
-        })
+def emit(self, event, data=None):  
 
-        if event in self.listeners:
-            for callback in self.listeners[event]:
-                callback(data)
+    st.session_state.events.append({  
+        "event": event,  
+        "data": str(data)  
+    })  
+
+    if event in self.listeners:  
+        for callback in self.listeners[event]:  
+            callback(data)  
+
 
 
 event_bus = EventBus()
 
 
-# =========================================================
-# 🧬 MEMORY ENGINE
-# =========================================================
+=========================================================
+
+
+🧬 MEMORY ENGINE
+
+
+=========================================================
+
+
 class MemoryEngine:
 
-    def remember(self, item):
-        st.session_state.city_memory.append(item)
 
-    def recall(self):
-        return st.session_state.city_memory[-10:]
+def remember(self, item):  
+    st.session_state.city_memory.append(item)  
+
+def recall(self):  
+    return st.session_state.city_memory[-10:]  
+
 
 
 memory = MemoryEngine()
 
 
-# =========================================================
-# 🏙️ RL CITY POLICY
-# =========================================================
+=========================================================
+
+
+🏙️ RL CITY POLICY
+
+
+=========================================================
+
+
 class CityPolicy:
 
-    def __init__(self):
-        self.risk_map = {}
-        self.lr = 0.2
 
-    def choose_location(self):
+def __init__(self):  
+    self.risk_map = {}  
+    self.lr = 0.2  
 
-        x = random.randint(0, 25)
-        y = random.randint(0, 25)
+def choose_location(self):  
 
-        if self.risk_map.get((x, y), 0) > 2:
-            return self.choose_location()
+    x = random.randint(0, 25)  
+    y = random.randint(0, 25)  
 
-        return x, y
+    if self.risk_map.get((x, y), 0) > 2:  
+        return self.choose_location()  
 
-    def update(self, failed_nodes):
+    return x, y  
 
-        for n in failed_nodes:
-            x, y, z = n
+def update(self, failed_nodes):  
 
-            self.risk_map[(x, y)] = (
-                self.risk_map.get((x, y), 0)
-                + self.lr
-            )
+    for n in failed_nodes:  
+        x, y, z = n  
+
+        self.risk_map[(x, y)] = (  
+            self.risk_map.get((x, y), 0)  
+            + self.lr  
+        )  
 
 
-# =========================================================
-# 🏗️ BUILDING GENERATOR
-# =========================================================
+
+=========================================================
+
+
+🏗️ BUILDING GENERATOR
+
+
+=========================================================
+
+
 class RLBuildingEngine:
 
-    def generate(self, policy):
 
-        buildings = []
+def generate(self, policy):  
 
-        for _ in range(5):
+    buildings = []  
 
-            x, y = policy.choose_location()
+    for _ in range(5):  
 
-            buildings.append({
-                "x": x,
-                "y": y,
-                "floors": random.randint(3, 20),
-                "grid": random.choice([6, 8, 10, 12]),
-                "usage": random.choice([
-                    "Residential",
-                    "Commercial",
-                    "Industrial"
-                ])
-            })
+        x, y = policy.choose_location()  
 
-        return buildings
+        buildings.append({  
+            "x": x,  
+            "y": y,  
+            "floors": random.randint(3, 20),  
+            "grid": random.choice([6, 8, 10, 12]),  
+            "usage": random.choice([  
+                "Residential",  
+                "Commercial",  
+                "Industrial"  
+            ])  
+        })  
+
+    return buildings  
 
 
-# =========================================================
-# 🧱 STRUCTURAL PHYSICS
-# =========================================================
+
+=========================================================
+
+
+🧱 STRUCTURAL PHYSICS
+
+
+=========================================================
+
+
 class RLPhysics:
 
-    def build_nodes(self, buildings):
 
-        nodes = []
+def build_nodes(self, buildings):  
 
-        for b in buildings:
+    nodes = []  
 
-            for z in range(b["floors"]):
+    for b in buildings:  
 
-                for x in range(0, b["grid"], 2):
+        for z in range(b["floors"]):  
 
-                    for y in range(0, b["grid"], 2):
+            for x in range(0, b["grid"], 2):  
 
-                        nodes.append((
-                            x + b["x"],
-                            y + b["y"],
-                            z
-                        ))
+                for y in range(0, b["grid"], 2):  
 
-        return nodes
+                    nodes.append((  
+                        x + b["x"],  
+                        y + b["y"],  
+                        z  
+                    ))  
 
-    def compute_loads(self, nodes):
+    return nodes  
 
-        loads = {n: 0.0 for n in nodes}
+def compute_loads(self, nodes):  
 
-        if not nodes:
-            return loads
+    loads = {n: 0.0 for n in nodes}  
 
-        max_z = max(n[2] for n in nodes)
+    if not nodes:  
+        return loads  
 
-        for n in nodes:
+    max_z = max(n[2] for n in nodes)  
 
-            if n[2] == max_z:
-                loads[n] += 1.0
+    for n in nodes:  
 
-        for _ in range(3):
+        if n[2] == max_z:  
+            loads[n] += 1.0  
 
-            for (x, y, z), l in list(loads.items()):
+    for _ in range(3):  
 
-                below = (x, y, z - 1)
+        for (x, y, z), l in list(loads.items()):  
 
-                if below in loads:
-                    loads[below] += l * 0.7
+            below = (x, y, z - 1)  
 
-        return loads
+            if below in loads:  
+                loads[below] += l * 0.7  
 
-    def collapse(self, loads):
+    return loads  
 
-        return {
-            n for n, l in loads.items()
-            if l > 2.0
-        }
+def collapse(self, loads):  
+
+    return {  
+        n for n, l in loads.items()  
+        if l > 2.0  
+    }  
 
 
-# =========================================================
-# 🏙️ RL CITY ENGINE
-# =========================================================
+
+=========================================================
+
+
+🏙️ RL CITY ENGINE
+
+
+=========================================================
+
+
 class RLCityEngine:
 
-    def __init__(self):
 
-        self.policy = CityPolicy()
-        self.builder = RLBuildingEngine()
-        self.physics = RLPhysics()
-        self.history = []
+def __init__(self):  
 
-    def step(self):
+    self.policy = CityPolicy()  
+    self.builder = RLBuildingEngine()  
+    self.physics = RLPhysics()  
+    self.history = []  
 
-        buildings = self.builder.generate(self.policy)
+def step(self):  
 
-        nodes = self.physics.build_nodes(buildings)
+    buildings = self.builder.generate(self.policy)  
 
-        loads = self.physics.compute_loads(nodes)
+    nodes = self.physics.build_nodes(buildings)  
 
-        failed = self.physics.collapse(loads)
+    loads = self.physics.compute_loads(nodes)  
 
-        self.policy.update(failed)
+    failed = self.physics.collapse(loads)  
 
-        stability = max(
-            0,
-            1 - len(failed) / max(1, len(nodes))
-        )
+    self.policy.update(failed)  
 
-        reward = stability - 0.3 * len(failed)
+    stability = max(  
+        0,  
+        1 - len(failed) / max(1, len(nodes))  
+    )  
 
-        self.history.append(reward)
+    reward = stability - 0.3 * len(failed)  
 
-        memory.remember({
-            "reward": reward,
-            "stability": stability,
-            "failures": len(failed)
-        })
+    self.history.append(reward)  
 
-        event_bus.emit("city_step_completed", {
-            "reward": reward
-        })
+    memory.remember({  
+        "reward": reward,  
+        "stability": stability,  
+        "failures": len(failed)  
+    })  
 
-        return (
-            buildings,
-            nodes,
-            loads,
-            failed,
-            stability,
-            reward
-        )
+    event_bus.emit("city_step_completed", {  
+        "reward": reward  
+    })  
+
+    return (  
+        buildings,  
+        nodes,  
+        loads,  
+        failed,  
+        stability,  
+        reward  
+    )  
+
 
 
 rl_engine = RLCityEngine()
 
 
-# =========================================================
-# 🧠 AGENT SYSTEM
-# =========================================================
+=========================================================
+
+
+🧠 AGENT SYSTEM
+
+
+=========================================================
+
+
 class PlannerAgent:
 
-    def act(self):
-        return "Planning city expansion"
+
+def act(self):  
+    return "Planning city expansion"  
+
 
 
 class DiplomacyAgent:
 
-    def act(self):
-        return random.choice([
-            "Alliance formed",
-            "Trade agreement signed",
-            "Border tension detected"
-        ])
+
+def act(self):  
+    return random.choice([  
+        "Alliance formed",  
+        "Trade agreement signed",  
+        "Border tension detected"  
+    ])  
+
 
 
 class WarAgent:
 
-    def act(self):
-        return random.choice([
-            "Peace maintained",
-            "Conflict escalation",
-            "Defense mobilized"
-        ])
+
+def act(self):  
+    return random.choice([  
+        "Peace maintained",  
+        "Conflict escalation",  
+        "Defense mobilized"  
+    ])  
+
 
 
 AGENTS = {
-    "planner": PlannerAgent(),
-    "diplomacy": DiplomacyAgent(),
-    "war": WarAgent()
+
+"planner": PlannerAgent(),
+
+"diplomacy": DiplomacyAgent(),
+
+"war": WarAgent()
+
 }
 
 
-# =========================================================
-# 🏗️ SIDEBAR
-# =========================================================
+=========================================================
+
+
+🏗️ SIDEBAR
+
+
+=========================================================
+
+
 mode = st.sidebar.selectbox(
-    "SYSTEM MODULE",
-    [
-        "🧠 AI Brain",
-        "🏛️ Architecture Generator",
-        "🏗️ Structure Engine",
-        "⚡ MEP Systems",
-        "🌍 GIS & Site",
-        "💰 Cost Engine",
-        "🧊 Rendering",
-        "🚀 Full Pipeline",
-        "🏙️ RL City",
-        "🌆 City Learning",
-        "🤝 Diplomacy Network",
-        "⚔️ War System",
-        "🎭 Culture System",
-        "🧠 Civilization Consciousness",
-        "🧬 Meta Evolution",
-        "📚 Memory System",
-        "📡 Event Bus",
-        "🤖 Agent Network",
-        "🛰️ System Registry"
-    ]
+
+"SYSTEM MODULE",
+
+[
+
+"🧠 AI Brain",
+
+"🏛️ Architecture Generator",
+
+"🏗️ Structure Engine",
+
+"⚡ MEP Systems",
+
+"🌍 GIS & Site",
+
+"💰 Cost Engine",
+
+"🧊 Rendering",
+
+"🚀 Full Pipeline",
+
+"🏙️ RL City",
+
+"🌆 City Learning",
+
+"🤝 Diplomacy Network",
+
+"⚔️ War System",
+
+"🎭 Culture System",
+
+"🧠 Civilization Consciousness",
+
+"🧬 Meta Evolution",
+
+"📚 Memory System",
+
+"📡 Event Bus",
+
+"🤖 Agent Network",
+
+"🛰️ System Registry"
+
+]
+
 )
 
 
-# =========================================================
-# 🧠 AI BRAIN
-# =========================================================
+=========================================================
+
+
+🧠 AI BRAIN
+
+
+=========================================================
+
+
 if mode == "🧠 AI Brain":
 
-    st.header("🧠 Random Brain")
 
-    st.session_state.intent_text = st.text_area(
-        "Describe Intent",
-        value=st.session_state.intent_text
-    )
+st.header("🧠 Random Brain")  
 
-    st.session_state.site_area = st.number_input(
-        "Site Area",
-        value=st.session_state.site_area
-    )
+st.session_state.intent_text = st.text_area(  
+    "Describe Intent",  
+    value=st.session_state.intent_text  
+)  
 
-    if st.button("RUN AUTONOMOUS GENERATION"):
+st.session_state.site_area = st.number_input(  
+    "Site Area",  
+    value=st.session_state.site_area  
+)  
 
-        try:
+if st.button("RUN AUTONOMOUS GENERATION"):  
 
-            analysis = brain.think(
-                st.session_state.intent_text
-            )
+    try:  
 
-            result = safe_execute(
-                run_pipeline,
-                "main",
-                analysis
-            )
+        analysis = brain.think(  
+            st.session_state.intent_text  
+        )  
 
-            st.session_state.result = result
+        result = safe_execute(  
+            run_pipeline,  
+            "main",  
+            analysis  
+        )  
 
-            brain.evolve()
+        st.session_state.result = result  
 
-            st.success("Generation complete")
+        brain.evolve()  
 
-        except Exception:
-            st.error(traceback.format_exc())
+        st.success("Generation complete")  
 
-    st.subheader("Brain State")
-    st.json(brain.summary())
+    except Exception:  
+        st.error(traceback.format_exc())  
 
-    if st.session_state.result:
-        st.subheader("Pipeline Result")
-        st.json(st.session_state.result)
+st.subheader("Brain State")  
+st.json(brain.summary())  
 
-    st.subheader("Brain Logs")
-    st.write(st.session_state.brain_logs[-10:])
+if st.session_state.result:  
+    st.subheader("Pipeline Result")  
+    st.json(st.session_state.result)  
+
+st.subheader("Brain Logs")  
+st.write(st.session_state.brain_logs[-10:])  
 
 
-# =========================================================
-# 🏛️ ARCHITECTURE
-# =========================================================
+
+=========================================================
+
+
+🏛️ ARCHITECTURE
+
+
+=========================================================
+
+
 elif mode == "🏛️ Architecture Generator":
 
-    st.header("🏛️ Architecture Generator")
 
-    floors = st.slider("Floors", 1, 100, 10)
+st.header("🏛️ Architecture Generator")  
 
-    building_type = st.selectbox(
-        "Building Type",
-        [
-            "Residential",
-            "Commercial",
-            "Industrial"
-        ]
-    )
+floors = st.slider("Floors", 1, 100, 10)  
 
-    if st.button("Generate Floorplan"):
+building_type = st.selectbox(  
+    "Building Type",  
+    [  
+        "Residential",  
+        "Commercial",  
+        "Industrial"  
+    ]  
+)  
 
-        plan = []
+if st.button("Generate Floorplan"):  
 
-        for i in range(floors):
+    plan = []  
 
-            rooms = random.randint(4, 20)
+    for i in range(floors):  
 
-            plan.append({
-                "floor": i + 1,
-                "rooms": rooms,
-                "corridors": random.randint(1, 5),
-                "stairs": random.randint(1, 3)
-            })
+        rooms = random.randint(4, 20)  
 
-        st.json(plan)
+        plan.append({  
+            "floor": i + 1,  
+            "rooms": rooms,  
+            "corridors": random.randint(1, 5),  
+            "stairs": random.randint(1, 3)  
+        })  
+
+    st.json(plan)  
 
 
-# =========================================================
-# 🏗️ STRUCTURE
-# =========================================================
+
+=========================================================
+
+
+🏗️ STRUCTURE
+
+
+=========================================================
+
+
 elif mode == "🏗️ Structure Engine":
 
-    st.header("🏗️ Eurocode Structural Engine")
 
-    span = st.slider("Beam Span", 3, 20, 8)
-    load = st.slider("Live Load", 1, 20, 5)
+st.header("🏗️ Eurocode Structural Engine")  
 
-    moment = load * span**2 / 8
+span = st.slider("Beam Span", 3, 20, 8)  
+load = st.slider("Live Load", 1, 20, 5)  
 
-    st.metric("Estimated Bending Moment", round(moment, 2))
+moment = load * span**2 / 8  
 
-    0
+st.metric("Estimated Bending Moment", round(moment, 2))  
 
-    st.info("Eurocode simulation layer active")
+0  
+
+st.info("Eurocode simulation layer active")  
 
 
-# =========================================================
-# ⚡ MEP
-# =========================================================
+
+=========================================================
+
+
+⚡ MEP
+
+
+=========================================================
+
+
 elif mode == "⚡ MEP Systems":
 
-    st.header("⚡ MEP Intelligence")
 
-    st.metric(
-        "HVAC Efficiency",
-        f"{random.randint(75,98)}%"
-    )
+st.header("⚡ MEP Intelligence")  
 
-    st.metric(
-        "Power Usage",
-        f"{random.randint(200,1200)} kWh"
-    )
+st.metric(  
+    "HVAC Efficiency",  
+    f"{random.randint(75,98)}%"  
+)  
+
+st.metric(  
+    "Power Usage",  
+    f"{random.randint(200,1200)} kWh"  
+)  
 
 
-# =========================================================
-# 🌍 GIS
-# =========================================================
+
+=========================================================
+
+
+🌍 GIS
+
+
+=========================================================
+
+
 elif mode == "🌍 GIS & Site":
 
-    st.header("🌍 Terrain Analysis")
 
-    x = np.linspace(0, 10, 100)
-    y = np.sin(x)
+st.header("🌍 Terrain Analysis")  
 
-    fig, ax = plt.subplots()
+x = np.linspace(0, 10, 100)  
+y = np.sin(x)  
 
-    ax.plot(x, y)
+fig, ax = plt.subplots()  
 
-    st.pyplot(fig)
+ax.plot(x, y)  
+
+st.pyplot(fig)  
 
 
-# =========================================================
-# 💰 COST
-# =========================================================
+
+=========================================================
+
+
+💰 COST
+
+
+=========================================================
+
+
 elif mode == "💰 Cost Engine":
 
-    st.header("💰 Cost Engine")
 
-    area = st.number_input("Area", value=500.0)
+st.header("💰 Cost Engine")  
 
-    cost = area * random.randint(400, 1200)
+area = st.number_input("Area", value=500.0)  
 
-    st.metric(
-        "Estimated Cost",
-        f"${cost:,.0f}"
-    )
+cost = area * random.randint(400, 1200)  
+
+st.metric(  
+    "Estimated Cost",  
+    f"${cost:,.0f}"  
+)  
 
 
-# =========================================================
-# 🧊 RENDERING
-# =========================================================
+
+=========================================================
+
+
+🧊 RENDERING
+
+
+=========================================================
+
+
 elif mode == "🧊 Rendering":
 
-    st.header("🧊 3D Procedural Massing")
 
-    fig = plt.figure()
+st.header("🧊 3D Procedural Massing")  
 
-    ax = fig.add_subplot(111, projection="3d")
+fig = plt.figure()  
 
-    xs = np.random.rand(200)
-    ys = np.random.rand(200)
-    zs = np.random.rand(200)
+ax = fig.add_subplot(111, projection="3d")  
 
-    ax.scatter(xs, ys, zs)
+xs = np.random.rand(200)  
+ys = np.random.rand(200)  
+zs = np.random.rand(200)  
 
-    st.pyplot(fig)
+ax.scatter(xs, ys, zs)  
+
+st.pyplot(fig)  
 
 
-# =========================================================
-# 🚀 FULL PIPELINE
-# =========================================================
+
+=========================================================
+
+
+🚀 FULL PIPELINE
+
+
+=========================================================
+
+
 elif mode == "🚀 Full Pipeline":
 
-    st.header("🚀 Autonomous Pipeline")
 
-    stages = [
-        "Intent Analysis",
-        "Architecture",
-        "Structure",
-        "MEP",
-        "Simulation",
-        "Rendering",
-        "Export"
-    ]
+st.header("🚀 Autonomous Pipeline")  
 
-    progress = st.progress(0)
+stages = [  
+    "Intent Analysis",  
+    "Architecture",  
+    "Structure",  
+    "MEP",  
+    "Simulation",  
+    "Rendering",  
+    "Export"  
+]  
 
-    for i, s in enumerate(stages):
+progress = st.progress(0)  
 
-        st.write(f"Running: {s}")
+for i, s in enumerate(stages):  
 
-        time.sleep(0.3)
+    st.write(f"Running: {s}")  
 
-        progress.progress((i + 1) / len(stages))
+    time.sleep(0.3)  
 
-    st.success("Civilization pipeline completed")
+    progress.progress((i + 1) / len(stages))  
+
+st.success("Civilization pipeline completed")  
 
 
-# =========================================================
-# 🏙️ RL CITY
-# =========================================================
+
+=========================================================
+
+
+🏙️ RL CITY
+
+
+=========================================================
+
+
 elif mode == "🏙️ RL City":
 
-    st.header("🏙️ RL City Simulator")
 
-    if st.button("Run Simulation Step"):
+st.header("🏙️ RL City Simulator")  
 
-        (
-            buildings,
-            nodes,
-            loads,
-            failed,
-            stability,
-            reward
-        ) = rl_engine.step()
+if st.button("Run Simulation Step"):  
 
-        c1, c2, c3 = st.columns(3)
+    (  
+        buildings,  
+        nodes,  
+        loads,  
+        failed,  
+        stability,  
+        reward  
+    ) = rl_engine.step()  
 
-        c1.metric("Stability", round(stability, 3))
-        c2.metric("Failures", len(failed))
-        c3.metric("Reward", round(reward, 3))
+    c1, c2, c3 = st.columns(3)  
 
-        st.json(buildings)
+    c1.metric("Stability", round(stability, 3))  
+    c2.metric("Failures", len(failed))  
+    c3.metric("Reward", round(reward, 3))  
+
+    st.json(buildings)  
 
 
-# =========================================================
-# 🌆 LEARNING
-# =========================================================
+
+=========================================================
+
+
+🌆 LEARNING
+
+
+=========================================================
+
+
 elif mode == "🌆 City Learning":
 
-    st.header("🌆 RL Learning Curve")
 
-    if rl_engine.history:
-        st.line_chart(rl_engine.history)
-    else:
-        st.info("Run RL City first")
+st.header("🌆 RL Learning Curve")  
+
+if rl_engine.history:  
+    st.line_chart(rl_engine.history)  
+else:  
+    st.info("Run RL City first")  
 
 
-# =========================================================
-# 🤝 DIPLOMACY
-# =========================================================
+
+=========================================================
+
+
+🤝 DIPLOMACY
+
+
+=========================================================
+
+
 elif mode == "🤝 Diplomacy Network":
 
-    st.header("🤝 Diplomacy AI")
 
-    st.success(
-        AGENTS["diplomacy"].act()
-    )
+st.header("🤝 Diplomacy AI")  
+
+st.success(  
+    AGENTS["diplomacy"].act()  
+)  
 
 
-# =========================================================
-# ⚔️ WAR
-# =========================================================
+
+=========================================================
+
+
+⚔️ WAR
+
+
+=========================================================
+
+
 elif mode == "⚔️ War System":
 
-    st.header("⚔️ Strategic Conflict Engine")
 
-    st.warning(
-        AGENTS["war"].act()
-    )
+st.header("⚔️ Strategic Conflict Engine")  
+
+st.warning(  
+    AGENTS["war"].act()  
+)  
 
 
-# =========================================================
-# 🎭 CULTURE
-# =========================================================
+
+=========================================================
+
+
+🎭 CULTURE
+
+
+=========================================================
+
+
 elif mode == "🎭 Culture System":
 
-    st.header("🎭 Cultural Evolution")
 
-    culture = {
-        "art": random.random(),
-        "science": random.random(),
-        "spirituality": random.random(),
-        "economics": random.random()
-    }
+st.header("🎭 Cultural Evolution")  
 
-    st.json(culture)
+culture = {  
+    "art": random.random(),  
+    "science": random.random(),  
+    "spirituality": random.random(),  
+    "economics": random.random()  
+}  
+
+st.json(culture)  
 
 
-# =========================================================
-# 🧠 CONSCIOUSNESS
-# =========================================================
+
+=========================================================
+
+
+🧠 CONSCIOUSNESS
+
+
+=========================================================
+
+
 elif mode == "🧠 Civilization Consciousness":
 
-    st.header("🧠 Global Consciousness")
 
-    state = np.random.rand(10)
+st.header("🧠 Global Consciousness")  
 
-    consciousness = {
-        "awareness": float(np.mean(state)),
-        "conflict": float(np.std(state)),
-        "innovation": float(np.max(state)),
-        "entropy": float(np.min(state))
-    }
+state = np.random.rand(10)  
 
-    st.json(consciousness)
+consciousness = {  
+    "awareness": float(np.mean(state)),  
+    "conflict": float(np.std(state)),  
+    "innovation": float(np.max(state)),  
+    "entropy": float(np.min(state))  
+}  
+
+st.json(consciousness)  
 
 
-# =========================================================
-# 🧬 META EVOLUTION
-# =========================================================
+
+=========================================================
+
+
+🧬 META EVOLUTION
+
+
+=========================================================
+
+
 elif mode == "🧬 Meta Evolution":
 
-    st.header("🧬 Evolution Engine")
 
-    st.write(
-        "System is recursively optimizing "
-        "its own learning architecture."
-    )
+st.header("🧬 Evolution Engine")  
 
-    st.info("Meta-learning layer active")
+st.write(  
+    "System is recursively optimizing "  
+    "its own learning architecture."  
+)  
+
+st.info("Meta-learning layer active")  
 
 
-# =========================================================
-# 📚 MEMORY
-# =========================================================
+
+=========================================================
+
+
+📚 MEMORY
+
+
+=========================================================
+
+
 elif mode == "📚 Memory System":
 
-    st.header("📚 Long-Term Memory")
 
-    st.json(memory.recall())
+st.header("📚 Long-Term Memory")  
+
+st.json(memory.recall())  
 
 
-# =========================================================
-# 📡 EVENT BUS
-# =========================================================
+
+=========================================================
+
+
+📡 EVENT BUS
+
+
+=========================================================
+
+
 elif mode == "📡 Event Bus":
 
-    st.header("📡 Event Stream")
 
-    st.json(st.session_state.events[-20:])
+st.header("📡 Event Stream")  
+
+st.json(st.session_state.events[-20:])  
 
 
-# =========================================================
-# 🤖 AGENTS
-# =========================================================
+
+=========================================================
+
+
+🤖 AGENTS
+
+
+=========================================================
+
+
 elif mode == "🤖 Agent Network":
 
-    st.header("🤖 Multi-Agent System")
 
-    for name, agent in AGENTS.items():
+st.header("🤖 Multi-Agent System")  
 
-        st.subheader(name.upper())
+for name, agent in AGENTS.items():  
 
-        st.write(agent.act())
+    st.subheader(name.upper())  
+
+    st.write(agent.act())  
 
 
-# =========================================================
-# 🛰️ REGISTRY
-# =========================================================
+
+=========================================================
+
+
+🛰️ REGISTRY
+
+
+=========================================================
+
+
 elif mode == "🛰️ System Registry":
 
-    st.header("🛰️ Registry System")
 
-    st.json(REGISTRIES)
+st.header("🛰️ Registry System")  
+
+st.json(REGISTRIES)  
+
+
+
+Integrate this streamlit_app.py with the one above and write me a newstreamlit_app.py
+
