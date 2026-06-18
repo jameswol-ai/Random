@@ -689,7 +689,6 @@ moment = load * span**2 / 8
 
 st.metric("Estimated Bending Moment", round(moment, 2))  
 
-0  
 
 st.info("Eurocode simulation layer active")  
 
