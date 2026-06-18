@@ -507,7 +507,6 @@ elif mode == "🏗️ Structure Engine":
 
     st.metric("Estimated Bending Moment", round(moment, 2))
 
-    0
 
     st.info("Eurocode simulation layer active")
 
