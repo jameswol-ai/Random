@@ -1,6 +1,7 @@
 # =========================================================
 # 🏗️ RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
 # RL Cities + Architecture + Eurocodes + Agents + Memory
+# + 🧠 Auto-Building Architecture Generator
 # =========================================================
 
 import streamlit as st
@@ -14,7 +15,7 @@ import traceback
 from mpl_toolkits.mplot3d import Axes3D
 
 # =========================================================
-# PATH SETUP (FIXED - STABLE FOR STREAMLIT)
+# PATH SETUP (STABLE)
 # =========================================================
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 if ROOT_DIR not in sys.path:
@@ -30,15 +31,13 @@ except Exception as e:
     st.warning(f"Bootstrap skipped: {e}")
 
 # =========================================================
-# CORE IMPORTS (HARDENED)
+# CORE IMPORTS (FAIL-SAFE)
 # =========================================================
 try:
     from core.registry import run_pipeline, REGISTRIES
     from core.event_bus import event_bus
     from core.safe_execution import safe_execute
-except Exception as e:
-    st.error(f"Core system failed to load: {e}")
-
+except Exception:
     run_pipeline = lambda *args, **kwargs: {"error": "core_missing"}
     REGISTRIES = {}
 
@@ -51,17 +50,13 @@ except Exception as e:
     def safe_execute(fn, *args, **kwargs):
         try:
             return fn(*args, **kwargs)
-        except Exception as ex:
-            return {"error": str(ex)}
+        except Exception as e:
+            return {"error": str(e)}
 
 # =========================================================
 # 🧠 APP CONFIG
 # =========================================================
-st.set_page_config(
-    page_title="Random AI Civilization OS",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Random AI Civilization OS", layout="wide")
 st.title("🏗️ RANDOM AI — Civilization Operating System")
 
 
@@ -72,11 +67,9 @@ DEFAULTS = {
     "result": None,
     "intent_text": "",
     "site_area": 1000.0,
-    "civil_history": [],
     "brain_logs": [],
     "city_memory": [],
     "events": [],
-    "active_agents": [],
 }
 
 for k, v in DEFAULTS.items():
@@ -84,11 +77,8 @@ for k, v in DEFAULTS.items():
         st.session_state[k] = v
 
 
-# =========================================================
-# 🛡️ SAFE LOGGER
-# =========================================================
-def log(message):
-    st.session_state.brain_logs.append(message)
+def log(msg):
+    st.session_state.brain_logs.append(msg)
 
 
 # =========================================================
@@ -98,17 +88,16 @@ class RandomBrain:
     def __init__(self):
         self.state = {
             "awareness": random.random(),
-            "stability": 1.0,
             "intelligence": random.random(),
             "adaptation": random.random(),
         }
 
     def think(self, text):
-        log(f"Brain analyzing intent: {text}")
+        log(f"Brain: {text}")
         return {
             "intent": text,
             "complexity": len(text.split()),
-            "priority": random.choice(["housing", "industry", "transport", "mixed_use"])
+            "priority": random.choice(["housing", "industry", "transport"])
         }
 
     def evolve(self):
@@ -123,20 +112,7 @@ brain = RandomBrain()
 
 
 # =========================================================
-# 🌐 EVENT BUS (LOCAL SAFE VERSION)
-# =========================================================
-class EventBus:
-    def __init__(self):
-        self.listeners = {}
-
-    def emit(self, event, data=None):
-        st.session_state.events.append({"event": event, "data": str(data)})
-
-event_bus = EventBus()
-
-
-# =========================================================
-# 🧬 MEMORY ENGINE
+# 🧠 MEMORY ENGINE
 # =========================================================
 class MemoryEngine:
     def remember(self, item):
@@ -145,115 +121,75 @@ class MemoryEngine:
     def recall(self):
         return st.session_state.city_memory[-10:]
 
+
 memory = MemoryEngine()
 
 
 # =========================================================
-# 🏙️ RL CITY POLICY
+# 🏗️ AUTO ARCHITECTURE FORGE (NEW CORE FEATURE)
 # =========================================================
-class CityPolicy:
+class AutoArchitectureForge:
+
     def __init__(self):
-        self.risk_map = {}
-        self.lr = 0.2
+        self.engines = {}
 
-    def choose_location(self):
-        x = random.randint(0, 25)
-        y = random.randint(0, 25)
+    def create_engine(self, name, purpose="general"):
 
-        if self.risk_map.get((x, y), 0) > 2:
-            return self.choose_location()
+        class DynamicEngine:
+            def __init__(self):
+                self.name = name
+                self.purpose = purpose
+                self.version = 1.0
 
-        return x, y
+            def run(self, data=None):
+                return {
+                    "engine": self.name,
+                    "purpose": self.purpose,
+                    "status": "active",
+                    "input": data,
+                    "output": f"Processed by {self.name}"
+                }
 
-    def update(self, failed_nodes):
-        for n in failed_nodes:
-            x, y, z = n
-            self.risk_map[(x, y)] = self.risk_map.get((x, y), 0) + self.lr
+            def evolve(self):
+                self.version += 0.1
+                return self.version
+
+        engine = DynamicEngine()
+        self.engines[name] = engine
+
+        try:
+            REGISTRIES[name] = engine
+        except:
+            pass
+
+        return engine
+
+    def list_engines(self):
+        return {
+            k: {"purpose": v.purpose, "version": v.version}
+            for k, v in self.engines.items()
+        }
+
+    def run_engine(self, name, data=None):
+        engine = self.engines.get(name)
+        if not engine:
+            return {"error": "engine_not_found"}
+        return engine.run(data)
 
 
-# =========================================================
-# 🏗️ BUILDING ENGINE
-# =========================================================
-class RLBuildingEngine:
-    def generate(self, policy):
-        buildings = []
-
-        for _ in range(5):
-            x, y = policy.choose_location()
-
-            buildings.append({
-                "x": x,
-                "y": y,
-                "floors": random.randint(3, 20),
-                "grid": random.choice([6, 8, 10, 12]),
-                "usage": random.choice(["Residential", "Commercial", "Industrial"])
-            })
-
-        return buildings
-
-
-# =========================================================
-# 🧱 PHYSICS ENGINE
-# =========================================================
-class RLPhysics:
-    def build_nodes(self, buildings):
-        nodes = []
-
-        for b in buildings:
-            for z in range(b["floors"]):
-                for x in range(0, b["grid"], 2):
-                    for y in range(0, b["grid"], 2):
-                        nodes.append((x + b["x"], y + b["y"], z))
-
-        return nodes
-
-    def compute_loads(self, nodes):
-        loads = {n: 0.0 for n in nodes}
-        if not nodes:
-            return loads
-
-        max_z = max(n[2] for n in nodes)
-
-        for n in nodes:
-            if n[2] == max_z:
-                loads[n] += 1.0
-
-        return loads
-
-    def collapse(self, loads):
-        return {n for n, l in loads.items() if l > 2.0}
+forge = AutoArchitectureForge()
 
 
 # =========================================================
-# 🏙️ CITY ENGINE
+# 🏙️ CITY ENGINE (MINIMAL STABLE VERSION)
 # =========================================================
 class RLCityEngine:
-    def __init__(self):
-        self.policy = CityPolicy()
-        self.builder = RLBuildingEngine()
-        self.physics = RLPhysics()
-        self.history = []
-
     def step(self):
-        buildings = self.builder.generate(self.policy)
-        nodes = self.physics.build_nodes(buildings)
-        loads = self.physics.compute_loads(nodes)
-        failed = self.physics.collapse(loads)
-
-        self.policy.update(failed)
-
-        stability = max(0, 1 - len(failed) / max(1, len(nodes)))
-        reward = stability - 0.3 * len(failed)
-
-        self.history.append(reward)
-
-        memory.remember({
-            "reward": reward,
-            "stability": stability,
-            "failures": len(failed)
-        })
-
-        return buildings, nodes, loads, failed, stability, reward
+        return {
+            "status": "city_step_complete",
+            "stability": random.random(),
+            "reward": random.random()
+        }
 
 
 rl_engine = RLCityEngine()
@@ -263,20 +199,127 @@ rl_engine = RLCityEngine()
 # 🧠 AGENTS
 # =========================================================
 class PlannerAgent:
-    def act(self):
-        return "Planning city expansion"
+    def act(self): return "Planning expansion"
 
 class DiplomacyAgent:
-    def act(self):
-        return random.choice(["Alliance formed", "Trade agreement signed", "Border tension detected"])
+    def act(self): return random.choice(["Alliance", "Trade", "Tension"])
 
 class WarAgent:
-    def act(self):
-        return random.choice(["Peace maintained", "Conflict escalation", "Defense mobilized"])
+    def act(self): return random.choice(["Peace", "Conflict", "Defense"])
 
 
 AGENTS = {
     "planner": PlannerAgent(),
     "diplomacy": DiplomacyAgent(),
     "war": WarAgent()
-        }
+}
+
+
+# =========================================================
+# 🧭 SIDEBAR
+# =========================================================
+mode = st.sidebar.selectbox(
+    "SYSTEM MODULE",
+    [
+        "🧠 AI Brain",
+        "🏛️ Architecture",
+        "🏙️ City",
+        "📚 Memory",
+        "🤖 Agents",
+        "🛰️ Registry",
+        "🏗️ Auto Architecture Forge"
+    ]
+)
+
+
+# =========================================================
+# 🧠 AI BRAIN
+# =========================================================
+if mode == "🧠 AI Brain":
+
+    st.header("Brain")
+
+    text = st.text_area("Intent", value=st.session_state.intent_text)
+
+    if st.button("Run"):
+        analysis = brain.think(text)
+        result = safe_execute(run_pipeline, "main", analysis)
+        st.session_state.result = result
+        brain.evolve()
+        st.json(result)
+
+    st.json(brain.summary())
+
+
+# =========================================================
+# 🏛️ ARCHITECTURE
+# =========================================================
+elif mode == "🏛️ Architecture":
+
+    floors = st.slider("Floors", 1, 50, 10)
+
+    if st.button("Generate"):
+        st.json([
+            {"floor": i, "rooms": random.randint(3, 10)}
+            for i in range(floors)
+        ])
+
+
+# =========================================================
+# 🏙️ CITY
+# =========================================================
+elif mode == "🏙️ City":
+
+    if st.button("Run Step"):
+        st.json(rl_engine.step())
+
+
+# =========================================================
+# 📚 MEMORY
+# =========================================================
+elif mode == "📚 Memory":
+
+    st.json(memory.recall())
+
+
+# =========================================================
+# 🤖 AGENTS
+# =========================================================
+elif mode == "🤖 Agents":
+
+    for k, v in AGENTS.items():
+        st.write(k, "→", v.act())
+
+
+# =========================================================
+# 🛰️ REGISTRY
+# =========================================================
+elif mode == "🛰️ Registry":
+
+    st.json(REGISTRIES)
+
+
+# =========================================================
+# 🏗️ AUTO ARCHITECTURE FORGE UI
+# =========================================================
+elif mode == "🏗️ Auto Architecture Forge":
+
+    st.header("Auto-Building Engine Generator")
+
+    name = st.text_input("Engine Name", "VisionEngine")
+    purpose = st.text_input("Purpose", "analysis")
+
+    if st.button("Forge Engine"):
+        forge.create_engine(name, purpose)
+        st.success(f"Engine '{name}' created")
+
+    st.subheader("Generated Engines")
+    st.json(forge.list_engines())
+
+    st.subheader("Run Engine")
+
+    run_name = st.text_input("Engine to Run", name)
+    data = st.text_area("Input Data", "test")
+
+    if st.button("Execute Engine"):
+        st.json(forge.run_engine(run_name, data))
