@@ -1,325 +1,202 @@
 # =========================================================
-# 🏗️ RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
-# RL Cities + Architecture + Eurocodes + Agents + Memory
-# + 🧠 Auto-Building Architecture Generator
+# RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
+# Single-file Streamlit Edition
 # =========================================================
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-import time
-import os
-import sys
-import traceback
-from mpl_toolkits.mplot3d import Axes3D
+import json
+from pathlib import Path
 
-# =========================================================
-# PATH SETUP (STABLE)
-# =========================================================
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
+st.set_page_config(page_title="RANDOM AI OS", layout="wide")
 
-# =========================================================
-# CORE BOOTSTRAP (SAFE)
-# =========================================================
-try:
-    from core.bootstrap import bootstrap
-    bootstrap()
-except Exception as e:
-    st.warning(f"Bootstrap skipped: {e}")
+MEMORY_FILE = Path("random_memory.json")
 
-# =========================================================
-# CORE IMPORTS (FAIL-SAFE)
-# =========================================================
-try:
-    from core.registry import run_pipeline, REGISTRIES
-    from core.event_bus import event_bus
-    from core.safe_execution import safe_execute
-except Exception:
-    run_pipeline = lambda *args, **kwargs: {"error": "core_missing"}
-    REGISTRIES = {}
-
-    class DummyBus:
-        def emit(self, *args, **kwargs):
-            pass
-
-    event_bus = DummyBus()
-
-    def safe_execute(fn, *args, **kwargs):
+def load_memory():
+    if MEMORY_FILE.exists():
         try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            return {"error": str(e)}
+            return json.loads(MEMORY_FILE.read_text())
+        except Exception:
+            return []
+    return []
 
-# =========================================================
-# 🧠 APP CONFIG
-# =========================================================
-st.set_page_config(page_title="Random AI Civilization OS", layout="wide")
-st.title("🏗️ RANDOM AI — Civilization Operating System")
+def save_memory(data):
+    MEMORY_FILE.write_text(json.dumps(data, indent=2))
 
-
-# =========================================================
-# 🧠 SESSION STATE
-# =========================================================
 DEFAULTS = {
-    "result": None,
-    "intent_text": "",
-    "site_area": 1000.0,
     "brain_logs": [],
-    "city_memory": [],
-    "events": [],
+    "memory": load_memory(),
 }
 
 for k, v in DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-
-def log(msg):
-    st.session_state.brain_logs.append(msg)
-
-
-# =========================================================
-# 🧠 RANDOM BRAIN
-# =========================================================
 class RandomBrain:
     def __init__(self):
-        self.state = {
-            "awareness": random.random(),
-            "intelligence": random.random(),
-            "adaptation": random.random(),
-        }
+        self.awareness = random.random()
+        self.intelligence = random.random()
 
     def think(self, text):
-        log(f"Brain: {text}")
         return {
             "intent": text,
             "complexity": len(text.split()),
-            "priority": random.choice(["housing", "industry", "transport"])
+            "priority": random.choice(["housing","industry","transport"])
         }
 
     def evolve(self):
-        self.state["awareness"] = np.clip(self.state["awareness"] + random.uniform(-0.05, 0.05), 0, 1)
-        self.state["intelligence"] = np.clip(self.state["intelligence"] + random.uniform(-0.05, 0.05), 0, 1)
+        self.awareness = min(1, max(0, self.awareness + random.uniform(-0.05,0.05)))
+        self.intelligence = min(1, max(0, self.intelligence + random.uniform(-0.05,0.05)))
 
-    def summary(self):
-        return self.state
+class EvolutionEngine:
+    def __init__(self):
+        self.generation = 1
 
+    def evolve(self):
+        self.generation += 1
+        return {
+            "generation": self.generation,
+            "capabilities": random.randint(1,5)
+        }
 
-brain = RandomBrain()
-
-
-# =========================================================
-# 🧠 MEMORY ENGINE
-# =========================================================
-class MemoryEngine:
-    def remember(self, item):
-        st.session_state.city_memory.append(item)
-
-    def recall(self):
-        return st.session_state.city_memory[-10:]
-
-
-memory = MemoryEngine()
-
-
-# =========================================================
-# 🏗️ AUTO ARCHITECTURE FORGE (NEW CORE FEATURE)
-# =========================================================
 class AutoArchitectureForge:
-
     def __init__(self):
         self.engines = {}
 
-    def create_engine(self, name, purpose="general"):
-
-        class DynamicEngine:
-            def __init__(self):
-                self.name = name
-                self.purpose = purpose
-                self.version = 1.0
-
-            def run(self, data=None):
-                return {
-                    "engine": self.name,
-                    "purpose": self.purpose,
-                    "status": "active",
-                    "input": data,
-                    "output": f"Processed by {self.name}"
-                }
-
-            def evolve(self):
-                self.version += 0.1
-                return self.version
-
-        engine = DynamicEngine()
-        self.engines[name] = engine
-
-        try:
-            REGISTRIES[name] = engine
-        except:
-            pass
-
-        return engine
-
-    def list_engines(self):
-        return {
-            k: {"purpose": v.purpose, "version": v.version}
-            for k, v in self.engines.items()
+    def create_engine(self, name, purpose):
+        self.engines[name] = {
+            "purpose": purpose,
+            "version": 1.0
         }
 
-    def run_engine(self, name, data=None):
-        engine = self.engines.get(name)
-        if not engine:
-            return {"error": "engine_not_found"}
-        return engine.run(data)
-
-
-forge = AutoArchitectureForge()
-
-
-# =========================================================
-# 🏙️ CITY ENGINE (MINIMAL STABLE VERSION)
-# =========================================================
-class RLCityEngine:
-    def step(self):
+    def run_engine(self, name, data):
+        if name not in self.engines:
+            return {"error":"engine_not_found"}
         return {
-            "status": "city_step_complete",
-            "stability": random.random(),
-            "reward": random.random()
+            "engine": name,
+            "input": data,
+            "status": "active"
         }
 
+if "brain" not in st.session_state:
+    st.session_state.brain = RandomBrain()
 
-rl_engine = RLCityEngine()
+if "evolution" not in st.session_state:
+    st.session_state.evolution = EvolutionEngine()
 
+if "forge" not in st.session_state:
+    st.session_state.forge = AutoArchitectureForge()
 
-# =========================================================
-# 🧠 AGENTS
-# =========================================================
-class PlannerAgent:
-    def act(self): return "Planning expansion"
+brain = st.session_state.brain
+evolution = st.session_state.evolution
+forge = st.session_state.forge
 
-class DiplomacyAgent:
-    def act(self): return random.choice(["Alliance", "Trade", "Tension"])
+st.title("🏗️ RANDOM AI OS")
 
-class WarAgent:
-    def act(self): return random.choice(["Peace", "Conflict", "Defense"])
-
-
-AGENTS = {
-    "planner": PlannerAgent(),
-    "diplomacy": DiplomacyAgent(),
-    "war": WarAgent()
-}
-
-
-# =========================================================
-# 🧭 SIDEBAR
-# =========================================================
 mode = st.sidebar.selectbox(
-    "SYSTEM MODULE",
+    "Module",
     [
-        "🧠 AI Brain",
-        "🏛️ Architecture",
-        "🏙️ City",
-        "📚 Memory",
-        "🤖 Agents",
-        "🛰️ Registry",
-        "🏗️ Auto Architecture Forge"
+        "Brain",
+        "Architecture",
+        "City",
+        "Agents",
+        "Memory",
+        "Evolution",
+        "Forge"
     ]
 )
 
-
-# =========================================================
-# 🧠 AI BRAIN
-# =========================================================
-if mode == "🧠 AI Brain":
-
-    st.header("Brain")
-
-    text = st.text_area("Intent", value=st.session_state.intent_text)
-
-    if st.button("Run"):
-        analysis = brain.think(text)
-        result = safe_execute(run_pipeline, "main", analysis)
-        st.session_state.result = result
+if mode == "Brain":
+    txt = st.text_area("Intent")
+    if st.button("Think"):
+        result = brain.think(txt)
         brain.evolve()
         st.json(result)
+    st.json({
+        "awareness": brain.awareness,
+        "intelligence": brain.intelligence
+    })
 
-    st.json(brain.summary())
+elif mode == "Architecture":
+    area = st.number_input("Site Area", 100.0, 100000.0, 1000.0)
+    floors = st.slider("Floors", 1, 100, 10)
 
+    if st.button("Generate Building"):
+        rooms = []
+        for i in range(max(4, int(area / 100))):
+            rooms.append({
+                "room": i + 1,
+                "size": random.randint(10, 40)
+            })
 
-# =========================================================
-# 🏛️ ARCHITECTURE
-# =========================================================
-elif mode == "🏛️ Architecture":
+        st.json({
+            "site_area": area,
+            "floors": floors,
+            "rooms": rooms
+        })
 
-    floors = st.slider("Floors", 1, 50, 10)
+    if st.button("Generate Structural Grid"):
+        width = int(np.sqrt(area))
+        cols = []
+        for x in range(0, width, 6):
+            for y in range(0, width, 6):
+                cols.append({"x": x, "y": y})
 
-    if st.button("Generate"):
-        st.json([
-            {"floor": i, "rooms": random.randint(3, 10)}
-            for i in range(floors)
-        ])
+        st.json({
+            "column_count": len(cols),
+            "columns": cols[:50]
+        })
 
+elif mode == "City":
+    if st.button("Run City Step"):
+        stability = random.random()
+        reward = random.random()
 
-# =========================================================
-# 🏙️ CITY
-# =========================================================
-elif mode == "🏙️ City":
+        fig = plt.figure()
+        plt.bar(["stability", "reward"], [stability, reward])
+        st.pyplot(fig)
 
-    if st.button("Run Step"):
-        st.json(rl_engine.step())
+        st.json({
+            "stability": stability,
+            "reward": reward
+        })
 
+elif mode == "Agents":
+    st.json({
+        "planner": random.choice(["housing","industry","transport"]),
+        "diplomacy": random.choice(["alliance","trade","negotiation"]),
+        "war": random.choice(["peace","defense","conflict"])
+    })
 
-# =========================================================
-# 📚 MEMORY
-# =========================================================
-elif mode == "📚 Memory":
+elif mode == "Memory":
+    st.json(st.session_state.memory)
 
-    st.json(memory.recall())
+    entry = st.text_input("Add Memory")
+    if st.button("Save Memory"):
+        st.session_state.memory.append(entry)
+        save_memory(st.session_state.memory)
+        st.success("Saved")
 
+elif mode == "Evolution":
+    if st.button("Evolve"):
+        result = evolution.evolve()
+        st.session_state.memory.append(result)
+        save_memory(st.session_state.memory)
+        st.json(result)
 
-# =========================================================
-# 🤖 AGENTS
-# =========================================================
-elif mode == "🤖 Agents":
-
-    for k, v in AGENTS.items():
-        st.write(k, "→", v.act())
-
-
-# =========================================================
-# 🛰️ REGISTRY
-# =========================================================
-elif mode == "🛰️ Registry":
-
-    st.json(REGISTRIES)
-
-
-# =========================================================
-# 🏗️ AUTO ARCHITECTURE FORGE UI
-# =========================================================
-elif mode == "🏗️ Auto Architecture Forge":
-
-    st.header("Auto-Building Engine Generator")
-
+elif mode == "Forge":
     name = st.text_input("Engine Name", "VisionEngine")
     purpose = st.text_input("Purpose", "analysis")
 
-    if st.button("Forge Engine"):
+    if st.button("Forge"):
         forge.create_engine(name, purpose)
-        st.success(f"Engine '{name}' created")
+        st.success("Engine Created")
 
-    st.subheader("Generated Engines")
-    st.json(forge.list_engines())
+    st.json(forge.engines)
 
-    st.subheader("Run Engine")
-
-    run_name = st.text_input("Engine to Run", name)
     data = st.text_area("Input Data", "test")
 
-    if st.button("Execute Engine"):
-        st.json(forge.run_engine(run_name, data))
+    if st.button("Run Engine"):
+        st.json(forge.run_engine(name, data))
