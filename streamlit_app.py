@@ -1,25 +1,11 @@
 # =========================================================
-# RANDOM V2 — AUTONOMOUS ARCHITECTURE OPERATING SYSTEM
-# Unified Streamlit Skeleton
-#
-# Modules:
-# - Dashboard
-# - Architecture Generator
-# - Structural Analysis
-# - Eurocode Engine
-# - AI Agents
-# - Memory System
-# - Civilization Simulator
-# - Engine Registry
+# RANDOM V2
+# Autonomous Architecture Operating System
 # =========================================================
 
 import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
 import json
-import random
 from pathlib import Path
-from datetime import datetime
 
 # =========================================================
 # CONFIG
@@ -30,190 +16,71 @@ st.set_page_config(
     layout="wide"
 )
 
-MEMORY_FILE = Path("random_memory.json")
+# =========================================================
+# SAFE IMPORTS
+# =========================================================
+
+try:
+    from engines.room_engine import RoomEngine
+except:
+    RoomEngine = None
+
+try:
+    from engines.adjacency_engine import AdjacencyEngine
+except:
+    AdjacencyEngine = None
+
+try:
+    from engines.grid_engine import GridEngine
+except:
+    GridEngine = None
+
+try:
+    from engines.layout_engine import LayoutEngine
+except:
+    LayoutEngine = None
+
+try:
+    from engines.structural_grid_engine import StructuralGridEngine
+except:
+    StructuralGridEngine = None
 
 # =========================================================
 # MEMORY
 # =========================================================
 
+MEMORY_FILE = Path("random_memory.json")
+
 def load_memory():
+
     if MEMORY_FILE.exists():
+
         try:
             with open(MEMORY_FILE, "r") as f:
                 return json.load(f)
         except:
             return {}
+
     return {}
 
-def save_memory(data):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(data, f, indent=4)
-
 memory = load_memory()
-
-# =========================================================
-# ENGINE REGISTRY
-# =========================================================
-
-class EngineRegistry:
-
-    def __init__(self):
-        self.engines = {}
-
-    def register(self, name, engine):
-        self.engines[name] = engine
-
-    def get(self, name):
-        return self.engines.get(name)
-
-    def list_engines(self):
-        return list(self.engines.keys())
-
-registry = EngineRegistry()
-
-# =========================================================
-# ARCHITECTURE ENGINE
-# =========================================================
-
-class ArchitectureEngine:
-
-    def generate_building(
-        self,
-        building_type,
-        floors,
-        rooms
-    ):
-        return {
-            "type": building_type,
-            "floors": floors,
-            "rooms": rooms,
-            "grid": "8m x 8m",
-            "columns": len(rooms) * 4
-        }
-
-registry.register(
-    "Architecture",
-    ArchitectureEngine()
-)
-
-# =========================================================
-# STRUCTURAL ENGINE
-# =========================================================
-
-class StructuralEngine:
-
-    def analyze(self, spans):
-
-        load = spans * 25
-
-        return {
-            "span": spans,
-            "load": load,
-            "status": "PASS"
-        }
-
-registry.register(
-    "Structural",
-    StructuralEngine()
-)
-
-# =========================================================
-# EUROCODE ENGINE
-# =========================================================
-
-class EurocodeEngine:
-
-    def check_beam(
-        self,
-        span,
-        load
-    ):
-
-        utilization = load / 100
-
-        return {
-            "span": span,
-            "load": load,
-            "utilization": round(utilization, 2),
-            "status":
-                "PASS"
-                if utilization < 1
-                else "FAIL"
-        }
-
-registry.register(
-    "Eurocode",
-    EurocodeEngine()
-)
-
-# =========================================================
-# AGENT SYSTEM
-# =========================================================
-
-class RandomAgent:
-
-    def __init__(self, name):
-        self.name = name
-
-    def think(self, task):
-
-        responses = [
-            "Generating design...",
-            "Analyzing structure...",
-            "Optimizing layout...",
-            "Checking code compliance..."
-        ]
-
-        return random.choice(responses)
-
-architect_agent = RandomAgent("Architect")
-engineer_agent = RandomAgent("Engineer")
-
-# =========================================================
-# CIVILIZATION SIMULATOR
-# =========================================================
-
-class CivilizationEngine:
-
-    def simulate(self):
-
-        population = random.randint(
-            10000,
-            1000000
-        )
-
-        economy = random.randint(
-            1,
-            100
-        )
-
-        return {
-            "population": population,
-            "economy": economy
-        }
-
-registry.register(
-    "Civilization",
-    CivilizationEngine()
-)
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("RANDOM V2")
+st.sidebar.title("🏗 RANDOM V2")
 
-page = st.sidebar.radio(
-    "Modules",
+module = st.sidebar.radio(
+    "Select Module",
     [
         "Dashboard",
-        "Architecture",
-        "Structural",
-        "Eurocode",
-        "Agents",
-        "Civilization",
-        "Memory",
-        "Registry"
+        "Room Programming",
+        "Adjacency",
+        "Grid Generator",
+        "Floor Plan",
+        "Structural Grid",
+        "Memory"
     ]
 )
 
@@ -221,216 +88,203 @@ page = st.sidebar.radio(
 # DASHBOARD
 # =========================================================
 
-if page == "Dashboard":
+if module == "Dashboard":
 
     st.title("🏗 RANDOM V2")
 
-    st.metric(
-        "Registered Engines",
-        len(registry.list_engines())
-    )
+    st.markdown("""
+    ### Autonomous Architecture Operating System
 
-    st.metric(
-        "Memory Entries",
-        len(memory)
-    )
+    Current Development Phase
 
-    st.write(
-        "Autonomous Architecture Operating System"
-    )
+    ✅ Room Programming Engine
+
+    ✅ Adjacency Engine
+
+    ✅ Grid Generator
+
+    ⏳ Floor Plan Renderer
+
+    ⏳ Structural Grid Generator
+
+    ⏳ Eurocode Engine
+
+    ⏳ BIM Export
+    """)
 
 # =========================================================
-# ARCHITECTURE
+# ROOM PROGRAMMING
 # =========================================================
 
-elif page == "Architecture":
+elif module == "Room Programming":
 
-    st.title("Architecture Generator")
+    st.header("Room Programming Engine")
 
     building_type = st.selectbox(
         "Building Type",
         [
-            "Residential",
-            "Office",
             "School",
-            "Hospital"
+            "Hospital",
+            "Office",
+            "Residential"
         ]
     )
 
-    floors = st.slider(
-        "Floors",
-        1,
-        50,
-        5
+    occupants = st.number_input(
+        "Occupants",
+        min_value=10,
+        value=500
     )
 
-    room_count = st.slider(
-        "Rooms",
-        1,
-        100,
-        20
+    if st.button("Generate Program"):
+
+        if RoomEngine:
+
+            engine = RoomEngine()
+
+            rooms = engine.generate(
+                building_type,
+                occupants
+            )
+
+            st.json(rooms)
+
+        else:
+
+            st.warning(
+                "room_engine.py not found"
+            )
+
+# =========================================================
+# ADJACENCY
+# =========================================================
+
+elif module == "Adjacency":
+
+    st.header("Adjacency Engine")
+
+    if st.button("Generate Adjacency"):
+
+        if AdjacencyEngine:
+
+            engine = AdjacencyEngine()
+
+            data = engine.generate()
+
+            st.json(data)
+
+        else:
+
+            st.warning(
+                "adjacency_engine.py not found"
+            )
+
+# =========================================================
+# GRID GENERATOR
+# =========================================================
+
+elif module == "Grid Generator":
+
+    st.header("Grid Generator")
+
+    width = st.number_input(
+        "Width (m)",
+        value=60
     )
 
-    if st.button("Generate"):
-
-        result = registry.get(
-            "Architecture"
-        ).generate_building(
-            building_type,
-            floors,
-            list(range(room_count))
-        )
-
-        st.json(result)
-
-# =========================================================
-# STRUCTURAL
-# =========================================================
-
-elif page == "Structural":
-
-    st.title("Structural Analysis")
-
-    span = st.slider(
-        "Span (m)",
-        1,
-        30,
-        8
+    length = st.number_input(
+        "Length (m)",
+        value=90
     )
 
-    if st.button("Analyze"):
-
-        result = registry.get(
-            "Structural"
-        ).analyze(span)
-
-        st.json(result)
-
-# =========================================================
-# EUROCODE
-# =========================================================
-
-elif page == "Eurocode":
-
-    st.title("Eurocode Check")
-
-    span = st.number_input(
-        "Span",
-        value=8.0
+    spacing = st.number_input(
+        "Grid Spacing",
+        value=8
     )
 
-    load = st.number_input(
-        "Load",
-        value=50.0
-    )
+    if st.button("Generate Grid"):
 
-    if st.button("Run Check"):
+        if GridEngine:
 
-        result = registry.get(
-            "Eurocode"
-        ).check_beam(
-            span,
-            load
-        )
+            engine = GridEngine()
 
-        st.json(result)
+            grid = engine.generate(
+                width,
+                length,
+                spacing
+            )
 
-# =========================================================
-# AGENTS
-# =========================================================
+            st.json(grid)
 
-elif page == "Agents":
+        else:
 
-    st.title("AI Agents")
-
-    task = st.text_input(
-        "Task",
-        "Design a school"
-    )
-
-    if st.button("Execute"):
-
-        st.success(
-            architect_agent.think(task)
-        )
-
-        st.info(
-            engineer_agent.think(task)
-        )
+            st.warning(
+                "grid_engine.py not found"
+            )
 
 # =========================================================
-# CIVILIZATION
+# FLOOR PLAN
 # =========================================================
 
-elif page == "Civilization":
+elif module == "Floor Plan":
 
-    st.title("Civilization Simulator")
+    st.header("Floor Plan Generator")
 
-    if st.button("Run Simulation"):
+    if st.button("Generate Floor Plan"):
 
-        result = registry.get(
-            "Civilization"
-        ).simulate()
+        if LayoutEngine:
 
-        st.json(result)
+            engine = LayoutEngine()
+
+            fig = engine.generate()
+
+            st.pyplot(fig)
+
+        else:
+
+            st.warning(
+                "layout_engine.py not found"
+            )
+
+# =========================================================
+# STRUCTURAL GRID
+# =========================================================
+
+elif module == "Structural Grid":
+
+    st.header("Structural Grid Generator")
+
+    if st.button("Generate Structure"):
+
+        if StructuralGridEngine:
+
+            engine = StructuralGridEngine()
+
+            structure = engine.generate()
+
+            st.json(structure)
+
+        else:
+
+            st.warning(
+                "structural_grid_engine.py not found"
+            )
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-elif page == "Memory":
+elif module == "Memory":
 
-    st.title("Memory System")
-
-    key = st.text_input("Key")
-
-    value = st.text_input("Value")
-
-    if st.button("Save"):
-
-        memory[key] = {
-            "value": value,
-            "timestamp":
-                str(datetime.now())
-        }
-
-        save_memory(memory)
-
-        st.success("Saved")
+    st.header("Memory")
 
     st.json(memory)
 
 # =========================================================
-# REGISTRY
+# FOOTER
 # =========================================================
 
-elif page == "Registry":
-
-    st.title("Engine Registry")
-
-    st.write(
-        registry.list_engines()
+st.sidebar.markdown("---")
+st.sidebar.caption(
+    "RANDOM V2 • Autonomous Architecture OS"
     )
-
-# =========================================================
-# FUTURE MODULES
-# =========================================================
-#
-# - AI Floor Plan Generator
-# - Room Relationship Engine
-# - Column Grid Generator
-# - Beam Layout Generator
-# - Slab Design
-# - Foundation Design
-# - Eurocode EC2
-# - Eurocode EC3
-# - BIM Export
-# - IFC Export
-# - Reinforcement Generator
-# - Cost Estimation
-# - Construction Sequencing
-# - Autonomous Design Evolution
-# - Multi-Agent Collaboration
-# - Self-Writing Engines
-#
-# =========================================================
