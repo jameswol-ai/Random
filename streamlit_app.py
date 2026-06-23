@@ -1,256 +1,436 @@
 # =========================================================
-# 🏗️ RANDOM V2 — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
-# Unified Core (Brain + Architecture + Eurocode + Evolution)
+# RANDOM V2 — AUTONOMOUS ARCHITECTURE OPERATING SYSTEM
+# Unified Streamlit Skeleton
+#
+# Modules:
+# - Dashboard
+# - Architecture Generator
+# - Structural Analysis
+# - Eurocode Engine
+# - AI Agents
+# - Memory System
+# - Civilization Simulator
+# - Engine Registry
 # =========================================================
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-import random
 import json
-import time
+import random
 from pathlib import Path
+from datetime import datetime
 
 # =========================================================
 # CONFIG
 # =========================================================
-st.set_page_config(page_title="RANDOM V2 OS", layout="wide")
 
-st.title("🏗️ RANDOM V2 — Civilization Operating System")
-st.caption("A self-evolving architecture + city intelligence engine")
+st.set_page_config(
+    page_title="RANDOM V2",
+    layout="wide"
+)
 
-# =========================================================
-# MEMORY (PERSISTENT)
-# =========================================================
 MEMORY_FILE = Path("random_memory.json")
+
+# =========================================================
+# MEMORY
+# =========================================================
 
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            return json.loads(MEMORY_FILE.read_text())
+            with open(MEMORY_FILE, "r") as f:
+                return json.load(f)
         except:
-            return []
-    return []
+            return {}
+    return {}
 
 def save_memory(data):
-    MEMORY_FILE.write_text(json.dumps(data, indent=2))
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(data, f, indent=4)
 
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
+memory = load_memory()
 
 # =========================================================
-# 🧠 BRAIN
+# ENGINE REGISTRY
 # =========================================================
-class RandomBrain:
+
+class EngineRegistry:
+
     def __init__(self):
-        self.awareness = random.random()
-        self.intelligence = random.random()
+        self.engines = {}
 
-    def think(self, text):
-        return {
-            "intent": text,
-            "complexity": len(text.split()),
-            "domain": random.choice(["housing", "industry", "transport", "mixed-use"])
-        }
+    def register(self, name, engine):
+        self.engines[name] = engine
 
-    def evolve(self):
-        self.awareness = min(1, max(0, self.awareness + random.uniform(-0.05, 0.05)))
-        self.intelligence = min(1, max(0, self.intelligence + random.uniform(-0.05, 0.05)))
+    def get(self, name):
+        return self.engines.get(name)
 
-brain = RandomBrain()
+    def list_engines(self):
+        return list(self.engines.keys())
+
+registry = EngineRegistry()
 
 # =========================================================
-# 🏗️ ARCHITECTURE ENGINE
+# ARCHITECTURE ENGINE
 # =========================================================
+
 class ArchitectureEngine:
-    def generate_floor_plan(self, w, h, rooms):
-        grid = np.zeros((h, w))
 
-        for r in range(1, rooms + 1):
-            x = random.randint(0, w - 2)
-            y = random.randint(0, h - 2)
-            rw = random.randint(2, 4)
-            rh = random.randint(2, 4)
-            grid[y:y+rh, x:x+rw] = r
-
-        return grid
-
-arch = ArchitectureEngine()
-
-# =========================================================
-# ⚖️ EUROCODE-INSPIRED ENGINE
-# =========================================================
-class EurocodeEngine:
-    def analyze(self, grid):
-        void = np.sum(grid == 0) / grid.size
-        density = np.count_nonzero(grid) / grid.size
-
-        coords = np.argwhere(grid > 0)
-        balance = 1 - np.linalg.norm(np.mean(coords, axis=0) - np.array(grid.shape)/2) / np.linalg.norm(grid.shape)
-
-        aspect = max(grid.shape) / min(grid.shape)
-
-        score = 100
-        issues = []
-
-        if void > 0.65:
-            issues.append("Excessive void ratio")
-            score -= 25
-
-        if density < 0.2:
-            issues.append("Low structural density")
-            score -= 20
-
-        if balance < 0.45:
-            issues.append("Poor structural balance")
-            score -= 20
-
-        if aspect > 3.5:
-            issues.append("Extreme aspect ratio")
-            score -= 15
-
+    def generate_building(
+        self,
+        building_type,
+        floors,
+        rooms
+    ):
         return {
-            "score": max(0, score),
-            "void": round(float(void), 3),
-            "density": round(float(density), 3),
-            "balance": round(float(balance), 3),
-            "issues": issues
+            "type": building_type,
+            "floors": floors,
+            "rooms": rooms,
+            "grid": "8m x 8m",
+            "columns": len(rooms) * 4
         }
 
-euro = EurocodeEngine()
+registry.register(
+    "Architecture",
+    ArchitectureEngine()
+)
 
 # =========================================================
-# 🔁 CRITIC + REPAIR
+# STRUCTURAL ENGINE
 # =========================================================
-class RepairEngine:
-    def repair(self, grid):
-        g = grid.copy()
-        h, w = g.shape
 
-        for _ in range(int(h * w * 0.1)):
-            x = random.randint(0, h-1)
-            y = random.randint(0, w-1)
-            g[x, y] = random.randint(1, 3)
+class StructuralEngine:
 
-        return g
+    def analyze(self, spans):
 
-repair = RepairEngine()
+        load = spans * 25
 
-def evolve_structure(grid, steps=3):
-    history = []
-    current = grid
+        return {
+            "span": spans,
+            "load": load,
+            "status": "PASS"
+        }
 
-    for _ in range(steps):
-        report = euro.analyze(current)
-
-        if report["score"] < 70:
-            current = repair.repair(current)
-
-        history.append((current.copy(), report))
-
-    return history
+registry.register(
+    "Structural",
+    StructuralEngine()
+)
 
 # =========================================================
-# 🌆 CITY ENGINE
+# EUROCODE ENGINE
 # =========================================================
-class CityEngine:
-    def generate(self, size):
-        city = np.zeros((size, size))
-        city[:, size//2] = 1
-        city[size//2, :] = 1
 
-        for _ in range(size * 2):
-            x = random.randint(0, size-1)
-            y = random.randint(0, size-1)
-            city[x, y] = random.randint(2, 5)
+class EurocodeEngine:
 
-        return city
+    def check_beam(
+        self,
+        span,
+        load
+    ):
 
-city_engine = CityEngine()
+        utilization = load / 100
+
+        return {
+            "span": span,
+            "load": load,
+            "utilization": round(utilization, 2),
+            "status":
+                "PASS"
+                if utilization < 1
+                else "FAIL"
+        }
+
+registry.register(
+    "Eurocode",
+    EurocodeEngine()
+)
 
 # =========================================================
-# UI MODE
+# AGENT SYSTEM
 # =========================================================
-mode = st.sidebar.radio(
-    "🧭 RANDOM OS MODE",
+
+class RandomAgent:
+
+    def __init__(self, name):
+        self.name = name
+
+    def think(self, task):
+
+        responses = [
+            "Generating design...",
+            "Analyzing structure...",
+            "Optimizing layout...",
+            "Checking code compliance..."
+        ]
+
+        return random.choice(responses)
+
+architect_agent = RandomAgent("Architect")
+engineer_agent = RandomAgent("Engineer")
+
+# =========================================================
+# CIVILIZATION SIMULATOR
+# =========================================================
+
+class CivilizationEngine:
+
+    def simulate(self):
+
+        population = random.randint(
+            10000,
+            1000000
+        )
+
+        economy = random.randint(
+            1,
+            100
+        )
+
+        return {
+            "population": population,
+            "economy": economy
+        }
+
+registry.register(
+    "Civilization",
+    CivilizationEngine()
+)
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+
+st.sidebar.title("RANDOM V2")
+
+page = st.sidebar.radio(
+    "Modules",
     [
-        "🧠 Brain",
-        "🏗️ Architecture Evolution",
-        "🌆 City Generator",
-        "🧠 Memory"
+        "Dashboard",
+        "Architecture",
+        "Structural",
+        "Eurocode",
+        "Agents",
+        "Civilization",
+        "Memory",
+        "Registry"
     ]
 )
 
 # =========================================================
-# 🧠 BRAIN MODE
+# DASHBOARD
 # =========================================================
-if mode == "🧠 Brain":
-    txt = st.text_area("Enter Intent")
 
-    if st.button("Think"):
-        brain.evolve()
-        st.json(brain.think(txt))
+if page == "Dashboard":
 
-    st.metric("Awareness", round(brain.awareness, 3))
-    st.metric("Intelligence", round(brain.intelligence, 3))
+    st.title("🏗 RANDOM V2")
 
-# =========================================================
-# 🏗️ ARCHITECTURE + EVOLUTION + EUROCODE
-# =========================================================
-elif mode == "🏗️ Architecture Evolution":
-    w = st.slider("Width", 5, 30, 12)
-    h = st.slider("Height", 5, 30, 12)
-    r = st.slider("Rooms", 1, 10, 5)
+    st.metric(
+        "Registered Engines",
+        len(registry.list_engines())
+    )
 
-    if st.button("Generate & Evolve Structure"):
-        grid = arch.generate_floor_plan(w, h, r)
-        history = evolve_structure(grid, steps=5)
+    st.metric(
+        "Memory Entries",
+        len(memory)
+    )
 
-        for i, (state, report) in enumerate(history):
-            st.markdown(f"### Step {i+1}")
-
-            fig, ax = plt.subplots()
-            ax.imshow(state, cmap="viridis")
-            st.pyplot(fig)
-
-            st.metric("Score", report["score"])
-
-            if report["issues"]:
-                for issue in report["issues"]:
-                    st.warning(issue)
-            else:
-                st.success("Structurally stable")
+    st.write(
+        "Autonomous Architecture Operating System"
+    )
 
 # =========================================================
-# 🌆 CITY MODE
+# ARCHITECTURE
 # =========================================================
-elif mode == "🌆 City Generator":
-    size = st.slider("City Size", 10, 50, 20)
 
-    if st.button("Generate City"):
-        city = city_engine.generate(size)
+elif page == "Architecture":
 
-        fig, ax = plt.subplots()
-        ax.imshow(city, cmap="coolwarm")
-        st.pyplot(fig)
+    st.title("Architecture Generator")
 
-        st.success("City generated")
+    building_type = st.selectbox(
+        "Building Type",
+        [
+            "Residential",
+            "Office",
+            "School",
+            "Hospital"
+        ]
+    )
 
-        st.session_state.memory.append({
-            "type": "city",
-            "size": size
-        })
-        save_memory(st.session_state.memory)
+    floors = st.slider(
+        "Floors",
+        1,
+        50,
+        5
+    )
+
+    room_count = st.slider(
+        "Rooms",
+        1,
+        100,
+        20
+    )
+
+    if st.button("Generate"):
+
+        result = registry.get(
+            "Architecture"
+        ).generate_building(
+            building_type,
+            floors,
+            list(range(room_count))
+        )
+
+        st.json(result)
 
 # =========================================================
-# 🧠 MEMORY MODE
+# STRUCTURAL
 # =========================================================
-elif mode == "🧠 Memory":
-    st.json(st.session_state.memory)
 
-    entry = st.text_input("Add Memory")
+elif page == "Structural":
+
+    st.title("Structural Analysis")
+
+    span = st.slider(
+        "Span (m)",
+        1,
+        30,
+        8
+    )
+
+    if st.button("Analyze"):
+
+        result = registry.get(
+            "Structural"
+        ).analyze(span)
+
+        st.json(result)
+
+# =========================================================
+# EUROCODE
+# =========================================================
+
+elif page == "Eurocode":
+
+    st.title("Eurocode Check")
+
+    span = st.number_input(
+        "Span",
+        value=8.0
+    )
+
+    load = st.number_input(
+        "Load",
+        value=50.0
+    )
+
+    if st.button("Run Check"):
+
+        result = registry.get(
+            "Eurocode"
+        ).check_beam(
+            span,
+            load
+        )
+
+        st.json(result)
+
+# =========================================================
+# AGENTS
+# =========================================================
+
+elif page == "Agents":
+
+    st.title("AI Agents")
+
+    task = st.text_input(
+        "Task",
+        "Design a school"
+    )
+
+    if st.button("Execute"):
+
+        st.success(
+            architect_agent.think(task)
+        )
+
+        st.info(
+            engineer_agent.think(task)
+        )
+
+# =========================================================
+# CIVILIZATION
+# =========================================================
+
+elif page == "Civilization":
+
+    st.title("Civilization Simulator")
+
+    if st.button("Run Simulation"):
+
+        result = registry.get(
+            "Civilization"
+        ).simulate()
+
+        st.json(result)
+
+# =========================================================
+# MEMORY
+# =========================================================
+
+elif page == "Memory":
+
+    st.title("Memory System")
+
+    key = st.text_input("Key")
+
+    value = st.text_input("Value")
 
     if st.button("Save"):
-        st.session_state.memory.append(entry)
-        save_memory(st.session_state.memory)
+
+        memory[key] = {
+            "value": value,
+            "timestamp":
+                str(datetime.now())
+        }
+
+        save_memory(memory)
+
         st.success("Saved")
+
+    st.json(memory)
+
+# =========================================================
+# REGISTRY
+# =========================================================
+
+elif page == "Registry":
+
+    st.title("Engine Registry")
+
+    st.write(
+        registry.list_engines()
+    )
+
+# =========================================================
+# FUTURE MODULES
+# =========================================================
+#
+# - AI Floor Plan Generator
+# - Room Relationship Engine
+# - Column Grid Generator
+# - Beam Layout Generator
+# - Slab Design
+# - Foundation Design
+# - Eurocode EC2
+# - Eurocode EC3
+# - BIM Export
+# - IFC Export
+# - Reinforcement Generator
+# - Cost Estimation
+# - Construction Sequencing
+# - Autonomous Design Evolution
+# - Multi-Agent Collaboration
+# - Self-Writing Engines
+#
+# =========================================================
