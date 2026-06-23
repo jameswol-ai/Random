@@ -1,202 +1,218 @@
 # =========================================================
-# RANDOM AI — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
-# Single-file Streamlit Edition
+# 🏗️ RANDOM V2 — AUTONOMOUS ARCHITECTURE & CIVILIZATION OS
+# Clean Core (No Forex, No SAI, No External Plugins)
 # =========================================================
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-import json
-from pathlib import Path
+import time
 
-st.set_page_config(page_title="RANDOM AI OS", layout="wide")
+# =========================================================
+# PAGE CONFIG
+# =========================================================
+st.set_page_config(
+    page_title="RANDOM V2 - Civilization OS",
+    layout="wide"
+)
 
-MEMORY_FILE = Path("random_memory.json")
+st.title("🏗️ RANDOM V2 — Autonomous Architecture & Civilization OS")
+st.caption("A self-growing system for cities, structures, and simulated worlds")
 
-def load_memory():
-    if MEMORY_FILE.exists():
-        try:
-            return json.loads(MEMORY_FILE.read_text())
-        except Exception:
-            return []
-    return []
-
-def save_memory(data):
-    MEMORY_FILE.write_text(json.dumps(data, indent=2))
-
-DEFAULTS = {
-    "brain_logs": [],
-    "memory": load_memory(),
-}
-
-for k, v in DEFAULTS.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-class RandomBrain:
+# =========================================================
+# MEMORY CORE (Lightweight In-Memory Store)
+# =========================================================
+class MemoryCore:
     def __init__(self):
-        self.awareness = random.random()
-        self.intelligence = random.random()
+        if "memory" not in st.session_state:
+            st.session_state.memory = []
 
-    def think(self, text):
-        return {
-            "intent": text,
-            "complexity": len(text.split()),
-            "priority": random.choice(["housing","industry","transport"])
-        }
+    def save(self, item):
+        st.session_state.memory.append({
+            "timestamp": time.time(),
+            "data": item
+        })
 
-    def evolve(self):
-        self.awareness = min(1, max(0, self.awareness + random.uniform(-0.05,0.05)))
-        self.intelligence = min(1, max(0, self.intelligence + random.uniform(-0.05,0.05)))
+    def load(self):
+        return st.session_state.memory
 
-class EvolutionEngine:
-    def __init__(self):
-        self.generation = 1
 
-    def evolve(self):
-        self.generation += 1
-        return {
-            "generation": self.generation,
-            "capabilities": random.randint(1,5)
-        }
+memory = MemoryCore()
 
-class AutoArchitectureForge:
-    def __init__(self):
-        self.engines = {}
+# =========================================================
+# ARCHITECTURE ENGINE
+# =========================================================
+class ArchitectureEngine:
+    def generate_floor_plan(self, width=10, height=10, rooms=5):
+        grid = np.zeros((height, width))
 
-    def create_engine(self, name, purpose):
-        self.engines[name] = {
-            "purpose": purpose,
-            "version": 1.0
-        }
+        for r in range(1, rooms + 1):
+            x = random.randint(0, width - 2)
+            y = random.randint(0, height - 2)
 
-    def run_engine(self, name, data):
-        if name not in self.engines:
-            return {"error":"engine_not_found"}
-        return {
-            "engine": name,
-            "input": data,
-            "status": "active"
-        }
+            w = random.randint(2, 4)
+            h = random.randint(2, 4)
 
-if "brain" not in st.session_state:
-    st.session_state.brain = RandomBrain()
+            grid[y:y+h, x:x+w] = r
 
-if "evolution" not in st.session_state:
-    st.session_state.evolution = EvolutionEngine()
+        return grid
 
-if "forge" not in st.session_state:
-    st.session_state.forge = AutoArchitectureForge()
+    def structural_score(self, grid):
+        density = np.count_nonzero(grid) / grid.size
+        balance = 1 - abs(np.mean(grid) - np.median(grid)) / (np.max(grid) + 1)
 
-brain = st.session_state.brain
-evolution = st.session_state.evolution
-forge = st.session_state.forge
+        score = (density * 0.6 + balance * 0.4) * 100
+        return round(score, 2)
 
-st.title("🏗️ RANDOM AI OS")
 
-mode = st.sidebar.selectbox(
-    "Module",
+arch = ArchitectureEngine()
+
+# =========================================================
+# CIVILIZATION ENGINE
+# =========================================================
+class CivilizationEngine:
+    def generate_city(self, size=20):
+        city = np.zeros((size, size))
+
+        # roads
+        city[:, size // 2] = 1
+        city[size // 2, :] = 1
+
+        # buildings
+        for _ in range(size * 2):
+            x = random.randint(0, size - 1)
+            y = random.randint(0, size - 1)
+            if city[y, x] == 0:
+                city[y, x] = random.randint(2, 5)
+
+        return city
+
+    def population_estimate(self, city):
+        return int(np.count_nonzero(city) * random.randint(10, 50))
+
+
+city_engine = CivilizationEngine()
+
+# =========================================================
+# SIMULATION ENGINE
+# =========================================================
+class SimulationEngine:
+    def evolve(self, city, steps=5):
+        history = [city.copy()]
+
+        for _ in range(steps):
+            new_city = city.copy()
+
+            x, y = random.randint(0, city.shape[0]-1), random.randint(0, city.shape[1]-1)
+            new_city[x, y] = random.randint(1, 5)
+
+            history.append(new_city)
+            city = new_city
+
+        return history
+
+
+sim_engine = SimulationEngine()
+
+# =========================================================
+# UI SIDEBAR CONTROL PANEL
+# =========================================================
+mode = st.sidebar.radio(
+    "🧭 System Mode",
     [
-        "Brain",
-        "Architecture",
-        "City",
-        "Agents",
-        "Memory",
-        "Evolution",
-        "Forge"
+        "🏗️ Architecture Generator",
+        "🌆 City Generator",
+        "🌍 Civilization Simulation",
+        "🧠 Memory Archive"
     ]
 )
 
-if mode == "Brain":
-    txt = st.text_area("Intent")
-    if st.button("Think"):
-        result = brain.think(txt)
-        brain.evolve()
-        st.json(result)
-    st.json({
-        "awareness": brain.awareness,
-        "intelligence": brain.intelligence
-    })
+# =========================================================
+# ARCHITECTURE MODE
+# =========================================================
+if mode == "🏗️ Architecture Generator":
+    st.subheader("🏗️ Floor Plan Generator")
 
-elif mode == "Architecture":
-    area = st.number_input("Site Area", 100.0, 100000.0, 1000.0)
-    floors = st.slider("Floors", 1, 100, 10)
+    w = st.slider("Width", 5, 30, 10)
+    h = st.slider("Height", 5, 30, 10)
+    r = st.slider("Rooms", 1, 10, 5)
 
-    if st.button("Generate Building"):
-        rooms = []
-        for i in range(max(4, int(area / 100))):
-            rooms.append({
-                "room": i + 1,
-                "size": random.randint(10, 40)
-            })
+    if st.button("Generate Floor Plan"):
+        grid = arch.generate_floor_plan(w, h, r)
+        score = arch.structural_score(grid)
 
-        st.json({
-            "site_area": area,
-            "floors": floors,
-            "rooms": rooms
-        })
-
-    if st.button("Generate Structural Grid"):
-        width = int(np.sqrt(area))
-        cols = []
-        for x in range(0, width, 6):
-            for y in range(0, width, 6):
-                cols.append({"x": x, "y": y})
-
-        st.json({
-            "column_count": len(cols),
-            "columns": cols[:50]
-        })
-
-elif mode == "City":
-    if st.button("Run City Step"):
-        stability = random.random()
-        reward = random.random()
-
-        fig = plt.figure()
-        plt.bar(["stability", "reward"], [stability, reward])
+        fig, ax = plt.subplots()
+        ax.imshow(grid, cmap="viridis")
         st.pyplot(fig)
 
-        st.json({
-            "stability": stability,
-            "reward": reward
+        st.success(f"Structural Integrity Score: {score}")
+
+        memory.save({
+            "type": "floor_plan",
+            "score": score
         })
 
-elif mode == "Agents":
-    st.json({
-        "planner": random.choice(["housing","industry","transport"]),
-        "diplomacy": random.choice(["alliance","trade","negotiation"]),
-        "war": random.choice(["peace","defense","conflict"])
-    })
+# =========================================================
+# CITY MODE
+# =========================================================
+elif mode == "🌆 City Generator":
+    st.subheader("🌆 Procedural City Generator")
 
-elif mode == "Memory":
-    st.json(st.session_state.memory)
+    size = st.slider("City Size", 10, 60, 20)
 
-    entry = st.text_input("Add Memory")
-    if st.button("Save Memory"):
-        st.session_state.memory.append(entry)
-        save_memory(st.session_state.memory)
-        st.success("Saved")
+    if st.button("Generate City"):
+        city = city_engine.generate_city(size)
+        pop = city_engine.population_estimate(city)
 
-elif mode == "Evolution":
-    if st.button("Evolve"):
-        result = evolution.evolve()
-        st.session_state.memory.append(result)
-        save_memory(st.session_state.memory)
-        st.json(result)
+        fig, ax = plt.subplots()
+        ax.imshow(city, cmap="coolwarm")
+        st.pyplot(fig)
 
-elif mode == "Forge":
-    name = st.text_input("Engine Name", "VisionEngine")
-    purpose = st.text_input("Purpose", "analysis")
+        st.info(f"Estimated Population: {pop}")
 
-    if st.button("Forge"):
-        forge.create_engine(name, purpose)
-        st.success("Engine Created")
+        memory.save({
+            "type": "city",
+            "population": pop
+        })
 
-    st.json(forge.engines)
+# =========================================================
+# SIMULATION MODE
+# =========================================================
+elif mode == "🌍 Civilization Simulation":
+    st.subheader("🌍 City Evolution Simulator")
 
-    data = st.text_area("Input Data", "test")
+    size = st.slider("Base City Size", 10, 40, 20)
+    steps = st.slider("Evolution Steps", 1, 15, 5)
 
-    if st.button("Run Engine"):
-        st.json(forge.run_engine(name, data))
+    if st.button("Run Simulation"):
+        city = city_engine.generate_city(size)
+        history = sim_engine.evolve(city, steps)
+
+        fig, ax = plt.subplots()
+
+        for i, state in enumerate(history):
+            ax.clear()
+            ax.imshow(state, cmap="plasma")
+            ax.set_title(f"Step {i}")
+            st.pyplot(fig)
+            time.sleep(0.3)
+
+        memory.save({
+            "type": "simulation",
+            "steps": steps
+        })
+
+# =========================================================
+# MEMORY MODE
+# =========================================================
+elif mode == "🧠 Memory Archive":
+    st.subheader("🧠 System Memory")
+
+    data = memory.load()
+
+    if not data:
+        st.warning("Memory is empty.")
+    else:
+        for i, item in enumerate(data[::-1]):
+            st.write(f"{i+1}. {item}")
