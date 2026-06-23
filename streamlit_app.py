@@ -1,218 +1,256 @@
 # =========================================================
-# 🏗️ RANDOM V2 — AUTONOMOUS ARCHITECTURE & CIVILIZATION OS
-# Clean Core (No Forex, No SAI, No External Plugins)
+# 🏗️ RANDOM V2 — AUTONOMOUS CIVILIZATION OPERATING SYSTEM
+# Unified Core (Brain + Architecture + Eurocode + Evolution)
 # =========================================================
 
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import json
 import time
+from pathlib import Path
 
 # =========================================================
-# PAGE CONFIG
+# CONFIG
 # =========================================================
-st.set_page_config(
-    page_title="RANDOM V2 - Civilization OS",
-    layout="wide"
-)
+st.set_page_config(page_title="RANDOM V2 OS", layout="wide")
 
-st.title("🏗️ RANDOM V2 — Autonomous Architecture & Civilization OS")
-st.caption("A self-growing system for cities, structures, and simulated worlds")
+st.title("🏗️ RANDOM V2 — Civilization Operating System")
+st.caption("A self-evolving architecture + city intelligence engine")
 
 # =========================================================
-# MEMORY CORE (Lightweight In-Memory Store)
+# MEMORY (PERSISTENT)
 # =========================================================
-class MemoryCore:
+MEMORY_FILE = Path("random_memory.json")
+
+def load_memory():
+    if MEMORY_FILE.exists():
+        try:
+            return json.loads(MEMORY_FILE.read_text())
+        except:
+            return []
+    return []
+
+def save_memory(data):
+    MEMORY_FILE.write_text(json.dumps(data, indent=2))
+
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
+
+# =========================================================
+# 🧠 BRAIN
+# =========================================================
+class RandomBrain:
     def __init__(self):
-        if "memory" not in st.session_state:
-            st.session_state.memory = []
+        self.awareness = random.random()
+        self.intelligence = random.random()
 
-    def save(self, item):
-        st.session_state.memory.append({
-            "timestamp": time.time(),
-            "data": item
-        })
+    def think(self, text):
+        return {
+            "intent": text,
+            "complexity": len(text.split()),
+            "domain": random.choice(["housing", "industry", "transport", "mixed-use"])
+        }
 
-    def load(self):
-        return st.session_state.memory
+    def evolve(self):
+        self.awareness = min(1, max(0, self.awareness + random.uniform(-0.05, 0.05)))
+        self.intelligence = min(1, max(0, self.intelligence + random.uniform(-0.05, 0.05)))
 
-
-memory = MemoryCore()
+brain = RandomBrain()
 
 # =========================================================
-# ARCHITECTURE ENGINE
+# 🏗️ ARCHITECTURE ENGINE
 # =========================================================
 class ArchitectureEngine:
-    def generate_floor_plan(self, width=10, height=10, rooms=5):
-        grid = np.zeros((height, width))
+    def generate_floor_plan(self, w, h, rooms):
+        grid = np.zeros((h, w))
 
         for r in range(1, rooms + 1):
-            x = random.randint(0, width - 2)
-            y = random.randint(0, height - 2)
-
-            w = random.randint(2, 4)
-            h = random.randint(2, 4)
-
-            grid[y:y+h, x:x+w] = r
+            x = random.randint(0, w - 2)
+            y = random.randint(0, h - 2)
+            rw = random.randint(2, 4)
+            rh = random.randint(2, 4)
+            grid[y:y+rh, x:x+rw] = r
 
         return grid
-
-    def structural_score(self, grid):
-        density = np.count_nonzero(grid) / grid.size
-        balance = 1 - abs(np.mean(grid) - np.median(grid)) / (np.max(grid) + 1)
-
-        score = (density * 0.6 + balance * 0.4) * 100
-        return round(score, 2)
-
 
 arch = ArchitectureEngine()
 
 # =========================================================
-# CIVILIZATION ENGINE
+# ⚖️ EUROCODE-INSPIRED ENGINE
 # =========================================================
-class CivilizationEngine:
-    def generate_city(self, size=20):
+class EurocodeEngine:
+    def analyze(self, grid):
+        void = np.sum(grid == 0) / grid.size
+        density = np.count_nonzero(grid) / grid.size
+
+        coords = np.argwhere(grid > 0)
+        balance = 1 - np.linalg.norm(np.mean(coords, axis=0) - np.array(grid.shape)/2) / np.linalg.norm(grid.shape)
+
+        aspect = max(grid.shape) / min(grid.shape)
+
+        score = 100
+        issues = []
+
+        if void > 0.65:
+            issues.append("Excessive void ratio")
+            score -= 25
+
+        if density < 0.2:
+            issues.append("Low structural density")
+            score -= 20
+
+        if balance < 0.45:
+            issues.append("Poor structural balance")
+            score -= 20
+
+        if aspect > 3.5:
+            issues.append("Extreme aspect ratio")
+            score -= 15
+
+        return {
+            "score": max(0, score),
+            "void": round(float(void), 3),
+            "density": round(float(density), 3),
+            "balance": round(float(balance), 3),
+            "issues": issues
+        }
+
+euro = EurocodeEngine()
+
+# =========================================================
+# 🔁 CRITIC + REPAIR
+# =========================================================
+class RepairEngine:
+    def repair(self, grid):
+        g = grid.copy()
+        h, w = g.shape
+
+        for _ in range(int(h * w * 0.1)):
+            x = random.randint(0, h-1)
+            y = random.randint(0, w-1)
+            g[x, y] = random.randint(1, 3)
+
+        return g
+
+repair = RepairEngine()
+
+def evolve_structure(grid, steps=3):
+    history = []
+    current = grid
+
+    for _ in range(steps):
+        report = euro.analyze(current)
+
+        if report["score"] < 70:
+            current = repair.repair(current)
+
+        history.append((current.copy(), report))
+
+    return history
+
+# =========================================================
+# 🌆 CITY ENGINE
+# =========================================================
+class CityEngine:
+    def generate(self, size):
         city = np.zeros((size, size))
+        city[:, size//2] = 1
+        city[size//2, :] = 1
 
-        # roads
-        city[:, size // 2] = 1
-        city[size // 2, :] = 1
-
-        # buildings
         for _ in range(size * 2):
-            x = random.randint(0, size - 1)
-            y = random.randint(0, size - 1)
-            if city[y, x] == 0:
-                city[y, x] = random.randint(2, 5)
+            x = random.randint(0, size-1)
+            y = random.randint(0, size-1)
+            city[x, y] = random.randint(2, 5)
 
         return city
 
-    def population_estimate(self, city):
-        return int(np.count_nonzero(city) * random.randint(10, 50))
-
-
-city_engine = CivilizationEngine()
+city_engine = CityEngine()
 
 # =========================================================
-# SIMULATION ENGINE
-# =========================================================
-class SimulationEngine:
-    def evolve(self, city, steps=5):
-        history = [city.copy()]
-
-        for _ in range(steps):
-            new_city = city.copy()
-
-            x, y = random.randint(0, city.shape[0]-1), random.randint(0, city.shape[1]-1)
-            new_city[x, y] = random.randint(1, 5)
-
-            history.append(new_city)
-            city = new_city
-
-        return history
-
-
-sim_engine = SimulationEngine()
-
-# =========================================================
-# UI SIDEBAR CONTROL PANEL
+# UI MODE
 # =========================================================
 mode = st.sidebar.radio(
-    "🧭 System Mode",
+    "🧭 RANDOM OS MODE",
     [
-        "🏗️ Architecture Generator",
+        "🧠 Brain",
+        "🏗️ Architecture Evolution",
         "🌆 City Generator",
-        "🌍 Civilization Simulation",
-        "🧠 Memory Archive"
+        "🧠 Memory"
     ]
 )
 
 # =========================================================
-# ARCHITECTURE MODE
+# 🧠 BRAIN MODE
 # =========================================================
-if mode == "🏗️ Architecture Generator":
-    st.subheader("🏗️ Floor Plan Generator")
+if mode == "🧠 Brain":
+    txt = st.text_area("Enter Intent")
 
-    w = st.slider("Width", 5, 30, 10)
-    h = st.slider("Height", 5, 30, 10)
+    if st.button("Think"):
+        brain.evolve()
+        st.json(brain.think(txt))
+
+    st.metric("Awareness", round(brain.awareness, 3))
+    st.metric("Intelligence", round(brain.intelligence, 3))
+
+# =========================================================
+# 🏗️ ARCHITECTURE + EVOLUTION + EUROCODE
+# =========================================================
+elif mode == "🏗️ Architecture Evolution":
+    w = st.slider("Width", 5, 30, 12)
+    h = st.slider("Height", 5, 30, 12)
     r = st.slider("Rooms", 1, 10, 5)
 
-    if st.button("Generate Floor Plan"):
+    if st.button("Generate & Evolve Structure"):
         grid = arch.generate_floor_plan(w, h, r)
-        score = arch.structural_score(grid)
+        history = evolve_structure(grid, steps=5)
 
-        fig, ax = plt.subplots()
-        ax.imshow(grid, cmap="viridis")
-        st.pyplot(fig)
+        for i, (state, report) in enumerate(history):
+            st.markdown(f"### Step {i+1}")
 
-        st.success(f"Structural Integrity Score: {score}")
+            fig, ax = plt.subplots()
+            ax.imshow(state, cmap="viridis")
+            st.pyplot(fig)
 
-        memory.save({
-            "type": "floor_plan",
-            "score": score
-        })
+            st.metric("Score", report["score"])
+
+            if report["issues"]:
+                for issue in report["issues"]:
+                    st.warning(issue)
+            else:
+                st.success("Structurally stable")
 
 # =========================================================
-# CITY MODE
+# 🌆 CITY MODE
 # =========================================================
 elif mode == "🌆 City Generator":
-    st.subheader("🌆 Procedural City Generator")
-
-    size = st.slider("City Size", 10, 60, 20)
+    size = st.slider("City Size", 10, 50, 20)
 
     if st.button("Generate City"):
-        city = city_engine.generate_city(size)
-        pop = city_engine.population_estimate(city)
+        city = city_engine.generate(size)
 
         fig, ax = plt.subplots()
         ax.imshow(city, cmap="coolwarm")
         st.pyplot(fig)
 
-        st.info(f"Estimated Population: {pop}")
+        st.success("City generated")
 
-        memory.save({
+        st.session_state.memory.append({
             "type": "city",
-            "population": pop
+            "size": size
         })
+        save_memory(st.session_state.memory)
 
 # =========================================================
-# SIMULATION MODE
+# 🧠 MEMORY MODE
 # =========================================================
-elif mode == "🌍 Civilization Simulation":
-    st.subheader("🌍 City Evolution Simulator")
+elif mode == "🧠 Memory":
+    st.json(st.session_state.memory)
 
-    size = st.slider("Base City Size", 10, 40, 20)
-    steps = st.slider("Evolution Steps", 1, 15, 5)
+    entry = st.text_input("Add Memory")
 
-    if st.button("Run Simulation"):
-        city = city_engine.generate_city(size)
-        history = sim_engine.evolve(city, steps)
-
-        fig, ax = plt.subplots()
-
-        for i, state in enumerate(history):
-            ax.clear()
-            ax.imshow(state, cmap="plasma")
-            ax.set_title(f"Step {i}")
-            st.pyplot(fig)
-            time.sleep(0.3)
-
-        memory.save({
-            "type": "simulation",
-            "steps": steps
-        })
-
-# =========================================================
-# MEMORY MODE
-# =========================================================
-elif mode == "🧠 Memory Archive":
-    st.subheader("🧠 System Memory")
-
-    data = memory.load()
-
-    if not data:
-        st.warning("Memory is empty.")
-    else:
-        for i, item in enumerate(data[::-1]):
-            st.write(f"{i+1}. {item}")
+    if st.button("Save"):
+        st.session_state.memory.append(entry)
+        save_memory(st.session_state.memory)
+        st.success("Saved")
