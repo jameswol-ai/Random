@@ -27,24 +27,48 @@ MEMORY_FILE = Path("random_memory.json")
 # =========================================================
 
 def load_memory():
-    if MEMORY_FILE.exists():
-        try:
-            with open(MEMORY_FILE, "r") as f:
-                return json.load(f)
-        except:
-            pass
 
-    return {
+    default_memory = {
         "projects": [],
         "cities": [],
         "history": []
     }
+
+    if not MEMORY_FILE.exists():
+        return default_memory
+
+    try:
+        with open(MEMORY_FILE, "r") as f:
+            data = json.load(f)
+
+        if not isinstance(data, dict):
+            return default_memory
+
+        data.setdefault("projects", [])
+        data.setdefault("cities", [])
+        data.setdefault("history", [])
+
+        return data
+
+    except Exception:
+        return default_memory
 
 def save_memory(data):
     with open(MEMORY_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
 memory = load_memory()
+
+if not isinstance(memory, dict):
+    memory = {
+        "projects": [],
+        "cities": [],
+        "history": []
+    }
+
+memory.setdefault("projects", [])
+memory.setdefault("cities", [])
+memory.setdefault("history", [])
 
 # =========================================================
 # ENGINE REGISTRY
