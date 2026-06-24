@@ -1,206 +1,313 @@
 # =========================================================
-# RANDOM V5 — SELF-WRITING AI ARCHITECTURE GENERATOR OS
-# Single-file Streamlit Kernel (Evolving System)
+# RANDOM V3
+# Autonomous Architecture Operating System
+# Single-File Streamlit Edition
 # =========================================================
 
 import streamlit as st
 import json
+import random
 import uuid
 from pathlib import Path
 from datetime import datetime
-import random
 
-# ---------------------------------------------------------
-# APP CONFIG
-# ---------------------------------------------------------
-st.set_page_config(page_title="RANDOM V5", layout="wide")
-st.title("🧠 RANDOM V5 — Self-Writing Architecture Generator")
+# =========================================================
+# CONFIG
+# =========================================================
 
-# ---------------------------------------------------------
-# MEMORY + ARCHITECTURE STORE
-# ---------------------------------------------------------
+st.set_page_config(
+    page_title="RANDOM V3",
+    page_icon="🏗️",
+    layout="wide"
+)
+
 MEMORY_FILE = Path("random_memory.json")
+
+# =========================================================
+# MEMORY
+# =========================================================
+
+DEFAULT_MEMORY = {
+    "projects": [],
+    "agents": [],
+    "engines": [],
+    "designs": [],
+    "cities": [],
+    "knowledge": []
+}
+
 
 def load_memory():
     if MEMORY_FILE.exists():
-        return json.loads(MEMORY_FILE.read_text())
-    return {
-        "projects": [],
-        "logs": [],
-        "agents": [],
-        "modules": []   # NEW: generated architecture modules
-    }
+        try:
+            with open(MEMORY_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return DEFAULT_MEMORY.copy()
+    return DEFAULT_MEMORY.copy()
 
-def save_memory(mem):
-    MEMORY_FILE.write_text(json.dumps(mem, indent=2))
+
+def save_memory(memory):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(memory, f, indent=4)
+
 
 memory = load_memory()
 
-# ---------------------------------------------------------
-# SELF-WRITING CODE ENGINE (ARCHITECTURE GENERATOR)
-# ---------------------------------------------------------
-class ArchitectureGenerator:
-    """
-    This system does NOT overwrite itself.
-    It generates new conceptual modules (like AI-written plugins).
-    """
+# =========================================================
+# ENGINE REGISTRY
+# =========================================================
 
-    MODULE_TEMPLATES = [
-        {
-            "name": "Memory Compression Unit",
-            "purpose": "Compress long-term memory logs into semantic summaries",
-            "logic": "cluster + summarize + prune low-signal events"
-        },
-        {
-            "name": "Agent Evolution Engine",
-            "purpose": "Mutate agent roles based on system performance",
-            "logic": "reward successful behaviors and rewrite roles"
-        },
-        {
-            "name": "Architecture Synthesizer",
-            "purpose": "Generate new system modules from system gaps",
-            "logic": "detect missing capabilities and propose modules"
-        },
-        {
-            "name": "Simulation Drift Controller",
-            "purpose": "Stabilize chaotic simulation outputs",
-            "logic": "apply equilibrium balancing across logs"
-        },
-        {
-            "name": "Knowledge Node Expander",
-            "purpose": "Grow graph-like memory structure",
-            "logic": "convert logs into connected knowledge nodes"
-        }
-    ]
+ENGINE_REGISTRY = [
+    "Room Engine",
+    "Adjacency Engine",
+    "Grid Engine",
+    "Layout Engine",
+    "Structural Engine",
+    "Optimizer Engine"
+]
 
-    def generate_module(self):
-        base = random.choice(self.MODULE_TEMPLATES)
+# =========================================================
+# AGENT REGISTRY
+# =========================================================
 
-        module = {
-            "id": str(uuid.uuid4())[:8],
-            "name": base["name"],
-            "purpose": base["purpose"],
-            "logic": base["logic"],
-            "created_at": str(datetime.now()),
-            "status": "dormant"
-        }
+AGENTS = [
+    "Architect Agent",
+    "Engineer Agent",
+    "Planner Agent",
+    "Optimizer Agent"
+]
 
-        return module
+# =========================================================
+# ARCHITECTURE BRAIN
+# =========================================================
 
-# ---------------------------------------------------------
-# AGENT CORE
-# ---------------------------------------------------------
-class Agent:
-    def __init__(self, name, role):
-        self.id = str(uuid.uuid4())[:8]
-        self.name = name
-        self.role = role
-        self.energy = random.randint(50, 100)
+def generate_rooms(building_type, bedrooms):
 
-    def act(self):
-        return random.choice([
-            "mapping system topology",
-            "rewriting internal heuristics",
-            "stabilizing memory drift",
-            "collaborating with modules",
-            "observing architecture evolution"
-        ])
+    rooms = []
 
-# ---------------------------------------------------------
-# SIDEBAR CONTROLS
-# ---------------------------------------------------------
-st.sidebar.header("⚙️ Control Panel")
+    if building_type == "House":
+        rooms = [
+            "Living Room",
+            "Dining Room",
+            "Kitchen"
+        ]
 
-gen = ArchitectureGenerator()
+        for i in range(bedrooms):
+            rooms.append(f"Bedroom {i+1}")
 
-if st.sidebar.button("➕ Spawn Agent"):
-    agent = Agent(f"Agent-{len(memory['agents'])+1}", "builder")
-    memory["agents"].append(agent.__dict__)
-    save_memory(memory)
-    st.sidebar.success("Agent created")
+        rooms.append("Bathroom")
 
-if st.sidebar.button("🧬 Generate New Module"):
-    module = gen.generate_module()
-    memory["modules"].append(module)
-    save_memory(memory)
-    st.sidebar.success(f"Module generated: {module['name']}")
+    elif building_type == "School":
+        rooms = [
+            "Classrooms",
+            "Library",
+            "Laboratory",
+            "Administration",
+            "Assembly Hall"
+        ]
 
-if st.sidebar.button("🧹 Reset System"):
-    memory = {"projects": [], "logs": [], "agents": [], "modules": []}
-    save_memory(memory)
-    st.sidebar.warning("System reset")
+    elif building_type == "Office":
+        rooms = [
+            "Reception",
+            "Meeting Room",
+            "Open Office",
+            "Director Office",
+            "Break Room"
+        ]
 
-# ---------------------------------------------------------
-# DASHBOARD
-# ---------------------------------------------------------
-col1, col2, col3, col4 = st.columns(4)
+    return rooms
 
-col1.metric("Agents", len(memory["agents"]))
-col2.metric("Modules", len(memory["modules"]))
-col3.metric("Logs", len(memory["logs"]))
-col4.metric("Projects", len(memory["projects"]))
 
-# ---------------------------------------------------------
-# MODULE VIEW (SELF-WRITTEN ARCHITECTURE)
-# ---------------------------------------------------------
-st.subheader("🧬 Generated Architecture Modules")
+def generate_adjacency(rooms):
 
-if memory["modules"]:
-    for m in memory["modules"]:
-        with st.expander(f"{m['name']} [{m['status']}]"):
-            st.write("**Purpose:**", m["purpose"])
-            st.write("**Logic Kernel:**", m["logic"])
-            st.write("**Created:**", m["created_at"])
-else:
-    st.info("No modules generated yet. The system has not begun evolving its architecture.")
+    adjacency = {}
 
-# ---------------------------------------------------------
-# AGENTS VIEW
-# ---------------------------------------------------------
-st.subheader("🤖 Agents")
+    for i in range(len(rooms)-1):
+        adjacency[rooms[i]] = [rooms[i+1]]
 
-for a in memory["agents"]:
-    st.write(f"**{a['name']}** ({a['role']}) energy={a['energy']}")
+    return adjacency
 
-# ---------------------------------------------------------
-# SIMULATION ENGINE
-# ---------------------------------------------------------
-st.subheader("🌐 Evolution Simulation")
 
-if st.button("Run Evolution Tick"):
-    event = random.choice([
-        "architecture drift detected",
-        "module synergy increased",
-        "agent specialization shift",
-        "memory restructuring occurred",
-        "system self-stabilized"
-    ])
+def generate_grid():
 
-    memory["logs"].append({
+    return {
+        "x": ["A", "B", "C", "D"],
+        "y": ["1", "2", "3", "4"],
+        "spacing": "6m x 6m"
+    }
+
+
+# =========================================================
+# PROJECTS
+# =========================================================
+
+def create_project(name, ptype):
+
+    project = {
         "id": str(uuid.uuid4())[:8],
-        "time": str(datetime.now()),
-        "event": event
-    })
+        "name": name,
+        "type": ptype,
+        "created": datetime.now().strftime("%Y-%m-%d %H:%M")
+    }
 
-    # Occasionally auto-generate a module (self-writing behavior)
-    if random.random() > 0.6:
-        auto_module = gen.generate_module()
-        memory["modules"].append(auto_module)
-        event += " + auto-module spawned"
-
+    memory["projects"].append(project)
     save_memory(memory)
-    st.success(event)
 
-# ---------------------------------------------------------
-# LOG STREAM
-# ---------------------------------------------------------
-st.subheader("📜 System Logs")
+    return project
 
-for log in reversed(memory["logs"][-10:]):
-    st.text(f"{log['time']} → {log['event']}")
+# =========================================================
+# SIDEBAR
+# =========================================================
 
-# ---------------------------------------------------------
-# SYSTEM INTROSPECTION
-# ---------------------------------------------------------
-st.markdown("---")
-st.caption("RANDOM V5 — architecture grows through emitted module structures, not self-editing code")
+st.sidebar.title("🏗 RANDOM V3")
+
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Dashboard",
+        "Projects",
+        "Design Studio",
+        "Agents",
+        "Engines",
+        "Memory"
+    ]
+)
+
+# =========================================================
+# DASHBOARD
+# =========================================================
+
+if page == "Dashboard":
+
+    st.title("🏗 RANDOM V3")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("Projects", len(memory["projects"]))
+    c2.metric("Agents", len(AGENTS))
+    c3.metric("Engines", len(ENGINE_REGISTRY))
+    c4.metric("Designs", len(memory["designs"]))
+
+    st.markdown("---")
+
+    st.subheader("System Status")
+
+    st.success("RANDOM Core Online")
+
+# =========================================================
+# PROJECTS
+# =========================================================
+
+elif page == "Projects":
+
+    st.title("📁 Projects")
+
+    with st.form("project_form"):
+
+        pname = st.text_input("Project Name")
+
+        ptype = st.selectbox(
+            "Type",
+            ["House", "School", "Office"]
+        )
+
+        submit = st.form_submit_button("Create Project")
+
+    if submit and pname:
+
+        p = create_project(pname, ptype)
+
+        st.success(
+            f"Created Project {p['name']} ({p['id']})"
+        )
+
+    st.markdown("---")
+
+    for p in memory["projects"]:
+        st.write(p)
+
+# =========================================================
+# DESIGN STUDIO
+# =========================================================
+
+elif page == "Design Studio":
+
+    st.title("🏠 Design Studio")
+
+    building = st.selectbox(
+        "Building Type",
+        ["House", "School", "Office"]
+    )
+
+    bedrooms = st.slider(
+        "Bedrooms",
+        1,
+        10,
+        3
+    )
+
+    if st.button("Generate Design"):
+
+        rooms = generate_rooms(
+            building,
+            bedrooms
+        )
+
+        adjacency = generate_adjacency(rooms)
+
+        grid = generate_grid()
+
+        design = {
+            "building": building,
+            "rooms": rooms,
+            "adjacency": adjacency,
+            "grid": grid
+        }
+
+        memory["designs"].append(design)
+
+        save_memory(memory)
+
+        st.success("Design Generated")
+
+        st.subheader("Rooms")
+        st.write(rooms)
+
+        st.subheader("Adjacency")
+        st.json(adjacency)
+
+        st.subheader("Grid")
+        st.json(grid)
+
+# =========================================================
+# AGENTS
+# =========================================================
+
+elif page == "Agents":
+
+    st.title("🤖 Agents")
+
+    for agent in AGENTS:
+        st.success(agent)
+
+# =========================================================
+# ENGINES
+# =========================================================
+
+elif page == "Engines":
+
+    st.title("⚙ Engine Registry")
+
+    for engine in ENGINE_REGISTRY:
+        st.info(engine)
+
+# =========================================================
+# MEMORY
+# =========================================================
+
+elif page == "Memory":
+
+    st.title("🧠 Memory")
+
+    st.json(memory)
