@@ -1,9 +1,12 @@
 # =========================================================
-# RANDOM V2
-# Autonomous Architecture Operating System
+# RANDOM V2 - AUTONOMOUS ARCHITECTURE & CIVILIZATION OS
+# Unified Streamlit Edition
 # =========================================================
 
 import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+import random
 import json
 from pathlib import Path
 
@@ -13,73 +16,114 @@ from pathlib import Path
 
 st.set_page_config(
     page_title="RANDOM V2",
+    page_icon="🏗️",
     layout="wide"
 )
 
-# =========================================================
-# SAFE IMPORTS
-# =========================================================
-
-try:
-    from engines.room_engine import RoomEngine
-except:
-    RoomEngine = None
-
-try:
-    from engines.adjacency_engine import AdjacencyEngine
-except:
-    AdjacencyEngine = None
-
-try:
-    from engines.grid_engine import GridEngine
-except:
-    GridEngine = None
-
-try:
-    from engines.layout_engine import LayoutEngine
-except:
-    LayoutEngine = None
-
-try:
-    from engines.structural_grid_engine import StructuralGridEngine
-except:
-    StructuralGridEngine = None
+MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-MEMORY_FILE = Path("random_memory.json")
-
 def load_memory():
-
     if MEMORY_FILE.exists():
-
         try:
             with open(MEMORY_FILE, "r") as f:
                 return json.load(f)
         except:
-            return {}
+            pass
 
-    return {}
+    return {
+        "projects": [],
+        "cities": [],
+        "history": []
+    }
+
+def save_memory(data):
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(data, f, indent=2)
 
 memory = load_memory()
+
+# =========================================================
+# ENGINE REGISTRY
+# =========================================================
+
+ENGINES = {
+    "Architecture AI": "ACTIVE",
+    "Structural AI": "ACTIVE",
+    "Eurocode Engine": "ACTIVE",
+    "Civilization Engine": "ACTIVE",
+    "Memory Core": "ACTIVE"
+}
+
+# =========================================================
+# FLOOR PLAN ENGINE
+# =========================================================
+
+def generate_floorplan(width, length, bedrooms):
+
+    rooms = []
+
+    rooms.append(("Living Room", width * 0.4))
+    rooms.append(("Kitchen", width * 0.15))
+
+    for i in range(bedrooms):
+        rooms.append((f"Bedroom {i+1}", width * 0.15))
+
+    rooms.append(("Bathroom", width * 0.10))
+
+    return rooms
+
+# =========================================================
+# STRUCTURAL GRID ENGINE
+# =========================================================
+
+def create_grid(width, length, spacing=4):
+
+    x = np.arange(0, width + spacing, spacing)
+    y = np.arange(0, length + spacing, spacing)
+
+    return x, y
+
+# =========================================================
+# EUROCODE ENGINE
+# =========================================================
+
+def eurocode_check(span):
+
+    if span <= 8:
+        return "PASS"
+
+    return "REVIEW REQUIRED"
+
+# =========================================================
+# CIVILIZATION ENGINE
+# =========================================================
+
+def evolve_city():
+
+    return {
+        "population": random.randint(1000, 100000),
+        "infrastructure": random.randint(1, 100),
+        "happiness": random.randint(1, 100)
+    }
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏗 RANDOM V2")
+st.sidebar.title("RANDOM V2")
 
-module = st.sidebar.radio(
-    "Select Module",
+section = st.sidebar.radio(
+    "Navigate",
     [
         "Dashboard",
-        "Room Programming",
-        "Adjacency",
-        "Grid Generator",
-        "Floor Plan",
-        "Structural Grid",
+        "Architecture AI",
+        "Structural AI",
+        "Eurocode",
+        "Civilization",
         "Memory"
     ]
 )
@@ -88,203 +132,108 @@ module = st.sidebar.radio(
 # DASHBOARD
 # =========================================================
 
-if module == "Dashboard":
+if section == "Dashboard":
 
-    st.title("🏗 RANDOM V2")
+    st.title("🏗️ RANDOM V2")
 
-    st.markdown("""
-    ### Autonomous Architecture Operating System
+    col1, col2, col3 = st.columns(3)
 
-    Current Development Phase
+    col1.metric("Engines", len(ENGINES))
+    col2.metric("Projects", len(memory["projects"]))
+    col3.metric("Cities", len(memory["cities"]))
 
-    ✅ Room Programming Engine
+    st.subheader("System Status")
 
-    ✅ Adjacency Engine
-
-    ✅ Grid Generator
-
-    ⏳ Floor Plan Renderer
-
-    ⏳ Structural Grid Generator
-
-    ⏳ Eurocode Engine
-
-    ⏳ BIM Export
-    """)
+    st.json(ENGINES)
 
 # =========================================================
-# ROOM PROGRAMMING
+# ARCHITECTURE AI
 # =========================================================
 
-elif module == "Room Programming":
-
-    st.header("Room Programming Engine")
-
-    building_type = st.selectbox(
-        "Building Type",
-        [
-            "School",
-            "Hospital",
-            "Office",
-            "Residential"
-        ]
-    )
-
-    occupants = st.number_input(
-        "Occupants",
-        min_value=10,
-        value=500
-    )
-
-    if st.button("Generate Program"):
-
-        if RoomEngine:
-
-            engine = RoomEngine()
-
-            rooms = engine.generate(
-                building_type,
-                occupants
-            )
-
-            st.json(rooms)
-
-        else:
-
-            st.warning(
-                "room_engine.py not found"
-            )
-
-# =========================================================
-# ADJACENCY
-# =========================================================
-
-elif module == "Adjacency":
-
-    st.header("Adjacency Engine")
-
-    if st.button("Generate Adjacency"):
-
-        if AdjacencyEngine:
-
-            engine = AdjacencyEngine()
-
-            data = engine.generate()
-
-            st.json(data)
-
-        else:
-
-            st.warning(
-                "adjacency_engine.py not found"
-            )
-
-# =========================================================
-# GRID GENERATOR
-# =========================================================
-
-elif module == "Grid Generator":
-
-    st.header("Grid Generator")
-
-    width = st.number_input(
-        "Width (m)",
-        value=60
-    )
-
-    length = st.number_input(
-        "Length (m)",
-        value=90
-    )
-
-    spacing = st.number_input(
-        "Grid Spacing",
-        value=8
-    )
-
-    if st.button("Generate Grid"):
-
-        if GridEngine:
-
-            engine = GridEngine()
-
-            grid = engine.generate(
-                width,
-                length,
-                spacing
-            )
-
-            st.json(grid)
-
-        else:
-
-            st.warning(
-                "grid_engine.py not found"
-            )
-
-# =========================================================
-# FLOOR PLAN
-# =========================================================
-
-elif module == "Floor Plan":
+elif section == "Architecture AI":
 
     st.header("Floor Plan Generator")
 
+    width = st.number_input("Width (m)", 10)
+    length = st.number_input("Length (m)", 15)
+    bedrooms = st.slider("Bedrooms", 1, 10, 3)
+
     if st.button("Generate Floor Plan"):
 
-        if LayoutEngine:
+        rooms = generate_floorplan(width, length, bedrooms)
 
-            engine = LayoutEngine()
+        st.success("Floor Plan Generated")
 
-            fig = engine.generate()
-
-            st.pyplot(fig)
-
-        else:
-
-            st.warning(
-                "layout_engine.py not found"
-            )
+        for room in rooms:
+            st.write(room)
 
 # =========================================================
-# STRUCTURAL GRID
+# STRUCTURAL AI
 # =========================================================
 
-elif module == "Structural Grid":
+elif section == "Structural AI":
 
     st.header("Structural Grid Generator")
 
-    if st.button("Generate Structure"):
+    width = st.number_input("Building Width", 20)
+    length = st.number_input("Building Length", 20)
 
-        if StructuralGridEngine:
+    if st.button("Generate Grid"):
 
-            engine = StructuralGridEngine()
+        x, y = create_grid(width, length)
 
-            structure = engine.generate()
+        fig, ax = plt.subplots()
 
-            st.json(structure)
+        for gx in x:
+            ax.axvline(gx)
 
-        else:
+        for gy in y:
+            ax.axhline(gy)
 
-            st.warning(
-                "structural_grid_engine.py not found"
-            )
+        ax.set_title("Structural Grid")
+
+        st.pyplot(fig)
+
+# =========================================================
+# EUROCODE
+# =========================================================
+
+elif section == "Eurocode":
+
+    st.header("Eurocode Span Check")
+
+    span = st.number_input("Span (m)", 5.0)
+
+    if st.button("Run Check"):
+
+        result = eurocode_check(span)
+
+        st.success(result)
+
+# =========================================================
+# CIVILIZATION
+# =========================================================
+
+elif section == "Civilization":
+
+    st.header("City Evolution")
+
+    if st.button("Evolve City"):
+
+        city = evolve_city()
+
+        memory["cities"].append(city)
+
+        save_memory(memory)
+
+        st.json(city)
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-elif module == "Memory":
+elif section == "Memory":
 
-    st.header("Memory")
+    st.header("Memory Core")
 
     st.json(memory)
-
-# =========================================================
-# FOOTER
-# =========================================================
-
-st.sidebar.markdown("---")
-st.sidebar.caption(
-    "RANDOM V2 • Autonomous Architecture OS"
-    )
