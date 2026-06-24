@@ -1,95 +1,55 @@
-# streamlit_app.py
+# client/streamlit_app.py
 
 import streamlit as st
-from core import memory, registry
-import importlib
-import os
+import requests
 
-st.set_page_config(page_title="RANDOM AI SYSTEM V1", layout="wide")
+API = "http://localhost:8000"
 
-mem = memory.load()
+st.title("🌍 RANDOM AI MULTI-USER SIMULATION")
 
-# -------------------------------
-# LOAD PLUGINS
-# -------------------------------
+# -----------------------------
+# CONNECT USER
+# -----------------------------
 
-def load_plugins():
-    plugin_files = [
-        "modules.design_engine",
-        "modules.city_engine",
-        "modules.knowledge_engine"
-    ]
+if "user_id" not in st.session_state:
+    if st.button("Connect to World"):
+        res = requests.post(f"{API}/connect").json()
+        st.session_state.user_id = res["user_id"]
 
-    for p in plugin_files:
-        mod = importlib.import_module(p)
-        name = p.split(".")[-1]
-        registry.register(name, mod.run)
+if "user_id" in st.session_state:
+    st.success(f"Connected: {st.session_state.user_id}")
 
-load_plugins()
+    uid = st.session_state.user_id
 
-# -------------------------------
-# UI
-# -------------------------------
+    # -------------------------
+    # ACTIONS
+    # -------------------------
 
-st.title("🧠 RANDOM AI SYSTEM V1")
+    col1, col2, col3 = st.columns(3)
 
-menu = st.sidebar.selectbox("Modules", [
-    "Dashboard",
-    "Design Engine",
-    "City Engine",
-    "Knowledge Engine"
-] + registry.list_engines())
+    if col1.button("Spawn City"):
+        r = requests.post(f"{API}/city/{uid}")
+        st.json(r.json())
 
-# -------------------------------
-# DASHBOARD
-# -------------------------------
+    if col2.button("Create Design"):
+        r = requests.post(f"{API}/design/{uid}")
+        st.json(r.json())
 
-if menu == "Dashboard":
-    st.metric("Cities", len(mem["cities"]))
-    st.metric("Designs", len(mem["designs"]))
-    st.metric("Knowledge", len(mem["knowledge"]))
-    st.metric("Engines", len(registry.list_engines()))
+    if col3.button("Tick World"):
+        requests.post(f"{API}/tick")
+        st.success("World evolved")
 
-# -------------------------------
-# DESIGN
-# -------------------------------
+    # -------------------------
+    # WORLD VIEW
+    # -------------------------
 
-elif menu == "Design Engine":
-    if st.button("Generate Design"):
-        result = registry.get("design_engine")(mem)
-        memory.save(mem)
-        st.json(result)
+    world = requests.get(f"{API}/world").json()
 
-# -------------------------------
-# CITY
-# -------------------------------
+    st.subheader("🌍 World State")
 
-elif menu == "City Engine":
-    if st.button("Spawn City"):
-        result = registry.get("city_engine")(mem)
-        memory.save(mem)
-        st.json(result)
+    st.metric("Users", len(world["users"]))
+    st.metric("Cities", len(world["cities"]))
+    st.metric("Designs", len(world["designs"]))
+    st.metric("Events", len(world["events"]))
 
-# -------------------------------
-# KNOWLEDGE
-# -------------------------------
-
-elif menu == "Knowledge Engine":
-    text = st.text_input("Knowledge")
-
-    if st.button("Store"):
-        result = registry.get("knowledge_engine")(mem, text)
-        memory.save(mem)
-        st.success(result)
-
-# -------------------------------
-# DYNAMIC ENGINE VIEW
-# -------------------------------
-
-elif menu in registry.list_engines():
-    st.subheader(f"Engine: {menu}")
-
-    if st.button("Run Engine"):
-        result = registry.get(menu)(mem)
-        memory.save(mem)
-        st.json(result)
+    st.json(world)
