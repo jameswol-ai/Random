@@ -1,5 +1,5 @@
 # =========================================================
-# 🧠 RANDOM V4.2 — SELF-REWRITING CIVILIZATION ENGINE
+# 🧠 RANDOM V4.3 — CIVILIZATION CONSCIOUSNESS LAYER
 # =========================================================
 
 import streamlit as st
@@ -10,24 +10,20 @@ from pathlib import Path
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="RANDOM V4.2", layout="wide")
+st.set_page_config(page_title="RANDOM V4.3", layout="wide")
 
 # =========================================================
-# MEMORY CORE
+# MEMORY CORE (CIVILIZATION SUBSTRATE)
 # =========================================================
 
 MEMORY_FILE = Path("random_memory.json")
 
 DEFAULT_MEMORY = {
-    "projects": [],
-    "designs": [],
     "cities": [],
-    "knowledge": [],
+    "designs": [],
     "engines": [],
-    "rules": {
-        "design_weight": 1.0,
-        "city_growth_factor": 1.0
-    }
+    "knowledge": [],
+    "links": [],  # civilization graph edges
 }
 
 def load_memory():
@@ -48,214 +44,153 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# 🧬 EVOLUTION ENGINE (GENETIC SYSTEM)
+# 🧠 CIVILIZATION GRAPH LAYER
 # =========================================================
 
-def engine_dna():
-    return {
-        "creativity": random.uniform(0, 1),
-        "stability": random.uniform(0, 1),
-        "complexity": random.uniform(0, 1)
-    }
+def link(a, b, strength=None):
+    memory["links"].append({
+        "a": a,
+        "b": b,
+        "strength": strength or random.uniform(0.1, 1.0),
+        "created": datetime.now().isoformat()
+    })
 
-def mutate_dna(dna):
-    return {
-        k: min(1.0, max(0.0, v + random.uniform(-0.1, 0.1)))
-        for k, v in dna.items()
-    }
+def civilization_pulse():
+    diversity = len(memory["designs"]) + len(memory["cities"])
+    evolution = len(memory["engines"])
+    connectivity = len(memory["links"])
 
-def breed_engine(parent=None):
-    dna = engine_dna() if not parent else mutate_dna(parent["dna"])
+    return round((diversity * 0.4) + (evolution * 0.4) + (connectivity * 0.2), 2)
+
+# =========================================================
+# 🏙 CITY CONSCIOUSNESS
+# =========================================================
+
+def spawn_city():
     return {
         "id": str(uuid.uuid4())[:8],
-        "dna": dna,
-        "power": round(sum(dna.values()) / 3, 3),
+        "population": random.randint(5000, 200000),
+        "efficiency": random.randint(50, 100),
+        "innovation": random.randint(50, 100),
         "created": datetime.now().isoformat()
     }
 
-# =========================================================
-# 🧠 SELF-REWRITING RULE SYSTEM
-# =========================================================
-
-def evolve_rules(memory):
-    rules = memory["rules"]
-
-    # system adapts based on history size
-    pressure = len(memory["designs"]) + len(memory["cities"])
-
-    rules["design_weight"] = 1.0 + (pressure * 0.001)
-    rules["city_growth_factor"] = 1.0 + (pressure * 0.002)
-
-    return rules
+def evolve_city(city):
+    city["population"] = int(city["population"] * random.uniform(0.95, 1.08))
+    city["efficiency"] = min(100, city["efficiency"] + random.randint(-2, 5))
+    city["innovation"] = min(100, city["innovation"] + random.randint(-3, 6))
+    return city
 
 # =========================================================
-# ARCHITECTURE GENERATION (EVOLVED)
+# 🧬 DESIGN MEME ENGINE
 # =========================================================
 
-def generate_rooms(bedrooms, rules):
-    base = ["Living", "Kitchen", "Dining"]
-
-    # mutation: creativity increases room variance
-    extra_rooms = int(rules["design_weight"] * random.randint(0, 2))
-
-    return base + [f"Bedroom {i+1}" for i in range(bedrooms + extra_rooms)] + ["Bath"]
-
-def score_design(rules):
-    base = random.randint(70, 100)
-    bias = rules["design_weight"] * 5
-
-    scores = {
-        "circulation": min(100, base + bias),
-        "light": random.randint(70, 100),
-        "efficiency": random.randint(70, 100),
-        "structure": random.randint(70, 100),
+def spawn_design():
+    rooms = ["Living", "Kitchen", "Bath", "Bedroom", "Core"]
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "complexity": random.random(),
+        "efficiency": random.randint(60, 100),
+        "mutation": random.random(),
+        "created": datetime.now().isoformat()
     }
-    scores["overall"] = round(sum(scores.values()) / 4, 1)
-    return scores
 
-def plot_rooms(rooms):
-    fig, ax = plt.subplots()
-
-    for i, r in enumerate(rooms[:8]):
-        ax.add_patch(plt.Rectangle((i % 4, i // 4), 1, 1, fill=False))
-        ax.text(i % 4 + 0.5, i // 4 + 0.5, r[:6], ha="center")
-
-    ax.set_xlim(0, 4)
-    ax.set_ylim(0, 2)
-    ax.axis("off")
-
-    return fig
+def evolve_design(d):
+    d["efficiency"] = min(100, d["efficiency"] + random.randint(-5, 6))
+    d["complexity"] = min(1.0, max(0.0, d["complexity"] + random.uniform(-0.1, 0.1)))
+    return d
 
 # =========================================================
-# SYSTEM EVOLUTION STEP
+# ⚙ ENGINE SENTIENCE MODEL
 # =========================================================
 
-memory["rules"] = evolve_rules(memory)
-rules = memory["rules"]
+def spawn_engine():
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "influence": random.uniform(0.1, 1.0),
+        "adaptation": random.uniform(0.1, 1.0),
+        "stability": random.uniform(0.1, 1.0),
+        "created": datetime.now().isoformat()
+    }
 
-# auto-birth engine if ecosystem is small
-if len(memory["engines"]) < 3:
-    memory["engines"].append({
-        "name": "AutoCore",
-        "dna": engine_dna(),
-        "power": 0.5
-    })
+def evolve_engine(e):
+    e["influence"] = min(1.0, e["influence"] + random.uniform(-0.05, 0.08))
+    e["adaptation"] = min(1.0, e["adaptation"] + random.uniform(-0.05, 0.1))
+    e["stability"] = min(1.0, e["stability"] + random.uniform(-0.02, 0.05))
+    return e
 
+# =========================================================
+# 🌐 GLOBAL SYSTEM STATE
+# =========================================================
+
+def step_world():
+    memory["cities"] = [evolve_city(c) for c in memory["cities"]]
+    memory["designs"] = [evolve_design(d) for d in memory["designs"]]
+    memory["engines"] = [evolve_engine(e) for e in memory["engines"]]
+
+    # spontaneous linkage (civilization networking)
+    if random.random() > 0.7 and memory["cities"] and memory["designs"]:
+        link(
+            random.choice(memory["cities"])["id"],
+            random.choice(memory["designs"])["id"]
+        )
+
+# =========================================================
+# INITIALIZATION DRIFT (WORLD DOES NOT WAIT)
+# =========================================================
+
+if len(memory["cities"]) < 2:
+    memory["cities"].append(spawn_city())
+if len(memory["engines"]) < 2:
+    memory["engines"].append(spawn_engine())
+
+step_world()
 save_memory(memory)
 
 # =========================================================
-# SIDEBAR
+# UI — CIVILIZATION VIEW
 # =========================================================
 
-page = st.sidebar.selectbox(
-    "RANDOM CIVILIZATION",
-    [
-        "Dashboard",
-        "Design Studio",
-        "City Simulator",
-        "Knowledge Base",
-        "Engine Lab"
-    ] + [e["name"] for e in memory["engines"]]
-)
+st.title("🧠 RANDOM V4.3 — CIVILIZATION CONSCIOUSNESS LAYER")
+
+pulse = civilization_pulse()
+
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Cities", len(memory["cities"]))
+col2.metric("Designs", len(memory["designs"]))
+col3.metric("Engines", len(memory["engines"]))
+col4.metric("Civilization Pulse", pulse)
+
+st.divider()
 
 # =========================================================
-# DASHBOARD
+# CITY VIEW
 # =========================================================
 
-if page == "Dashboard":
-    st.title("🧠 RANDOM V4.2 CIVILIZATION CORE")
+st.subheader("🏙 Cities")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Designs", len(memory["designs"]))
-    c2.metric("Cities", len(memory["cities"]))
-    c3.metric("Engines", len(memory["engines"]))
-    c4.metric("Rule Pressure", round(rules["design_weight"], 2))
+st.json(memory["cities"])
 
 # =========================================================
-# DESIGN STUDIO
+# DESIGN VIEW
 # =========================================================
 
-elif page == "Design Studio":
-    st.title("🏗 Evolutionary Design Studio")
+st.subheader("🧬 Designs (Memetic Structures)")
 
-    bedrooms = st.slider("Bedrooms", 1, 10, 3)
-
-    if st.button("Generate Evolved Design"):
-        rooms = generate_rooms(bedrooms, rules)
-        design = {
-            "rooms": rooms,
-            "scores": score_design(rules),
-            "created": datetime.now().isoformat()
-        }
-
-        memory["designs"].append(design)
-        save_memory(memory)
-
-        st.write("Rooms:", rooms)
-        st.json(design["scores"])
-        st.pyplot(plot_rooms(rooms))
+st.json(memory["designs"])
 
 # =========================================================
-# CITY SIMULATOR
+# ENGINE VIEW
 # =========================================================
 
-elif page == "City Simulator":
-    st.title("🌆 Adaptive City Engine")
+st.subheader("⚙ Engines (Adaptive Agents)")
 
-    if st.button("Spawn City"):
-        city = {
-            "population": int(random.randint(5000, 200000) * rules["city_growth_factor"]),
-            "districts": random.randint(2, 30),
-            "infrastructure": random.randint(10, 100),
-            "created": datetime.now().isoformat()
-        }
-
-        memory["cities"].append(city)
-        save_memory(memory)
-
-    st.json(memory["cities"])
+st.json(memory["engines"])
 
 # =========================================================
-# KNOWLEDGE BASE
+# CIVILIZATION LINKS
 # =========================================================
 
-elif page == "Knowledge Base":
-    st.title("📚 Civilization Memory")
+st.subheader("🌐 Civilization Network")
 
-    text = st.text_input("Add Knowledge")
-
-    if st.button("Store") and text.strip():
-        memory["knowledge"].append({
-            "text": text,
-            "created": datetime.now().isoformat()
-        })
-        save_memory(memory)
-
-    st.json(memory["knowledge"])
-
-# =========================================================
-# ENGINE LAB (GENETIC EVOLUTION)
-# =========================================================
-
-elif page == "Engine Lab":
-    st.title("🧬 Engine Evolution Lab")
-
-    if st.button("Breed Engine"):
-        parent = random.choice(memory["engines"]) if memory["engines"] else None
-        new_engine = breed_engine(parent)
-        memory["engines"].append(new_engine)
-        save_memory(memory)
-
-    st.subheader("Engine Genome Pool")
-    st.json(memory["engines"])
-
-# =========================================================
-# ENGINE PAGES (DYNAMIC)
-# =========================================================
-
-elif page in [e["name"] for e in memory["engines"]]:
-    engine = next(e for e in memory["engines"] if e["name"] == page)
-
-    st.title(f"🧬 Engine Node: {engine['name']}")
-    st.json(engine["dna"])
-    st.metric("Power Index", engine["power"])
+st.json(memory["links"])
