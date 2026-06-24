@@ -1,5 +1,5 @@
 # =========================================================
-# 🧠 RANDOM V4.6 — UNIVERSE ENGINE (MULTI-REALITY LAYER)
+# 🧠 META RANDOM V5 — SELF-AUTHORING REALITY ENGINE
 # =========================================================
 
 import streamlit as st
@@ -8,19 +8,22 @@ import random
 import uuid
 from pathlib import Path
 from datetime import datetime
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="RANDOM V4.6 UNIVERSE ENGINE", layout="wide")
+st.set_page_config(page_title="META RANDOM V5", layout="wide")
 
 # =========================================================
-# 🌌 UNIVERSE MEMORY CORE
+# 🧠 META MEMORY CORE (SELF-MODIFYING SUBSTRATE)
 # =========================================================
 
-MEMORY_FILE = Path("random_universe.json")
+MEMORY_FILE = Path("meta_random.json")
 
 DEFAULT_MEMORY = {
-    "universes": [],
-    "cross_links": [],
-    "events": []
+    "cities": [],
+    "designs": [],
+    "engines": [],
+    "knowledge": [],
+    "rules": {}
 }
 
 def load_memory():
@@ -41,119 +44,137 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# 🌠 UNIVERSE MODEL
+# 🧬 RULE EVOLUTION ENGINE (META LAYER)
 # =========================================================
 
-def spawn_universe():
+def evolve_rule_schema(rules):
+    """Rules can mutate structurally, not just numerically."""
+
+    if not rules:
+        rules = {
+            "design_pressure": 1.0,
+            "city_growth": 1.0
+        }
+
+    # numeric drift
+    for k in list(rules.keys()):
+        rules[k] += random.uniform(-0.05, 0.08)
+
+    # spontaneous rule creation (META EVENT)
+    if random.random() > 0.7:
+        new_rule = f"rule_{uuid.uuid4().hex[:4]}"
+        rules[new_rule] = random.uniform(0.5, 1.5)
+
+    return rules
+
+# =========================================================
+# 🧬 EVOLVING GENERATORS (SELF-MODIFYING BEHAVIOR)
+# =========================================================
+
+def generate_rooms(rules):
+    base = ["Living", "Kitchen", "Core"]
+
+    variance = int(rules.get("design_pressure", 1.0) * random.randint(0, 3))
+
+    extra = [f"Room-{i}" for i in range(variance)]
+
+    return base + extra + ["Bath"]
+
+def score_design(rules):
+    base = random.randint(60, 100)
+    pressure = rules.get("design_pressure", 1.0)
+
     return {
+        "circulation": min(100, base + pressure * 3),
+        "efficiency": random.randint(60, 100),
+        "adaptation": random.randint(60, 100),
+        "structure": random.randint(60, 100),
+        "meta_score": round(random.uniform(0, 1) * pressure, 3)
+    }
+
+def evolve_city(city, rules):
+    city["population"] = int(city["population"] * random.uniform(0.95, 1.1))
+    city["adaptation"] = city.get("adaptation", 50) + random.randint(-3, 5)
+    return city
+
+# =========================================================
+# 🧠 META EVOLUTION STEP (THE KEY LOOP)
+# =========================================================
+
+memory["rules"] = evolve_rule_schema(memory.get("rules", {}))
+rules = memory["rules"]
+
+# auto-bootstrap
+if len(memory["engines"]) < 2:
+    memory["engines"].append({
         "id": str(uuid.uuid4())[:8],
-        "laws": {
-            "growth_rate": random.uniform(0.5, 2.0),
-            "innovation_bias": random.uniform(0.5, 2.0),
-            "stability_field": random.uniform(0.5, 2.0),
-            "connectivity": random.uniform(0.5, 2.0)
-        },
-        "civilizations": random.randint(1, 5),
-        "entropy": random.uniform(0.1, 1.0),
+        "dna": {"meta": 1.0},
+        "power": 0.5
+    })
+
+for c in memory["cities"]:
+    evolve_city(c, rules)
+
+# =========================================================
+# 🌱 SPAWNING EVENTS
+# =========================================================
+
+if random.random() > 0.6:
+    memory["cities"].append({
+        "id": str(uuid.uuid4())[:8],
+        "population": random.randint(5000, 200000),
+        "adaptation": random.randint(40, 100),
         "created": datetime.now().isoformat()
-    }
-
-def evolve_universe(u):
-    # LAW MUTATION (THE BIG IDEA)
-    for k in u["laws"]:
-        drift = random.uniform(-0.05, 0.08)
-        u["laws"][k] = max(0.1, u["laws"][k] + drift)
-
-    # civilization drift influenced by laws
-    u["civilizations"] += random.choice([-1, 0, 1]) * u["laws"]["growth_rate"]
-    u["civilizations"] = max(1, int(u["civilizations"]))
-
-    # entropy rises unless stability suppresses it
-    u["entropy"] += random.uniform(-0.05, 0.1) / u["laws"]["stability_field"]
-    u["entropy"] = min(1.0, max(0.0, u["entropy"]))
-
-    return u
+    })
 
 # =========================================================
-# 🕳 CROSS-UNIVERSE INTERACTION
+# 💾 SAVE STATE
 # =========================================================
 
-def cross_link(a, b):
-    return {
-        "from": a["id"],
-        "to": b["id"],
-        "type": random.choice(["drift", "knowledge bleed", "law echo"]),
-        "strength": random.uniform(0.1, 1.0),
-        "time": datetime.now().isoformat()
-    }
-
-# =========================================================
-# 🌠 COSMIC STEP FUNCTION
-# =========================================================
-
-def step_universe():
-    # evolve universes
-    for u in memory["universes"]:
-        evolve_universe(u)
-
-    # spawn universes
-    if len(memory["universes"]) < 2 or random.random() > 0.6:
-        memory["universes"].append(spawn_universe())
-
-    # cross-universe interaction
-    if len(memory["universes"]) >= 2 and random.random() > 0.5:
-        a, b = random.sample(memory["universes"], 2)
-        memory["cross_links"].append(cross_link(a, b))
-
-    # rare cosmic event
-    if random.random() > 0.9:
-        memory["events"].append({
-            "type": random.choice([
-                "universe split",
-                "law mutation cascade",
-                "entropy collapse bloom",
-                "civilization rebirth wave"
-            ]),
-            "impact": random.randint(10, 100),
-            "time": datetime.now().isoformat()
-        })
-
-# =========================================================
-# 🌌 UNIVERSAL COHERENCE INDEX
-# =========================================================
-
-def uci():
-    u = len(memory["universes"])
-    c = len(memory["cross_links"])
-    e = len(memory["events"])
-    return round((u * 0.5) + (c * 0.4) + (e * 0.6), 2)
-
-# =========================================================
-# INITIALIZATION
-# =========================================================
-
-step_universe()
 save_memory(memory)
 
 # =========================================================
-# 🌌 UI — UNIVERSE VIEW
+# 🧠 UI — META CORE VIEW
 # =========================================================
 
-st.title("🧠 RANDOM V4.6 — UNIVERSE ENGINE")
+st.title("🧠 META RANDOM V5 — SELF-AUTHORING ENGINE")
 
-col1, col2, col3, col4 = st.columns(4)
-col1.metric("Universes", len(memory["universes"]))
-col2.metric("Cross Links", len(memory["cross_links"]))
-col3.metric("Cosmic Events", len(memory["events"]))
-col4.metric("UCI", uci())
+st.subheader("🧬 Active Rules (Now Mutable Structure)")
+st.json(rules)
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Cities", len(memory["cities"]))
+col2.metric("Designs", len(memory["designs"]))
+col3.metric("Engines", len(memory["engines"]))
 
 st.divider()
 
-st.subheader("🌠 Universes")
-st.json(memory["universes"])
+# =========================================================
+# 🏙 CITIES
+# =========================================================
 
-st.subheader("🕳 Cross-Universe Links")
-st.json(memory["cross_links"])
+st.subheader("🏙 Evolving Cities")
+st.json(memory["cities"])
 
-st.subheader("🌌 Cosmic Events")
-st.json(memory["events"])
+# =========================================================
+# 🧬 DESIGN GENERATION
+# =========================================================
+
+if st.button("Generate Meta Design"):
+    design = {
+        "rooms": generate_rooms(rules),
+        "score": score_design(rules),
+        "created": datetime.now().isoformat()
+    }
+    memory["designs"].append(design)
+    save_memory(memory)
+
+st.subheader("🧬 Designs")
+st.json(memory["designs"])
+
+# =========================================================
+# ⚙ ENGINE VIEW
+# =========================================================
+
+st.subheader("⚙ Engines")
+st.json(memory["engines"])
