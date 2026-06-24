@@ -1,5 +1,5 @@
 # =========================================================
-# 🧠 RANDOM V4.3 — CIVILIZATION CONSCIOUSNESS LAYER
+# 🪐 RANDOM V4.4 — PLANETARY CIVILIZATION SIMULATION
 # =========================================================
 
 import streamlit as st
@@ -8,22 +8,19 @@ import random
 import uuid
 from pathlib import Path
 from datetime import datetime
-import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="RANDOM V4.3", layout="wide")
+st.set_page_config(page_title="PLANET RANDOM V4.4", layout="wide")
 
 # =========================================================
-# MEMORY CORE (CIVILIZATION SUBSTRATE)
+# 🌍 PLANETARY MEMORY CORE
 # =========================================================
 
-MEMORY_FILE = Path("random_memory.json")
+MEMORY_FILE = Path("random_planet.json")
 
 DEFAULT_MEMORY = {
-    "cities": [],
-    "designs": [],
-    "engines": [],
-    "knowledge": [],
-    "links": [],  # civilization graph edges
+    "civilizations": [],
+    "transactions": [],
+    "global_events": []
 }
 
 def load_memory():
@@ -44,153 +41,131 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# 🧠 CIVILIZATION GRAPH LAYER
+# 🏛 CIVILIZATION MODEL
 # =========================================================
 
-def link(a, b, strength=None):
-    memory["links"].append({
-        "a": a,
-        "b": b,
-        "strength": strength or random.uniform(0.1, 1.0),
-        "created": datetime.now().isoformat()
-    })
-
-def civilization_pulse():
-    diversity = len(memory["designs"]) + len(memory["cities"])
-    evolution = len(memory["engines"])
-    connectivity = len(memory["links"])
-
-    return round((diversity * 0.4) + (evolution * 0.4) + (connectivity * 0.2), 2)
-
-# =========================================================
-# 🏙 CITY CONSCIOUSNESS
-# =========================================================
-
-def spawn_city():
+def spawn_civilization():
     return {
         "id": str(uuid.uuid4())[:8],
-        "population": random.randint(5000, 200000),
-        "efficiency": random.randint(50, 100),
-        "innovation": random.randint(50, 100),
+        "name": f"Civ-{random.randint(100,999)}",
+        "wealth": random.randint(50, 200),
+        "knowledge": random.randint(50, 200),
+        "innovation": random.randint(50, 200),
+        "stability": random.randint(50, 200),
         "created": datetime.now().isoformat()
     }
 
-def evolve_city(city):
-    city["population"] = int(city["population"] * random.uniform(0.95, 1.08))
-    city["efficiency"] = min(100, city["efficiency"] + random.randint(-2, 5))
-    city["innovation"] = min(100, city["innovation"] + random.randint(-3, 6))
-    return city
+def evolve_civilization(c):
+    drift = random.uniform(-10, 15)
+
+    c["wealth"] = max(0, c["wealth"] + int(drift))
+    c["knowledge"] = max(0, c["knowledge"] + random.randint(-5, 10))
+    c["innovation"] = max(0, c["innovation"] + random.randint(-8, 12))
+    c["stability"] = max(0, c["stability"] + random.randint(-6, 8))
+
+    return c
 
 # =========================================================
-# 🧬 DESIGN MEME ENGINE
+# 💱 INTERACTION SYSTEM (ECONOMY + EXCHANGE)
 # =========================================================
 
-def spawn_design():
-    rooms = ["Living", "Kitchen", "Bath", "Bedroom", "Core"]
+def trade(a, b):
+    transfer = random.randint(5, 20)
+
+    a["wealth"] += transfer
+    b["knowledge"] += transfer
+
     return {
-        "id": str(uuid.uuid4())[:8],
-        "complexity": random.random(),
-        "efficiency": random.randint(60, 100),
-        "mutation": random.random(),
-        "created": datetime.now().isoformat()
+        "from": a["id"],
+        "to": b["id"],
+        "value": transfer,
+        "type": "knowledge-wealth-exchange",
+        "time": datetime.now().isoformat()
     }
 
-def evolve_design(d):
-    d["efficiency"] = min(100, d["efficiency"] + random.randint(-5, 6))
-    d["complexity"] = min(1.0, max(0.0, d["complexity"] + random.uniform(-0.1, 0.1)))
-    return d
-
 # =========================================================
-# ⚙ ENGINE SENTIENCE MODEL
-# =========================================================
-
-def spawn_engine():
-    return {
-        "id": str(uuid.uuid4())[:8],
-        "influence": random.uniform(0.1, 1.0),
-        "adaptation": random.uniform(0.1, 1.0),
-        "stability": random.uniform(0.1, 1.0),
-        "created": datetime.now().isoformat()
-    }
-
-def evolve_engine(e):
-    e["influence"] = min(1.0, e["influence"] + random.uniform(-0.05, 0.08))
-    e["adaptation"] = min(1.0, e["adaptation"] + random.uniform(-0.05, 0.1))
-    e["stability"] = min(1.0, e["stability"] + random.uniform(-0.02, 0.05))
-    return e
-
-# =========================================================
-# 🌐 GLOBAL SYSTEM STATE
+# 🌐 GLOBAL EVOLUTION STEP
 # =========================================================
 
 def step_world():
-    memory["cities"] = [evolve_city(c) for c in memory["cities"]]
-    memory["designs"] = [evolve_design(d) for d in memory["designs"]]
-    memory["engines"] = [evolve_engine(e) for e in memory["engines"]]
+    # evolve civs
+    for c in memory["civilizations"]:
+        evolve_civilization(c)
 
-    # spontaneous linkage (civilization networking)
-    if random.random() > 0.7 and memory["cities"] and memory["designs"]:
-        link(
-            random.choice(memory["cities"])["id"],
-            random.choice(memory["designs"])["id"]
-        )
+    # spontaneous civilization birth
+    if len(memory["civilizations"]) < 3 or random.random() > 0.7:
+        memory["civilizations"].append(spawn_civilization())
+
+    # spontaneous trade event
+    if len(memory["civilizations"]) >= 2 and random.random() > 0.5:
+        a, b = random.sample(memory["civilizations"], 2)
+        memory["transactions"].append(trade(a, b))
+
+    # occasional global event
+    if random.random() > 0.85:
+        memory["global_events"].append({
+            "event": random.choice([
+                "knowledge bloom",
+                "resource imbalance",
+                "innovation surge",
+                "civilization drift"
+            ]),
+            "impact": random.randint(10, 40),
+            "time": datetime.now().isoformat()
+        })
 
 # =========================================================
-# INITIALIZATION DRIFT (WORLD DOES NOT WAIT)
+# 🌡 PLANETARY COHERENCE INDEX
 # =========================================================
 
-if len(memory["cities"]) < 2:
-    memory["cities"].append(spawn_city())
-if len(memory["engines"]) < 2:
-    memory["engines"].append(spawn_engine())
+def pci():
+    civs = len(memory["civilizations"])
+    trades = len(memory["transactions"])
+    events = len(memory["global_events"])
+
+    return round((civs * 0.5) + (trades * 0.3) + (events * 0.2), 2)
+
+# =========================================================
+# INITIALIZATION
+# =========================================================
 
 step_world()
 save_memory(memory)
 
 # =========================================================
-# UI — CIVILIZATION VIEW
+# 🌍 UI — PLANET VIEW
 # =========================================================
 
-st.title("🧠 RANDOM V4.3 — CIVILIZATION CONSCIOUSNESS LAYER")
-
-pulse = civilization_pulse()
+st.title("🪐 PLANET RANDOM V4.4")
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Cities", len(memory["cities"]))
-col2.metric("Designs", len(memory["designs"]))
-col3.metric("Engines", len(memory["engines"]))
-col4.metric("Civilization Pulse", pulse)
+col1.metric("Civilizations", len(memory["civilizations"]))
+col2.metric("Trades", len(memory["transactions"]))
+col3.metric("Events", len(memory["global_events"]))
+col4.metric("PCI", pci())
 
 st.divider()
 
 # =========================================================
-# CITY VIEW
+# 🏛 CIVILIZATIONS
 # =========================================================
 
-st.subheader("🏙 Cities")
+st.subheader("🏛 Civilizations")
 
-st.json(memory["cities"])
-
-# =========================================================
-# DESIGN VIEW
-# =========================================================
-
-st.subheader("🧬 Designs (Memetic Structures)")
-
-st.json(memory["designs"])
+st.json(memory["civilizations"])
 
 # =========================================================
-# ENGINE VIEW
+# 💱 ECONOMY LAYER
 # =========================================================
 
-st.subheader("⚙ Engines (Adaptive Agents)")
+st.subheader("💱 Transactions")
 
-st.json(memory["engines"])
+st.json(memory["transactions"])
 
 # =========================================================
-# CIVILIZATION LINKS
+# 🌐 GLOBAL EVENTS
 # =========================================================
 
-st.subheader("🌐 Civilization Network")
+st.subheader("🌐 Planetary Events")
 
-st.json(memory["links"])
+st.json(memory["global_events"])
