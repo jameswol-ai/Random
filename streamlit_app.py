@@ -139,7 +139,7 @@ if section == "Dashboard":
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Engines", len(ENGINES))
-    col2.metric("Projects", len(memory["projects"]))
+    col2.metric("Projects", len memory = load_memory()
     col3.metric("Cities", len(memory["cities"]))
 
     st.subheader("System Status")
