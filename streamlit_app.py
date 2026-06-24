@@ -1,5 +1,5 @@
 # =========================================================
-# 🧠 RANDOM V4.1 — SELF-EXPANDING ARCHITECTURE ENGINE
+# 🧠 RANDOM V4.2 — SELF-REWRITING CIVILIZATION ENGINE
 # =========================================================
 
 import streamlit as st
@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="RANDOM V4.1", layout="wide")
+st.set_page_config(page_title="RANDOM V4.2", layout="wide")
 
 # =========================================================
 # MEMORY CORE
@@ -23,7 +23,11 @@ DEFAULT_MEMORY = {
     "designs": [],
     "cities": [],
     "knowledge": [],
-    "engines": []
+    "engines": [],
+    "rules": {
+        "design_weight": 1.0,
+        "city_growth_factor": 1.0
+    }
 }
 
 def load_memory():
@@ -32,7 +36,7 @@ def load_memory():
             data = json.loads(MEMORY_FILE.read_text())
             for k in DEFAULT_MEMORY:
                 if k not in data:
-                    data[k] = []
+                    data[k] = DEFAULT_MEMORY[k]
             return data
         except:
             return DEFAULT_MEMORY.copy()
@@ -44,123 +48,151 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# ENGINE REGISTRY (SELF-EXPANDING CORE)
+# 🧬 EVOLUTION ENGINE (GENETIC SYSTEM)
 # =========================================================
 
-def register_engine(name, desc, ui_type):
-    memory["engines"].append({
+def engine_dna():
+    return {
+        "creativity": random.uniform(0, 1),
+        "stability": random.uniform(0, 1),
+        "complexity": random.uniform(0, 1)
+    }
+
+def mutate_dna(dna):
+    return {
+        k: min(1.0, max(0.0, v + random.uniform(-0.1, 0.1)))
+        for k, v in dna.items()
+    }
+
+def breed_engine(parent=None):
+    dna = engine_dna() if not parent else mutate_dna(parent["dna"])
+    return {
         "id": str(uuid.uuid4())[:8],
-        "name": name,
-        "desc": desc,
-        "ui": ui_type,
+        "dna": dna,
+        "power": round(sum(dna.values()) / 3, 3),
         "created": datetime.now().isoformat()
-    })
-    save_memory(memory)
-
-def get_engine_names():
-    return [e["name"] for e in memory["engines"]]
+    }
 
 # =========================================================
-# ARCHITECTURE GENERATORS
+# 🧠 SELF-REWRITING RULE SYSTEM
 # =========================================================
 
-def generate_rooms(bedrooms):
+def evolve_rules(memory):
+    rules = memory["rules"]
+
+    # system adapts based on history size
+    pressure = len(memory["designs"]) + len(memory["cities"])
+
+    rules["design_weight"] = 1.0 + (pressure * 0.001)
+    rules["city_growth_factor"] = 1.0 + (pressure * 0.002)
+
+    return rules
+
+# =========================================================
+# ARCHITECTURE GENERATION (EVOLVED)
+# =========================================================
+
+def generate_rooms(bedrooms, rules):
     base = ["Living", "Kitchen", "Dining"]
-    return base + [f"Bedroom {i+1}" for i in range(bedrooms)] + ["Bath"]
 
-def score_design():
-    scores = {k: random.randint(70, 100) for k in
-              ["circulation", "light", "efficiency", "structure"]}
+    # mutation: creativity increases room variance
+    extra_rooms = int(rules["design_weight"] * random.randint(0, 2))
+
+    return base + [f"Bedroom {i+1}" for i in range(bedrooms + extra_rooms)] + ["Bath"]
+
+def score_design(rules):
+    base = random.randint(70, 100)
+    bias = rules["design_weight"] * 5
+
+    scores = {
+        "circulation": min(100, base + bias),
+        "light": random.randint(70, 100),
+        "efficiency": random.randint(70, 100),
+        "structure": random.randint(70, 100),
+    }
     scores["overall"] = round(sum(scores.values()) / 4, 1)
     return scores
 
 def plot_rooms(rooms):
     fig, ax = plt.subplots()
+
     for i, r in enumerate(rooms[:8]):
         ax.add_patch(plt.Rectangle((i % 4, i // 4), 1, 1, fill=False))
         ax.text(i % 4 + 0.5, i // 4 + 0.5, r[:6], ha="center")
+
     ax.set_xlim(0, 4)
     ax.set_ylim(0, 2)
     ax.axis("off")
+
     return fig
 
 # =========================================================
-# SIDEBAR (DYNAMIC EXPANSION)
+# SYSTEM EVOLUTION STEP
 # =========================================================
 
-base_pages = [
-    "Dashboard",
-    "Projects",
-    "Design Studio",
-    "City Simulator",
-    "Knowledge Base",
-    "Engine Builder"
-]
+memory["rules"] = evolve_rules(memory)
+rules = memory["rules"]
 
-dynamic_pages = base_pages + get_engine_names()
+# auto-birth engine if ecosystem is small
+if len(memory["engines"]) < 3:
+    memory["engines"].append({
+        "name": "AutoCore",
+        "dna": engine_dna(),
+        "power": 0.5
+    })
 
-page = st.sidebar.selectbox("RANDOM CORE", dynamic_pages)
+save_memory(memory)
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+
+page = st.sidebar.selectbox(
+    "RANDOM CIVILIZATION",
+    [
+        "Dashboard",
+        "Design Studio",
+        "City Simulator",
+        "Knowledge Base",
+        "Engine Lab"
+    ] + [e["name"] for e in memory["engines"]]
+)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🧠 RANDOM V4.1 CORE")
+    st.title("🧠 RANDOM V4.2 CIVILIZATION CORE")
 
-    cols = st.columns(4)
-    cols[0].metric("Projects", len(memory["projects"]))
-    cols[1].metric("Designs", len(memory["designs"]))
-    cols[2].metric("Cities", len(memory["cities"]))
-    cols[3].metric("Engines", len(memory["engines"]))
-
-# =========================================================
-# PROJECTS
-# =========================================================
-
-elif page == "Projects":
-    st.title("📁 Projects")
-
-    name = st.text_input("Project Name")
-
-    if st.button("Create") and name.strip():
-        memory["projects"].append({
-            "id": str(uuid.uuid4())[:8],
-            "name": name,
-            "created": datetime.now().isoformat()
-        })
-        save_memory(memory)
-        st.success("Project created")
-
-    st.json(memory["projects"])
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Designs", len(memory["designs"]))
+    c2.metric("Cities", len(memory["cities"]))
+    c3.metric("Engines", len(memory["engines"]))
+    c4.metric("Rule Pressure", round(rules["design_weight"], 2))
 
 # =========================================================
 # DESIGN STUDIO
 # =========================================================
 
 elif page == "Design Studio":
-    st.title("🏗 Design Studio")
+    st.title("🏗 Evolutionary Design Studio")
 
     bedrooms = st.slider("Bedrooms", 1, 10, 3)
 
-    if st.button("Generate Design"):
-        rooms = generate_rooms(bedrooms)
+    if st.button("Generate Evolved Design"):
+        rooms = generate_rooms(bedrooms, rules)
         design = {
             "rooms": rooms,
-            "scores": score_design(),
+            "scores": score_design(rules),
             "created": datetime.now().isoformat()
         }
 
         memory["designs"].append(design)
         save_memory(memory)
 
-        st.subheader("Rooms")
-        st.write(rooms)
-
-        st.subheader("Score")
+        st.write("Rooms:", rooms)
         st.json(design["scores"])
-
-        st.subheader("Plan")
         st.pyplot(plot_rooms(rooms))
 
 # =========================================================
@@ -168,15 +200,16 @@ elif page == "Design Studio":
 # =========================================================
 
 elif page == "City Simulator":
-    st.title("🌆 City Evolution Simulator")
+    st.title("🌆 Adaptive City Engine")
 
-    if st.button("Generate City"):
+    if st.button("Spawn City"):
         city = {
-            "population": random.randint(5000, 200000),
-            "districts": random.randint(2, 25),
+            "population": int(random.randint(5000, 200000) * rules["city_growth_factor"]),
+            "districts": random.randint(2, 30),
             "infrastructure": random.randint(10, 100),
             "created": datetime.now().isoformat()
         }
+
         memory["cities"].append(city)
         save_memory(memory)
 
@@ -187,11 +220,11 @@ elif page == "City Simulator":
 # =========================================================
 
 elif page == "Knowledge Base":
-    st.title("📚 Knowledge Core")
+    st.title("📚 Civilization Memory")
 
     text = st.text_input("Add Knowledge")
 
-    if st.button("Save") and text.strip():
+    if st.button("Store") and text.strip():
         memory["knowledge"].append({
             "text": text,
             "created": datetime.now().isoformat()
@@ -201,35 +234,28 @@ elif page == "Knowledge Base":
     st.json(memory["knowledge"])
 
 # =========================================================
-# ENGINE BUILDER (THE MAGIC LAYER)
+# ENGINE LAB (GENETIC EVOLUTION)
 # =========================================================
 
-elif page == "Engine Builder":
-    st.title("⚙ Engine Builder")
+elif page == "Engine Lab":
+    st.title("🧬 Engine Evolution Lab")
 
-    name = st.text_input("Engine Name")
-    desc = st.text_area("Engine Description")
+    if st.button("Breed Engine"):
+        parent = random.choice(memory["engines"]) if memory["engines"] else None
+        new_engine = breed_engine(parent)
+        memory["engines"].append(new_engine)
+        save_memory(memory)
 
-    ui_type = st.selectbox("Engine Type", ["Dashboard Panel", "Simulation Node", "Analyzer"])
-
-    if st.button("Forge Engine") and name.strip():
-        register_engine(name, desc, ui_type)
-        st.success("Engine created — it now exists in the system")
-
-    st.subheader("Active Engines")
+    st.subheader("Engine Genome Pool")
     st.json(memory["engines"])
 
 # =========================================================
-# DYNAMIC ENGINE RENDERING
+# ENGINE PAGES (DYNAMIC)
 # =========================================================
 
-elif page in get_engine_names():
-    st.title(f"🧬 Engine: {page}")
+elif page in [e["name"] for e in memory["engines"]]:
+    engine = next(e for e in memory["engines"] if e["name"] == page)
 
-    engine = next((e for e in memory["engines"] if e["name"] == page), None)
-
-    if engine:
-        st.write("Description:", engine["desc"])
-        st.write("Type:", engine["ui"])
-
-        st.info("This engine is a placeholder node. Future versions will allow live execution logic per engine.")
+    st.title(f"🧬 Engine Node: {engine['name']}")
+    st.json(engine["dna"])
+    st.metric("Power Index", engine["power"])
