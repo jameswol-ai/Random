@@ -1,5 +1,5 @@
 # =========================================================
-# 🌌 RANDOM V4.5 — GALAXY CIVILIZATION ENGINE
+# 🧠 RANDOM V4.6 — UNIVERSE ENGINE (MULTI-REALITY LAYER)
 # =========================================================
 
 import streamlit as st
@@ -9,17 +9,17 @@ import uuid
 from pathlib import Path
 from datetime import datetime
 
-st.set_page_config(page_title="GALAXY RANDOM V4.5", layout="wide")
+st.set_page_config(page_title="RANDOM V4.6 UNIVERSE ENGINE", layout="wide")
 
 # =========================================================
-# 🌌 GALAXY MEMORY CORE
+# 🌌 UNIVERSE MEMORY CORE
 # =========================================================
 
-MEMORY_FILE = Path("random_galaxy.json")
+MEMORY_FILE = Path("random_universe.json")
 
 DEFAULT_MEMORY = {
-    "planets": [],
-    "routes": [],
+    "universes": [],
+    "cross_links": [],
     "events": []
 }
 
@@ -41,120 +41,119 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# 🪐 PLANET MODEL (FULL CIVILIZATION SYSTEM)
+# 🌠 UNIVERSE MODEL
 # =========================================================
 
-def spawn_planet():
+def spawn_universe():
     return {
         "id": str(uuid.uuid4())[:8],
-        "name": f"Planet-{random.randint(1000,9999)}",
+        "laws": {
+            "growth_rate": random.uniform(0.5, 2.0),
+            "innovation_bias": random.uniform(0.5, 2.0),
+            "stability_field": random.uniform(0.5, 2.0),
+            "connectivity": random.uniform(0.5, 2.0)
+        },
         "civilizations": random.randint(1, 5),
-        "innovation_field": random.uniform(0.5, 2.0),
-        "stability_gravity": random.uniform(0.5, 2.0),
-        "trade_friction": random.uniform(0.1, 1.5),
+        "entropy": random.uniform(0.1, 1.0),
         "created": datetime.now().isoformat()
     }
 
-def evolve_planet(p):
-    p["civilizations"] = max(1, p["civilizations"] + random.choice([-1, 0, 1]))
-    p["innovation_field"] = max(0.1, p["innovation_field"] + random.uniform(-0.1, 0.2))
-    p["stability_gravity"] = max(0.1, p["stability_gravity"] + random.uniform(-0.1, 0.2))
-    return p
+def evolve_universe(u):
+    # LAW MUTATION (THE BIG IDEA)
+    for k in u["laws"]:
+        drift = random.uniform(-0.05, 0.08)
+        u["laws"][k] = max(0.1, u["laws"][k] + drift)
+
+    # civilization drift influenced by laws
+    u["civilizations"] += random.choice([-1, 0, 1]) * u["laws"]["growth_rate"]
+    u["civilizations"] = max(1, int(u["civilizations"]))
+
+    # entropy rises unless stability suppresses it
+    u["entropy"] += random.uniform(-0.05, 0.1) / u["laws"]["stability_field"]
+    u["entropy"] = min(1.0, max(0.0, u["entropy"]))
+
+    return u
 
 # =========================================================
-# 🚀 INTERPLANETARY TRAVEL
+# 🕳 CROSS-UNIVERSE INTERACTION
 # =========================================================
 
-def travel(a, b):
-    success = random.random() > (b["trade_friction"] * 0.5)
-
+def cross_link(a, b):
     return {
         "from": a["id"],
         "to": b["id"],
-        "success": success,
-        "mutation": random.uniform(0.0, 1.0),
+        "type": random.choice(["drift", "knowledge bleed", "law echo"]),
+        "strength": random.uniform(0.1, 1.0),
         "time": datetime.now().isoformat()
     }
 
 # =========================================================
-# 🌌 GALAXY EVOLUTION STEP
+# 🌠 COSMIC STEP FUNCTION
 # =========================================================
 
-def step_galaxy():
-    # evolve planets
-    for p in memory["planets"]:
-        evolve_planet(p)
+def step_universe():
+    # evolve universes
+    for u in memory["universes"]:
+        evolve_universe(u)
 
-    # spawn planets
-    if len(memory["planets"]) < 3 or random.random() > 0.7:
-        memory["planets"].append(spawn_planet())
+    # spawn universes
+    if len(memory["universes"]) < 2 or random.random() > 0.6:
+        memory["universes"].append(spawn_universe())
 
-    # interplanetary travel events
-    if len(memory["planets"]) >= 2 and random.random() > 0.4:
-        a, b = random.sample(memory["planets"], 2)
-        memory["routes"].append(travel(a, b))
+    # cross-universe interaction
+    if len(memory["universes"]) >= 2 and random.random() > 0.5:
+        a, b = random.sample(memory["universes"], 2)
+        memory["cross_links"].append(cross_link(a, b))
 
-    # supernova event
+    # rare cosmic event
     if random.random() > 0.9:
         memory["events"].append({
             "type": random.choice([
-                "supernova knowledge burst",
-                "civilization extinction wave",
-                "galactic innovation bloom",
-                "planetary alignment shift"
+                "universe split",
+                "law mutation cascade",
+                "entropy collapse bloom",
+                "civilization rebirth wave"
             ]),
-            "intensity": random.randint(50, 100),
+            "impact": random.randint(10, 100),
             "time": datetime.now().isoformat()
         })
 
 # =========================================================
-# 🌌 GALACTIC ENTROPY INDEX
+# 🌌 UNIVERSAL COHERENCE INDEX
 # =========================================================
 
-def gei():
-    p = len(memory["planets"])
-    r = len(memory["routes"])
+def uci():
+    u = len(memory["universes"])
+    c = len(memory["cross_links"])
     e = len(memory["events"])
-    return round((p * 0.6) + (r * 0.3) + (e * 0.4), 2)
+    return round((u * 0.5) + (c * 0.4) + (e * 0.6), 2)
 
 # =========================================================
 # INITIALIZATION
 # =========================================================
 
-step_galaxy()
+step_universe()
 save_memory(memory)
 
 # =========================================================
-# 🌌 UI — GALAXY VIEW
+# 🌌 UI — UNIVERSE VIEW
 # =========================================================
 
-st.title("🌌 GALAXY RANDOM V4.5")
+st.title("🧠 RANDOM V4.6 — UNIVERSE ENGINE")
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Planets", len(memory["planets"]))
-col2.metric("Travel Routes", len(memory["routes"]))
-col3.metric("Events", len(memory["events"]))
-col4.metric("GEI", gei())
+col1.metric("Universes", len(memory["universes"]))
+col2.metric("Cross Links", len(memory["cross_links"]))
+col3.metric("Cosmic Events", len(memory["events"]))
+col4.metric("UCI", uci())
 
 st.divider()
 
-# =========================================================
-# 🪐 PLANETS
-# =========================================================
+st.subheader("🌠 Universes")
+st.json(memory["universes"])
 
-st.subheader("🪐 Planetary Systems")
-st.json(memory["planets"])
+st.subheader("🕳 Cross-Universe Links")
+st.json(memory["cross_links"])
 
-# =========================================================
-# 🚀 ROUTES
-# =========================================================
-
-st.subheader("🚀 Interplanetary Travel")
-st.json(memory["routes"])
-
-# =========================================================
-# 🌌 EVENTS
-# =========================================================
-
-st.subheader("🌠 Galactic Events")
+st.subheader("🌌 Cosmic Events")
 st.json(memory["events"])
