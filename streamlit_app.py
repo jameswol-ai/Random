@@ -1,5 +1,5 @@
 # =========================================================
-# 🧠 META RANDOM V5 — SELF-AUTHORING REALITY ENGINE
+# ⚙️ OMEGA RANDOM V5 — SELF-REWRITING OPERATING SYSTEM
 # =========================================================
 
 import streamlit as st
@@ -10,20 +10,21 @@ from pathlib import Path
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="META RANDOM V5", layout="wide")
+st.set_page_config(page_title="OMEGA RANDOM V5", layout="wide")
 
 # =========================================================
-# 🧠 META MEMORY CORE (SELF-MODIFYING SUBSTRATE)
+# 🧠 META MEMORY CORE (SELF-EXPANDING SUBSTRATE)
 # =========================================================
 
-MEMORY_FILE = Path("meta_random.json")
+MEMORY_FILE = Path("omega_memory.json")
 
 DEFAULT_MEMORY = {
-    "cities": [],
+    "projects": [],
     "designs": [],
-    "engines": [],
+    "cities": [],
     "knowledge": [],
-    "rules": {}
+    "engines": [],
+    "modules": {}   # 🧠 dynamic system registry
 }
 
 def load_memory():
@@ -44,137 +45,179 @@ def save_memory(mem):
 memory = load_memory()
 
 # =========================================================
-# 🧬 RULE EVOLUTION ENGINE (META LAYER)
+# 🧬 ENGINE BIRTH SYSTEM (META GENERATION CORE)
 # =========================================================
 
-def evolve_rule_schema(rules):
-    """Rules can mutate structurally, not just numerically."""
-
-    if not rules:
-        rules = {
-            "design_pressure": 1.0,
-            "city_growth": 1.0
-        }
-
-    # numeric drift
-    for k in list(rules.keys()):
-        rules[k] += random.uniform(-0.05, 0.08)
-
-    # spontaneous rule creation (META EVENT)
-    if random.random() > 0.7:
-        new_rule = f"rule_{uuid.uuid4().hex[:4]}"
-        rules[new_rule] = random.uniform(0.5, 1.5)
-
-    return rules
-
-# =========================================================
-# 🧬 EVOLVING GENERATORS (SELF-MODIFYING BEHAVIOR)
-# =========================================================
-
-def generate_rooms(rules):
-    base = ["Living", "Kitchen", "Core"]
-
-    variance = int(rules.get("design_pressure", 1.0) * random.randint(0, 3))
-
-    extra = [f"Room-{i}" for i in range(variance)]
-
-    return base + extra + ["Bath"]
-
-def score_design(rules):
-    base = random.randint(60, 100)
-    pressure = rules.get("design_pressure", 1.0)
-
+def spawn_engine(name=None):
     return {
-        "circulation": min(100, base + pressure * 3),
+        "id": str(uuid.uuid4())[:8],
+        "name": name or f"Engine-{random.randint(100,999)}",
+        "power": random.uniform(0.3, 1.0),
+        "adaptation": random.uniform(0.3, 1.0),
+        "stability": random.uniform(0.3, 1.0),
+        "created": datetime.now().isoformat()
+    }
+
+def evolve_engine(e):
+    e["power"] = min(1.0, e["power"] + random.uniform(-0.05, 0.08))
+    e["adaptation"] = min(1.0, e["adaptation"] + random.uniform(-0.05, 0.1))
+    e["stability"] = min(1.0, e["stability"] + random.uniform(-0.03, 0.06))
+    return e
+
+# =========================================================
+# 🧠 SELF-EXPANDING MODULE SYSTEM
+# =========================================================
+
+def register_module(name, function_type):
+    memory["modules"][name] = {
+        "type": function_type,
+        "created": datetime.now().isoformat()
+    }
+
+def get_dynamic_modules():
+    return list(memory["modules"].keys())
+
+# =========================================================
+# 🏗 CORE GENERATION FUNCTIONS
+# =========================================================
+
+def generate_rooms():
+    base = ["Living", "Kitchen", "Core"]
+    extras = [f"Room-{i}" for i in range(random.randint(0, 3))]
+    return base + extras + ["Bath"]
+
+def score_design():
+    base = random.randint(60, 100)
+    return {
+        "circulation": base,
         "efficiency": random.randint(60, 100),
         "adaptation": random.randint(60, 100),
         "structure": random.randint(60, 100),
-        "meta_score": round(random.uniform(0, 1) * pressure, 3)
+        "meta_index": round(random.random(), 3)
     }
 
-def evolve_city(city, rules):
-    city["population"] = int(city["population"] * random.uniform(0.95, 1.1))
-    city["adaptation"] = city.get("adaptation", 50) + random.randint(-3, 5)
-    return city
-
 # =========================================================
-# 🧠 META EVOLUTION STEP (THE KEY LOOP)
+# 🌱 SYSTEM EVOLUTION STEP
 # =========================================================
 
-memory["rules"] = evolve_rule_schema(memory.get("rules", {}))
-rules = memory["rules"]
+# auto-grow engines
+if len(memory["engines"]) < 3:
+    memory["engines"].append(spawn_engine())
 
-# auto-bootstrap
-if len(memory["engines"]) < 2:
-    memory["engines"].append({
-        "id": str(uuid.uuid4())[:8],
-        "dna": {"meta": 1.0},
-        "power": 0.5
-    })
-
-for c in memory["cities"]:
-    evolve_city(c, rules)
-
-# =========================================================
-# 🌱 SPAWNING EVENTS
-# =========================================================
-
+# auto-register modules based on system state
 if random.random() > 0.6:
-    memory["cities"].append({
-        "id": str(uuid.uuid4())[:8],
-        "population": random.randint(5000, 200000),
-        "adaptation": random.randint(40, 100),
-        "created": datetime.now().isoformat()
-    })
+    register_module(
+        f"module_{random.randint(1000,9999)}",
+        "auto_generated"
+    )
 
-# =========================================================
-# 💾 SAVE STATE
-# =========================================================
+# evolve engines
+memory["engines"] = [evolve_engine(e) for e in memory["engines"]]
 
 save_memory(memory)
 
 # =========================================================
-# 🧠 UI — META CORE VIEW
+# 🧭 SIDEBAR (SELF-GENERATED UI TREE)
 # =========================================================
 
-st.title("🧠 META RANDOM V5 — SELF-AUTHORING ENGINE")
+base_pages = [
+    "Dashboard",
+    "Design Studio",
+    "City Simulator",
+    "Knowledge Base",
+    "Engine Lab"
+]
 
-st.subheader("🧬 Active Rules (Now Mutable Structure)")
-st.json(rules)
+dynamic_pages = base_pages + get_dynamic_modules()
 
-col1, col2, col3 = st.columns(3)
-col1.metric("Cities", len(memory["cities"]))
-col2.metric("Designs", len(memory["designs"]))
-col3.metric("Engines", len(memory["engines"]))
-
-st.divider()
-
-# =========================================================
-# 🏙 CITIES
-# =========================================================
-
-st.subheader("🏙 Evolving Cities")
-st.json(memory["cities"])
+page = st.sidebar.selectbox("OMEGA CORE", dynamic_pages)
 
 # =========================================================
-# 🧬 DESIGN GENERATION
+# 🧠 DASHBOARD
 # =========================================================
 
-if st.button("Generate Meta Design"):
-    design = {
-        "rooms": generate_rooms(rules),
-        "score": score_design(rules),
-        "created": datetime.now().isoformat()
-    }
-    memory["designs"].append(design)
-    save_memory(memory)
+if page == "Dashboard":
+    st.title("⚙ OMEGA RANDOM V5 — CORE SYSTEM")
 
-st.subheader("🧬 Designs")
-st.json(memory["designs"])
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Projects", len(memory["projects"]))
+    col2.metric("Designs", len(memory["designs"]))
+    col3.metric("Engines", len(memory["engines"]))
+    col4.metric("Modules", len(memory["modules"]))
 
 # =========================================================
-# ⚙ ENGINE VIEW
+# 🏗 DESIGN STUDIO
 # =========================================================
 
-st.subheader("⚙ Engines")
-st.json(memory["engines"])
+elif page == "Design Studio":
+    st.title("🏗 Self-Generating Design Engine")
+
+    if st.button("Generate Design"):
+        design = {
+            "rooms": generate_rooms(),
+            "score": score_design(),
+            "created": datetime.now().isoformat()
+        }
+        memory["designs"].append(design)
+        save_memory(memory)
+
+    st.json(memory["designs"])
+
+# =========================================================
+# 🌆 CITY SIMULATOR
+# =========================================================
+
+elif page == "City Simulator":
+    st.title("🌆 Adaptive Civilization Node")
+
+    if st.button("Spawn City"):
+        memory["cities"].append({
+            "id": str(uuid.uuid4())[:8],
+            "population": random.randint(1000, 200000),
+            "growth": random.random(),
+            "created": datetime.now().isoformat()
+        })
+        save_memory(memory)
+
+    st.json(memory["cities"])
+
+# =========================================================
+# 📚 KNOWLEDGE CORE
+# =========================================================
+
+elif page == "Knowledge Base":
+    st.title("📚 Memory Substrate")
+
+    txt = st.text_input("Add Knowledge")
+
+    if st.button("Store") and txt:
+        memory["knowledge"].append({
+            "text": txt,
+            "created": datetime.now().isoformat()
+        })
+        save_memory(memory)
+
+    st.json(memory["knowledge"])
+
+# =========================================================
+# ⚙ ENGINE LAB
+# =========================================================
+
+elif page == "Engine Lab":
+    st.title("🧬 Engine Evolution Lab")
+
+    if st.button("Breed Engine"):
+        memory["engines"].append(spawn_engine())
+        save_memory(memory)
+
+    st.json(memory["engines"])
+
+# =========================================================
+# 🧠 DYNAMIC MODULE VIEW (SELF-GENERATED NODES)
+# =========================================================
+
+elif page in memory["modules"]:
+    st.title(f"🧬 Dynamic Module: {page}")
+
+    st.write("Type:", memory["modules"][page]["type"])
+    st.json(memory["modules"][page])
