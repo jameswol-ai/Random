@@ -1,313 +1,213 @@
-# =========================================================
-# RANDOM V3
-# Autonomous Architecture Operating System
-# Single-File Streamlit Edition
-# =========================================================
 
+# =========================================================
+# RANDOM V4 FULL BUILD (Single File Prototype)
+# =========================================================
 import streamlit as st
-import json
-import random
-import uuid
+import json, random, uuid
 from pathlib import Path
 from datetime import datetime
+import matplotlib.pyplot as plt
 
-# =========================================================
-# CONFIG
-# =========================================================
-
-st.set_page_config(
-    page_title="RANDOM V3",
-    page_icon="🏗️",
-    layout="wide"
-)
+st.set_page_config(page_title="RANDOM V4", layout="wide")
 
 MEMORY_FILE = Path("random_memory.json")
 
-# =========================================================
-# MEMORY
-# =========================================================
-
 DEFAULT_MEMORY = {
     "projects": [],
-    "agents": [],
-    "engines": [],
     "designs": [],
     "cities": [],
-    "knowledge": []
+    "knowledge": [],
+    "engines": [],
 }
-
 
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r") as f:
-                return json.load(f)
+            return json.loads(MEMORY_FILE.read_text())
         except:
-            return DEFAULT_MEMORY.copy()
+            pass
     return DEFAULT_MEMORY.copy()
 
-
-def save_memory(memory):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(memory, f, indent=4)
-
+def save_memory(mem):
+    MEMORY_FILE.write_text(json.dumps(mem, indent=2))
 
 memory = load_memory()
 
-# =========================================================
-# ENGINE REGISTRY
-# =========================================================
-
-ENGINE_REGISTRY = [
-    "Room Engine",
-    "Adjacency Engine",
-    "Grid Engine",
-    "Layout Engine",
-    "Structural Engine",
-    "Optimizer Engine"
-]
-
-# =========================================================
-# AGENT REGISTRY
-# =========================================================
-
-AGENTS = [
-    "Architect Agent",
-    "Engineer Agent",
-    "Planner Agent",
-    "Optimizer Agent"
-]
-
-# =========================================================
-# ARCHITECTURE BRAIN
-# =========================================================
+# ---------- Architecture Brain ----------
 
 def generate_rooms(building_type, bedrooms):
-
-    rooms = []
-
-    if building_type == "House":
-        rooms = [
-            "Living Room",
-            "Dining Room",
-            "Kitchen"
-        ]
-
-        for i in range(bedrooms):
-            rooms.append(f"Bedroom {i+1}")
-
-        rooms.append("Bathroom")
-
-    elif building_type == "School":
-        rooms = [
-            "Classrooms",
-            "Library",
-            "Laboratory",
-            "Administration",
-            "Assembly Hall"
-        ]
-
-    elif building_type == "Office":
-        rooms = [
-            "Reception",
-            "Meeting Room",
-            "Open Office",
-            "Director Office",
-            "Break Room"
-        ]
-
+    rooms = ["Living Room", "Dining Room", "Kitchen"]
+    for i in range(bedrooms):
+        rooms.append(f"Bedroom {i+1}")
+    rooms += ["Bathroom", "Laundry"]
     return rooms
 
-
 def generate_adjacency(rooms):
-
-    adjacency = {}
-
-    for i in range(len(rooms)-1):
-        adjacency[rooms[i]] = [rooms[i+1]]
-
-    return adjacency
-
+    return {r: [rooms[i+1]] if i < len(rooms)-1 else [] for i, r in enumerate(rooms)}
 
 def generate_grid():
+    return {"x":["A","B","C","D"], "y":["1","2","3","4"]}
 
-    return {
-        "x": ["A", "B", "C", "D"],
-        "y": ["1", "2", "3", "4"],
-        "spacing": "6m x 6m"
+def generate_columns(grid):
+    return [f"{x}{y}" for x in grid["x"] for y in grid["y"]]
+
+def score_design():
+    scores = {
+        "circulation": random.randint(70,100),
+        "daylighting": random.randint(70,100),
+        "efficiency": random.randint(70,100),
+        "structure": random.randint(70,100)
     }
+    scores["overall"] = round(sum(scores.values())/4,1)
+    return scores
 
+def plot_floorplan(rooms):
+    fig, ax = plt.subplots(figsize=(6,4))
+    for i, room in enumerate(rooms[:8]):
+        x = (i % 4) * 2
+        y = (i // 4) * 2
+        ax.add_patch(plt.Rectangle((x,y),2,2,fill=False))
+        ax.text(x+1,y+1,room[:8],ha="center")
+    ax.set_xlim(0,8)
+    ax.set_ylim(0,4)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    return fig
 
-# =========================================================
-# PROJECTS
-# =========================================================
+# ---------- Sidebar ----------
 
-def create_project(name, ptype):
-
-    project = {
-        "id": str(uuid.uuid4())[:8],
-        "name": name,
-        "type": ptype,
-        "created": datetime.now().strftime("%Y-%m-%d %H:%M")
-    }
-
-    memory["projects"].append(project)
-    save_memory(memory)
-
-    return project
-
-# =========================================================
-# SIDEBAR
-# =========================================================
-
-st.sidebar.title("🏗 RANDOM V3")
-
-page = st.sidebar.radio(
-    "Navigation",
+page = st.sidebar.selectbox(
+    "Module",
     [
         "Dashboard",
         "Projects",
         "Design Studio",
-        "Agents",
-        "Engines",
-        "Memory"
+        "Structural Studio",
+        "City Simulator",
+        "Knowledge Base",
+        "Engine Builder"
     ]
 )
 
-# =========================================================
-# DASHBOARD
-# =========================================================
+# ---------- Dashboard ----------
 
 if page == "Dashboard":
-
-    st.title("🏗 RANDOM V3")
-
-    c1, c2, c3, c4 = st.columns(4)
-
+    st.title("🏗 RANDOM V4")
+    c1,c2,c3,c4 = st.columns(4)
     c1.metric("Projects", len(memory["projects"]))
-    c2.metric("Agents", len(AGENTS))
-    c3.metric("Engines", len(ENGINE_REGISTRY))
-    c4.metric("Designs", len(memory["designs"]))
+    c2.metric("Designs", len(memory["designs"]))
+    c3.metric("Cities", len(memory["cities"]))
+    c4.metric("Knowledge", len(memory["knowledge"]))
 
-    st.markdown("---")
-
-    st.subheader("System Status")
-
-    st.success("RANDOM Core Online")
-
-# =========================================================
-# PROJECTS
-# =========================================================
+# ---------- Projects ----------
 
 elif page == "Projects":
-
     st.title("📁 Projects")
+    name = st.text_input("Project Name")
+    if st.button("Create Project") and name:
+        memory["projects"].append({
+            "id": str(uuid.uuid4())[:8],
+            "name": name,
+            "created": datetime.now().isoformat()
+        })
+        save_memory(memory)
+        st.success("Project created")
+    st.json(memory["projects"])
 
-    with st.form("project_form"):
-
-        pname = st.text_input("Project Name")
-
-        ptype = st.selectbox(
-            "Type",
-            ["House", "School", "Office"]
-        )
-
-        submit = st.form_submit_button("Create Project")
-
-    if submit and pname:
-
-        p = create_project(pname, ptype)
-
-        st.success(
-            f"Created Project {p['name']} ({p['id']})"
-        )
-
-    st.markdown("---")
-
-    for p in memory["projects"]:
-        st.write(p)
-
-# =========================================================
-# DESIGN STUDIO
-# =========================================================
+# ---------- Design Studio ----------
 
 elif page == "Design Studio":
-
     st.title("🏠 Design Studio")
 
-    building = st.selectbox(
-        "Building Type",
-        ["House", "School", "Office"]
-    )
-
-    bedrooms = st.slider(
-        "Bedrooms",
-        1,
-        10,
-        3
-    )
+    building = st.selectbox("Building Type", ["House","School","Office"])
+    bedrooms = st.slider("Bedrooms",1,10,3)
 
     if st.button("Generate Design"):
-
-        rooms = generate_rooms(
-            building,
-            bedrooms
-        )
-
+        rooms = generate_rooms(building, bedrooms)
         adjacency = generate_adjacency(rooms)
-
         grid = generate_grid()
+        columns = generate_columns(grid)
+        scores = score_design()
 
         design = {
             "building": building,
             "rooms": rooms,
             "adjacency": adjacency,
-            "grid": grid
+            "grid": grid,
+            "columns": columns,
+            "scores": scores
         }
 
         memory["designs"].append(design)
-
         save_memory(memory)
 
-        st.success("Design Generated")
-
-        st.subheader("Rooms")
+        st.subheader("Room Program")
         st.write(rooms)
 
-        st.subheader("Adjacency")
+        st.subheader("Adjacency Matrix")
         st.json(adjacency)
 
-        st.subheader("Grid")
-        st.json(grid)
+        st.subheader("Structural Columns")
+        st.write(columns)
 
-# =========================================================
-# AGENTS
-# =========================================================
+        st.subheader("Design Scores")
+        st.json(scores)
 
-elif page == "Agents":
+        st.subheader("Floor Plan")
+        st.pyplot(plot_floorplan(rooms))
 
-    st.title("🤖 Agents")
+# ---------- Structural ----------
 
-    for agent in AGENTS:
-        st.success(agent)
+elif page == "Structural Studio":
+    st.title("🏗 Structural Studio")
 
-# =========================================================
-# ENGINES
-# =========================================================
+    span = st.number_input("Beam Span (m)", value=6.0)
 
-elif page == "Engines":
+    load = span * 5
+    st.metric("Estimated Load Index", round(load,2))
 
-    st.title("⚙ Engine Registry")
+# ---------- City ----------
 
-    for engine in ENGINE_REGISTRY:
-        st.info(engine)
+elif page == "City Simulator":
+    st.title("🌆 City Simulator")
 
-# =========================================================
-# MEMORY
-# =========================================================
+    if st.button("Generate City"):
+        city = {
+            "population": random.randint(1000,100000),
+            "districts": random.randint(1,20),
+            "roads": random.randint(20,500),
+            "schools": random.randint(1,50)
+        }
+        memory["cities"].append(city)
+        save_memory(memory)
 
-elif page == "Memory":
+    st.json(memory["cities"])
 
-    st.title("🧠 Memory")
+# ---------- Knowledge ----------
 
-    st.json(memory)
+elif page == "Knowledge Base":
+    st.title("📚 Knowledge Base")
+
+    item = st.text_input("Knowledge Entry")
+
+    if st.button("Save Knowledge") and item:
+        memory["knowledge"].append(item)
+        save_memory(memory)
+
+    st.json(memory["knowledge"])
+
+# ---------- Engine Builder ----------
+
+elif page == "Engine Builder":
+    st.title("⚙ Engine Builder")
+
+    engine = st.text_input("Engine Name")
+
+    if st.button("Create Engine") and engine:
+        memory["engines"].append({
+            "name": engine,
+            "created": datetime.now().isoformat()
+        })
+        save_memory(memory)
+
+    st.json(memory["engines"])
