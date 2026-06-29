@@ -2,6 +2,7 @@
 # RANDOM V8
 # Evolutionary Architecture Intelligence System
 # Multi-Agent + Genetic Design Evolution Engine
+# + 2D/3D Design Visualization Layer
 # Single-File Streamlit Edition
 # =========================================================
 
@@ -11,6 +12,9 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # 3D ENGINE 🌌
 
 # =========================================================
 # CONFIG
@@ -33,15 +37,9 @@ st.markdown("""
 body {
     background: radial-gradient(circle at top, #0b1220, #050814);
 }
-.main {
-    background: transparent;
-}
-h1 {
-    color: #38bdf8;
-}
-h2,h3 {
-    color: #7dd3fc;
-}
+.main { background: transparent; }
+h1 { color: #38bdf8; }
+h2,h3 { color: #7dd3fc; }
 .stMetric {
     background: rgba(17,24,39,0.6);
     border-radius: 12px;
@@ -115,47 +113,41 @@ def domain_of(t):
 
 def base_design(btype, bedrooms):
 
-    domain = domain_of(btype)
-
     return {
+        "id": str(uuid.uuid4())[:8],
         "type": btype,
-        "domain": domain,
+        "domain": domain_of(btype),
         "rooms": ["Space"] * random.randint(3,8),
         "structure": {
             "columns": random.randint(10,30),
             "beams": random.randint(20,60)
         },
-        "cost": random.randint(200000, 3000000),
-        "bedrooms": bedrooms
+        "bedrooms": bedrooms,
+        "cost": random.randint(200000, 3000000)
     }
 
 # =========================================================
-# MUTATION ENGINE 🧬
+# 🧬 MUTATION ENGINE
 # =========================================================
 
 def mutate(design):
+    mutated = json.loads(json.dumps(design))
 
-    mutated = json.loads(json.dumps(design))  # deep copy
-
-    # structural mutation
     mutated["structure"]["columns"] += random.randint(-2, 3)
     mutated["structure"]["beams"] += random.randint(-5, 5)
 
-    # room mutation
     if random.random() > 0.5:
         mutated["rooms"].append("Extra Module")
 
-    # cost drift
     mutated["cost"] += random.randint(-100000, 200000)
 
     return mutated
 
 # =========================================================
-# FITNESS FUNCTION 🏆
+# FITNESS FUNCTION
 # =========================================================
 
 def fitness(d):
-
     structure_score = max(0, 100 - abs(d["structure"]["columns"] - 20))
     cost_score = max(0, 100 - (d["cost"] // 50000))
     complexity_score = min(100, len(d["rooms"]) * 10)
@@ -181,7 +173,6 @@ def evolve_population(btype, bedrooms, generations=3, pop_size=5):
     for g in range(generations):
 
         scored = []
-
         for d in population:
             f = fitness(d)
             d["fitness"] = f
@@ -191,17 +182,11 @@ def evolve_population(btype, bedrooms, generations=3, pop_size=5):
         scored.sort(key=lambda x: x["score"], reverse=True)
 
         best = scored[0]
-        history.append({
-            "generation": g,
-            "best_score": best["score"]
-        })
+        history.append({"generation": g, "best_score": best["score"]})
 
-        # selection (top 50%)
-        survivors = scored[:max(2, pop_size//2)]
+        survivors = scored[:max(2, pop_size // 2)]
 
-        # reproduction (mutation)
         new_population = []
-
         for s in survivors:
             new_population.append(s)
             new_population.append(mutate(s))
@@ -209,6 +194,51 @@ def evolve_population(btype, bedrooms, generations=3, pop_size=5):
         population = new_population[:pop_size]
 
     return scored[0], history, scored
+
+# =========================================================
+# 🧠 2D + 3D DESIGN GENERATION ENGINE
+# =========================================================
+
+def generate_geometry(design):
+    cols = design["structure"]["columns"]
+
+    # 2D + 3D points
+    points_2d = [(random.uniform(0, 10), random.uniform(0, 10)) for _ in range(cols)]
+    points_3d = [(x, y, random.uniform(0, 5)) for x, y in points_2d]
+
+    return {
+        "2d": points_2d,
+        "3d": points_3d
+    }
+
+def plot_2d(points):
+    fig, ax = plt.subplots()
+    x = [p[0] for p in points]
+    y = [p[1] for p in points]
+
+    ax.scatter(x, y, c="cyan")
+    ax.set_title("2D Architectural Layout")
+    ax.set_xlabel("X Axis")
+    ax.set_ylabel("Y Axis")
+
+    st.pyplot(fig)
+
+def plot_3d(points):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x = [p[0] for p in points]
+    y = [p[1] for p in points]
+    z = [p[2] for p in points]
+
+    ax.scatter(x, y, z, c="orange")
+    ax.set_title("3D Structural Elevation")
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+
+    st.pyplot(fig)
 
 # =========================================================
 # PROJECT SYSTEM
@@ -230,21 +260,13 @@ def new_project(name, t):
 # =========================================================
 
 st.sidebar.title("🧬 RANDOM V8")
-st.sidebar.caption("Evolutionary Architecture Intelligence System")
-
-page = st.sidebar.radio("Navigation", [
-    "Dashboard",
-    "Projects",
-    "Evolution Lab",
-    "Memory"
-])
+page = st.sidebar.radio("Navigation", ["Dashboard","Projects","Evolution Lab","Memory"])
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-
     st.title("🧬 RANDOM V8 Control Core")
 
     c1,c2,c3 = st.columns(3)
@@ -263,7 +285,6 @@ if page == "Dashboard":
 # =========================================================
 
 elif page == "Projects":
-
     st.title("📁 Projects")
 
     name = st.text_input("Name")
@@ -278,14 +299,14 @@ elif page == "Projects":
             st.json(p)
 
 # =========================================================
-# EVOLUTION LAB 🧬
+# EVOLUTION LAB 🧬 + 2D/3D VISUALIZATION
 # =========================================================
 
 elif page == "Evolution Lab":
 
-    st.title("🧬 Evolutionary Design Lab")
+    st.title("🧬 Evolutionary Design Lab (2D + 3D Engine)")
 
-    left,right = st.columns([1,2])
+    left, right = st.columns([1,2])
 
     with left:
         btype = st.selectbox("Building Type", sum(ARCH.values(), []))
@@ -297,9 +318,11 @@ elif page == "Evolution Lab":
 
     if run:
 
-        best, history, final_pop = evolve_population(
-            btype, bedrooms, gens, pop
-        )
+        best, history, final_pop = evolve_population(btype, bedrooms, gens, pop)
+
+        geometry = generate_geometry(best)
+
+        best["geometry"] = geometry
 
         mem["evolution"].append({
             "id": str(uuid.uuid4())[:8],
@@ -309,7 +332,7 @@ elif page == "Evolution Lab":
         })
 
         save()
-        log("Evolution run completed")
+        log("Evolution run completed with 2D/3D modeling")
 
         st.success("Evolution Complete")
 
@@ -317,11 +340,19 @@ elif page == "Evolution Lab":
         st.json(best)
 
         st.subheader("📈 Evolution Curve")
-
         st.line_chart([h["best_score"] for h in history])
 
-        st.subheader("👥 Final Population")
+        # =========================
+        # 2D + 3D VISUALIZATION
+        # =========================
 
+        st.subheader("🗺️ 2D Architectural Layout")
+        plot_2d(geometry["2d"])
+
+        st.subheader("🏗️ 3D Structural Model")
+        plot_3d(geometry["3d"])
+
+        st.subheader("👥 Final Population")
         for d in final_pop:
             st.markdown(f"### Score: {d['score']}")
             st.json(d)
