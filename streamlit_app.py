@@ -1,7 +1,7 @@
 # =========================================================
-# RANDOM V9
-# City Evolution Architecture Intelligence System
-# Stable Multi-Agent Evolution + City Simulation Layer
+# RANDOM V8
+# Evolutionary Architecture Intelligence System
+# Multi-Agent + Genetic Design Evolution Engine
 # Single-File Streamlit Edition
 # =========================================================
 
@@ -11,22 +11,21 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
-import copy
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V9",
-    page_icon="🌍",
+    page_title="RANDOM V8",
+    page_icon="🧬",
     layout="wide"
 )
 
 MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
-# SAFE THEME
+# THEME
 # =========================================================
 
 st.markdown("""
@@ -37,16 +36,18 @@ body {
 .main {
     background: transparent;
 }
-h1 { color: #38bdf8; }
-h2,h3 { color: #7dd3fc; }
-
-div[data-testid="metric-container"] {
+h1 {
+    color: #38bdf8;
+}
+h2,h3 {
+    color: #7dd3fc;
+}
+.stMetric {
     background: rgba(17,24,39,0.6);
-    border: 1px solid #1f2937;
     border-radius: 12px;
+    border: 1px solid #1f2937;
     padding: 12px;
 }
-
 .stButton>button {
     background: linear-gradient(135deg,#2563eb,#38bdf8);
     color: white;
@@ -56,32 +57,27 @@ div[data-testid="metric-container"] {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY (CRASH-PROOF)
+# MEMORY
 # =========================================================
 
 DEFAULT = {
-    "cities": [],
     "projects": [],
-    "evolution": [],
-    "logs": []
+    "designs": [],
+    "logs": [],
+    "evolution": []
 }
 
-def safe_load():
+def load():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r") as f:
-                data = json.load(f)
-                for k in DEFAULT:
-                    data.setdefault(k, DEFAULT[k])
-                return data
+            return json.load(open(MEMORY_FILE))
         except:
-            return copy.deepcopy(DEFAULT)
-    return copy.deepcopy(DEFAULT)
+            return DEFAULT.copy()
+    return DEFAULT.copy()
 
 def save():
     try:
-        with open(MEMORY_FILE, "w") as f:
-            json.dump(st.session_state.memory, f, indent=2)
+        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
     except:
         pass
 
@@ -93,43 +89,18 @@ def log(msg):
     save()
 
 if "memory" not in st.session_state:
-    st.session_state.memory = safe_load()
+    st.session_state.memory = load()
 
 mem = st.session_state.memory
 
 # =========================================================
-# CITY SYSTEM 🌍
-# =========================================================
-
-ZONES = ["Central", "Residential", "Industrial", "Commercial"]
-
-def create_city(name):
-    city = {
-        "id": str(uuid.uuid4())[:8],
-        "name": name,
-        "zones": {
-            z: {
-                "buildings": random.randint(2, 5),
-                "health": random.randint(60, 100)
-            } for z in ZONES
-        },
-        "created": datetime.now().isoformat()
-    }
-
-    mem["cities"].append(city)
-    save()
-    log(f"City created: {name}")
-
-    return city
-
-# =========================================================
-# ARCHITECTURE DOMAIN SYSTEM
+# ARCHITECTURE DOMAINS
 # =========================================================
 
 ARCH = {
-    "Residential": ["House", "Apartment", "Villa"],
-    "Commercial": ["Office", "School", "Hotel"],
-    "Industrial": ["Warehouse", "Factory", "Plant"]
+    "Residential": ["House","Apartment","Villa"],
+    "Commercial": ["Office","School","Hospital","Hotel"],
+    "Industrial": ["Warehouse","Factory","Plant"]
 }
 
 def domain_of(t):
@@ -139,21 +110,23 @@ def domain_of(t):
     return "Unknown"
 
 # =========================================================
-# DESIGN CORE
+# BASE DESIGN ENGINE
 # =========================================================
 
-def base_design(btype, zone):
+def base_design(btype, bedrooms):
+
+    domain = domain_of(btype)
 
     return {
         "type": btype,
-        "domain": domain_of(btype),
-        "zone": zone,
+        "domain": domain,
+        "rooms": ["Space"] * random.randint(3,8),
         "structure": {
             "columns": random.randint(10,30),
             "beams": random.randint(20,60)
         },
-        "cost": random.randint(200000, 4000000),
-        "population_fit": random.randint(60,100)
+        "cost": random.randint(200000, 3000000),
+        "bedrooms": bedrooms
     }
 
 # =========================================================
@@ -161,43 +134,48 @@ def base_design(btype, zone):
 # =========================================================
 
 def mutate(design):
-    d = copy.deepcopy(design)
 
-    d["structure"]["columns"] += random.randint(-2, 3)
-    d["structure"]["beams"] += random.randint(-5, 5)
+    mutated = json.loads(json.dumps(design))  # deep copy
 
-    d["cost"] += random.randint(-150000, 250000)
-    d["population_fit"] += random.randint(-5, 5)
+    # structural mutation
+    mutated["structure"]["columns"] += random.randint(-2, 3)
+    mutated["structure"]["beams"] += random.randint(-5, 5)
 
-    d["population_fit"] = max(0, min(100, d["population_fit"]))
+    # room mutation
+    if random.random() > 0.5:
+        mutated["rooms"].append("Extra Module")
 
-    return d
+    # cost drift
+    mutated["cost"] += random.randint(-100000, 200000)
+
+    return mutated
 
 # =========================================================
 # FITNESS FUNCTION 🏆
 # =========================================================
 
 def fitness(d):
-    structure = max(0, 100 - abs(d["structure"]["columns"] - 20))
-    cost = max(0, 100 - (d["cost"] // 60000))
-    population = d["population_fit"]
+
+    structure_score = max(0, 100 - abs(d["structure"]["columns"] - 20))
+    cost_score = max(0, 100 - (d["cost"] // 50000))
+    complexity_score = min(100, len(d["rooms"]) * 10)
 
     return {
-        "structure": structure,
-        "cost": cost,
-        "population": population
+        "structure": structure_score,
+        "cost": cost_score,
+        "complexity": complexity_score
     }
 
-def score(f):
+def total_score(f):
     return int(sum(f.values()) / len(f))
 
 # =========================================================
-# EVOLUTION ENGINE 🌱
+# EVOLUTION ENGINE 🌍
 # =========================================================
 
-def evolve(zone, btype, generations=3, pop_size=5):
+def evolve_population(btype, bedrooms, generations=3, pop_size=5):
 
-    population = [base_design(btype, zone) for _ in range(pop_size)]
+    population = [base_design(btype, bedrooms) for _ in range(pop_size)]
     history = []
 
     for g in range(generations):
@@ -207,7 +185,7 @@ def evolve(zone, btype, generations=3, pop_size=5):
         for d in population:
             f = fitness(d)
             d["fitness"] = f
-            d["score"] = score(f)
+            d["score"] = total_score(f)
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
@@ -215,71 +193,49 @@ def evolve(zone, btype, generations=3, pop_size=5):
         best = scored[0]
         history.append({
             "generation": g,
-            "score": best["score"]
+            "best_score": best["score"]
         })
 
+        # selection (top 50%)
         survivors = scored[:max(2, pop_size//2)]
 
-        new_pop = []
+        # reproduction (mutation)
+        new_population = []
 
         for s in survivors:
-            new_pop.append(s)
-            new_pop.append(mutate(s))
+            new_population.append(s)
+            new_population.append(mutate(s))
 
-        population = new_pop[:pop_size]
+        population = new_population[:pop_size]
 
     return scored[0], history, scored
 
 # =========================================================
-# CITY EVOLUTION 🌍
+# PROJECT SYSTEM
 # =========================================================
 
-def evolve_city(city_id):
-
-    city = next(c for c in mem["cities"] if c["id"] == city_id)
-
-    evolution_result = {
-        "city_id": city_id,
-        "zones": {},
-        "time": datetime.now().isoformat()
-    }
-
-    for zone in city["zones"]:
-
-        zone_data = city["zones"][zone]
-
-        best, history, population = evolve(
-            zone=zone,
-            btype=random.choice(sum(ARCH.values(), [])),
-            generations=3,
-            pop_size=5
-        )
-
-        evolution_result["zones"][zone] = {
-            "best": best,
-            "history": history,
-            "population": population
-        }
-
-        city["zones"][zone]["health"] = min(100, best["score"])
-
-    mem["evolution"].append(evolution_result)
+def new_project(name, t):
+    mem["projects"].append({
+        "id": str(uuid.uuid4())[:8],
+        "name": name,
+        "type": t,
+        "domain": domain_of(t),
+        "created": datetime.now().isoformat()
+    })
     save()
-    log(f"City evolved: {city_id}")
-
-    return evolution_result
+    log("Project created")
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🌍 RANDOM V9")
-st.sidebar.caption("City Evolution Intelligence System")
+st.sidebar.title("🧬 RANDOM V8")
+st.sidebar.caption("Evolutionary Architecture Intelligence System")
 
 page = st.sidebar.radio("Navigation", [
     "Dashboard",
-    "Cities",
-    "City Lab",
+    "Projects",
+    "Evolution Lab",
     "Memory"
 ])
 
@@ -289,65 +245,86 @@ page = st.sidebar.radio("Navigation", [
 
 if page == "Dashboard":
 
-    st.title("🌍 City Intelligence Core")
+    st.title("🧬 RANDOM V8 Control Core")
 
     c1,c2,c3 = st.columns(3)
-
-    c1.metric("Cities", len(mem["cities"]))
-    c2.metric("Evolution Runs", len(mem["evolution"]))
-    c3.metric("Logs", len(mem["logs"]))
+    c1.metric("Projects", len(mem["projects"]))
+    c2.metric("Designs", len(mem["designs"]))
+    c3.metric("Evolution Runs", len(mem["evolution"]))
 
     st.divider()
-    st.subheader("System Activity")
+    st.subheader("System Log")
 
     for l in mem["logs"][-10:]:
         st.write(f"{l.get('time')} → {l.get('msg')}")
 
 # =========================================================
-# CITIES
+# PROJECTS
 # =========================================================
 
-elif page == "Cities":
+elif page == "Projects":
 
-    st.title("🏙 City Registry")
+    st.title("📁 Projects")
 
-    name = st.text_input("City Name")
+    name = st.text_input("Name")
+    t = st.selectbox("Type", sum(ARCH.values(), []))
 
-    if st.button("Create City"):
-        create_city(name)
-        st.success("City Created")
+    if st.button("Create"):
+        new_project(name, t)
+        st.success("Created")
 
-    st.divider()
-
-    for c in mem["cities"]:
-        with st.expander(c["name"]):
-            st.json(c)
+    for p in mem["projects"]:
+        with st.expander(p["name"]):
+            st.json(p)
 
 # =========================================================
-# CITY LAB 🌍
+# EVOLUTION LAB 🧬
 # =========================================================
 
-elif page == "City Lab":
+elif page == "Evolution Lab":
 
-    st.title("🌍 City Evolution Lab")
+    st.title("🧬 Evolutionary Design Lab")
 
-    if len(mem["cities"]) == 0:
-        st.warning("Create a city first.")
-    else:
+    left,right = st.columns([1,2])
 
-        city_names = {c["name"]: c["id"] for c in mem["cities"]}
-        selected = st.selectbox("Select City", list(city_names.keys()))
+    with left:
+        btype = st.selectbox("Building Type", sum(ARCH.values(), []))
+        bedrooms = st.slider("Bedrooms", 1, 10, 3)
+        gens = st.slider("Generations", 1, 8, 3)
+        pop = st.slider("Population", 3, 10, 5)
 
-        if st.button("Evolve City"):
+        run = st.button("Evolve Architecture")
 
-            result = evolve_city(city_names[selected])
+    if run:
 
-            st.success("Evolution Complete")
+        best, history, final_pop = evolve_population(
+            btype, bedrooms, gens, pop
+        )
 
-            st.subheader("Zone Health Overview")
+        mem["evolution"].append({
+            "id": str(uuid.uuid4())[:8],
+            "best": best,
+            "history": history,
+            "created": datetime.now().isoformat()
+        })
 
-            for zone, data in result["zones"].items():
-                st.write(f"{zone}: {data['best']['score']}")
+        save()
+        log("Evolution run completed")
+
+        st.success("Evolution Complete")
+
+        st.subheader("🏆 Best Evolved Design")
+        st.json(best)
+
+        st.subheader("📈 Evolution Curve")
+
+        st.line_chart([h["best_score"] for h in history])
+
+        st.subheader("👥 Final Population")
+
+        for d in final_pop:
+            st.markdown(f"### Score: {d['score']}")
+            st.json(d)
 
 # =========================================================
 # MEMORY
@@ -355,15 +332,15 @@ elif page == "City Lab":
 
 elif page == "Memory":
 
-    st.title("🧠 System Memory")
+    st.title("🧠 Memory System")
 
-    tab1,tab2,tab3 = st.tabs(["Cities","Evolution","Logs"])
+    tab1,tab2,tab3 = st.tabs(["Projects","Designs","Evolution"])
 
     with tab1:
-        st.json(mem["cities"])
+        st.json(mem["projects"])
 
     with tab2:
-        st.json(mem["evolution"])
+        st.json(mem["designs"])
 
     with tab3:
-        st.json(mem["logs"])
+        st.json(mem["evolution"])
