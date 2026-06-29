@@ -1,7 +1,7 @@
 # =========================================================
-# RANDOM V10
-# Autonomous Civilization Operating System
-# Multi-City + Economy + Competition + Evolution
+# RANDOM V9
+# City Evolution Architecture Intelligence System
+# Stable Multi-Agent Evolution + City Simulation Layer
 # Single-File Streamlit Edition
 # =========================================================
 
@@ -18,15 +18,15 @@ import copy
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V10",
-    page_icon="🌐",
+    page_title="RANDOM V9",
+    page_icon="🌍",
     layout="wide"
 )
 
 MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
-# THEME
+# SAFE THEME
 # =========================================================
 
 st.markdown("""
@@ -42,8 +42,8 @@ h2,h3 { color: #7dd3fc; }
 
 div[data-testid="metric-container"] {
     background: rgba(17,24,39,0.6);
-    border-radius: 12px;
     border: 1px solid #1f2937;
+    border-radius: 12px;
     padding: 12px;
 }
 
@@ -56,11 +56,13 @@ div[data-testid="metric-container"] {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY (SAFE + STABLE)
+# MEMORY (CRASH-PROOF)
 # =========================================================
 
 DEFAULT = {
     "cities": [],
+    "projects": [],
+    "evolution": [],
     "logs": []
 }
 
@@ -78,7 +80,8 @@ def safe_load():
 
 def save():
     try:
-        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
+        with open(MEMORY_FILE, "w") as f:
+            json.dump(st.session_state.memory, f, indent=2)
     except:
         pass
 
@@ -95,30 +98,21 @@ if "memory" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# WORLD ECONOMY 🌍
+# CITY SYSTEM 🌍
 # =========================================================
 
-def generate_resources():
-    return {
-        "energy": random.randint(50, 100),
-        "materials": random.randint(50, 100),
-        "population": random.randint(50, 100),
-        "tech": random.randint(40, 100)
-    }
-
-# =========================================================
-# CITY CREATION 🏙
-# =========================================================
+ZONES = ["Central", "Residential", "Industrial", "Commercial"]
 
 def create_city(name):
-
     city = {
         "id": str(uuid.uuid4())[:8],
         "name": name,
-        "resources": generate_resources(),
-        "health": random.randint(60, 100),
-        "influence": random.randint(50, 100),
-        "age": 0,
+        "zones": {
+            z: {
+                "buildings": random.randint(2, 5),
+                "health": random.randint(60, 100)
+            } for z in ZONES
+        },
         "created": datetime.now().isoformat()
     }
 
@@ -129,99 +123,163 @@ def create_city(name):
     return city
 
 # =========================================================
-# CITY GOVERNANCE AI 🧠
+# ARCHITECTURE DOMAIN SYSTEM
 # =========================================================
 
-def govern(city):
+ARCH = {
+    "Residential": ["House", "Apartment", "Villa"],
+    "Commercial": ["Office", "School", "Hotel"],
+    "Industrial": ["Warehouse", "Factory", "Plant"]
+}
 
-    r = city["resources"]
+def domain_of(t):
+    for k,v in ARCH.items():
+        if t in v:
+            return k
+    return "Unknown"
 
-    policy = {
-        "build_rate": random.uniform(0.5, 1.5),
-        "trade_focus": random.choice(["energy", "materials", "tech"]),
-        "stability": random.randint(60, 100)
+# =========================================================
+# DESIGN CORE
+# =========================================================
+
+def base_design(btype, zone):
+
+    return {
+        "type": btype,
+        "domain": domain_of(btype),
+        "zone": zone,
+        "structure": {
+            "columns": random.randint(10,30),
+            "beams": random.randint(20,60)
+        },
+        "cost": random.randint(200000, 4000000),
+        "population_fit": random.randint(60,100)
     }
 
-    # resource drift
-    r["energy"] += random.randint(-5, 5)
-    r["materials"] += random.randint(-5, 5)
-    r["population"] += random.randint(-3, 4)
-    r["tech"] += random.randint(-2, 5)
-
-    # clamp
-    for k in r:
-        r[k] = max(0, min(100, r[k]))
-
-    return policy
-
 # =========================================================
-# CITY INTERACTION 🌐
+# MUTATION ENGINE 🧬
 # =========================================================
 
-def interact(cities):
+def mutate(design):
+    d = copy.deepcopy(design)
 
-    for c in cities:
-        for other in cities:
-            if c["id"] == other["id"]:
-                continue
+    d["structure"]["columns"] += random.randint(-2, 3)
+    d["structure"]["beams"] += random.randint(-5, 5)
 
-            diff = c["resources"]["tech"] - other["resources"]["tech"]
+    d["cost"] += random.randint(-150000, 250000)
+    d["population_fit"] += random.randint(-5, 5)
 
-            if diff > 20:
-                c["influence"] += 2
-                other["influence"] -= 2
+    d["population_fit"] = max(0, min(100, d["population_fit"]))
 
-            elif diff < -20:
-                c["influence"] -= 2
-                other["influence"] += 2
+    return d
 
 # =========================================================
-# CITY EVOLUTION 🌱
+# FITNESS FUNCTION 🏆
 # =========================================================
 
-def evolve_city(city):
+def fitness(d):
+    structure = max(0, 100 - abs(d["structure"]["columns"] - 20))
+    cost = max(0, 100 - (d["cost"] // 60000))
+    population = d["population_fit"]
 
-    city["age"] += 1
+    return {
+        "structure": structure,
+        "cost": cost,
+        "population": population
+    }
 
-    gov = govern(city)
-
-    city["health"] += random.randint(-3, 4)
-
-    # resource influence
-    city["health"] += (city["resources"]["tech"] // 20)
-
-    city["health"] = max(0, min(100, city["health"]))
-
-    return gov
+def score(f):
+    return int(sum(f.values()) / len(f))
 
 # =========================================================
-# WORLD SIMULATION LOOP 🌍
+# EVOLUTION ENGINE 🌱
 # =========================================================
 
-def simulate_world():
+def evolve(zone, btype, generations=3, pop_size=5):
 
-    cities = mem["cities"]
+    population = [base_design(btype, zone) for _ in range(pop_size)]
+    history = []
 
-    for c in cities:
-        evolve_city(c)
+    for g in range(generations):
 
-    interact(cities)
+        scored = []
 
+        for d in population:
+            f = fitness(d)
+            d["fitness"] = f
+            d["score"] = score(f)
+            scored.append(d)
+
+        scored.sort(key=lambda x: x["score"], reverse=True)
+
+        best = scored[0]
+        history.append({
+            "generation": g,
+            "score": best["score"]
+        })
+
+        survivors = scored[:max(2, pop_size//2)]
+
+        new_pop = []
+
+        for s in survivors:
+            new_pop.append(s)
+            new_pop.append(mutate(s))
+
+        population = new_pop[:pop_size]
+
+    return scored[0], history, scored
+
+# =========================================================
+# CITY EVOLUTION 🌍
+# =========================================================
+
+def evolve_city(city_id):
+
+    city = next(c for c in mem["cities"] if c["id"] == city_id)
+
+    evolution_result = {
+        "city_id": city_id,
+        "zones": {},
+        "time": datetime.now().isoformat()
+    }
+
+    for zone in city["zones"]:
+
+        zone_data = city["zones"][zone]
+
+        best, history, population = evolve(
+            zone=zone,
+            btype=random.choice(sum(ARCH.values(), [])),
+            generations=3,
+            pop_size=5
+        )
+
+        evolution_result["zones"][zone] = {
+            "best": best,
+            "history": history,
+            "population": population
+        }
+
+        city["zones"][zone]["health"] = min(100, best["score"])
+
+    mem["evolution"].append(evolution_result)
     save()
-    log("World simulation tick executed")
+    log(f"City evolved: {city_id}")
+
+    return evolution_result
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🌐 RANDOM V10")
-st.sidebar.caption("Autonomous Civilization OS")
+st.sidebar.title("🌍 RANDOM V9")
+st.sidebar.caption("City Evolution Intelligence System")
 
 page = st.sidebar.radio("Navigation", [
     "Dashboard",
-    "World",
     "Cities",
-    "Simulation",
+    "City Lab",
     "Memory"
 ])
 
@@ -231,12 +289,12 @@ page = st.sidebar.radio("Navigation", [
 
 if page == "Dashboard":
 
-    st.title("🌐 Civilization Core Dashboard")
+    st.title("🌍 City Intelligence Core")
 
     c1,c2,c3 = st.columns(3)
 
     c1.metric("Cities", len(mem["cities"]))
-    c2.metric("Avg Health", int(sum([c["health"] for c in mem["cities"]]) / len(mem["cities"])) if mem["cities"] else 0)
+    c2.metric("Evolution Runs", len(mem["evolution"]))
     c3.metric("Logs", len(mem["logs"]))
 
     st.divider()
@@ -246,25 +304,7 @@ if page == "Dashboard":
         st.write(f"{l.get('time')} → {l.get('msg')}")
 
 # =========================================================
-# WORLD VIEW 🌍
-# =========================================================
-
-elif page == "World":
-
-    st.title("🌍 World Overview")
-
-    if not mem["cities"]:
-        st.warning("No cities exist yet.")
-    else:
-        for c in mem["cities"]:
-            st.subheader(c["name"])
-            st.write("Health:", c["health"])
-            st.write("Influence:", c["influence"])
-            st.json(c["resources"])
-            st.divider()
-
-# =========================================================
-# CITIES 🏙
+# CITIES
 # =========================================================
 
 elif page == "Cities":
@@ -277,42 +317,53 @@ elif page == "Cities":
         create_city(name)
         st.success("City Created")
 
+    st.divider()
+
     for c in mem["cities"]:
         with st.expander(c["name"]):
             st.json(c)
 
 # =========================================================
-# SIMULATION LOOP ⚙️
+# CITY LAB 🌍
 # =========================================================
 
-elif page == "Simulation":
+elif page == "City Lab":
 
-    st.title("⚙ World Simulation Engine")
+    st.title("🌍 City Evolution Lab")
 
-    st.info("Run one tick of civilization evolution")
+    if len(mem["cities"]) == 0:
+        st.warning("Create a city first.")
+    else:
 
-    if st.button("Run Simulation Tick"):
-        simulate_world()
-        st.success("Simulation Complete")
+        city_names = {c["name"]: c["id"] for c in mem["cities"]}
+        selected = st.selectbox("Select City", list(city_names.keys()))
 
-    if mem["cities"]:
-        st.subheader("Live City Status")
+        if st.button("Evolve City"):
 
-        for c in mem["cities"]:
-            st.write(f"{c['name']} → Health {c['health']} | Influence {c['influence']}")
+            result = evolve_city(city_names[selected])
+
+            st.success("Evolution Complete")
+
+            st.subheader("Zone Health Overview")
+
+            for zone, data in result["zones"].items():
+                st.write(f"{zone}: {data['best']['score']}")
 
 # =========================================================
-# MEMORY 🧠
+# MEMORY
 # =========================================================
 
 elif page == "Memory":
 
     st.title("🧠 System Memory")
 
-    tab1,tab2 = st.tabs(["Cities","Logs"])
+    tab1,tab2,tab3 = st.tabs(["Cities","Evolution","Logs"])
 
     with tab1:
         st.json(mem["cities"])
 
     with tab2:
+        st.json(mem["evolution"])
+
+    with tab3:
         st.json(mem["logs"])
