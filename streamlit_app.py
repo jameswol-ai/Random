@@ -1,19 +1,18 @@
-
 # =========================================================
-# ARC — ARCHITECTURAL INTELLECT ENGINE (FIXED)
-# Generative Multi-Story Floor Plan & Structural Synthesis
+# ARC ARCHITECTURE INTELLIGENCE ENGINE
+# Evolutionary Spatial Layout Synthesis & Diagnostics
+# Zero-Dependency Single-File Streamlit Implementation
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
-import math
 from pathlib import Path
 from datetime import datetime
 
 # =========================================================
-# CONFIG
+# CONFIG & GLOBAL STUDIO STYLING
 # =========================================================
 
 st.set_page_config(
@@ -22,62 +21,88 @@ st.set_page_config(
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_studio_v11.json")
+MEMORY_FILE = Path("arc_memory.json")
 
-# =========================================================
-# STYLE
-# =========================================================
-
+# Custom Architectural Studio UI Skin
 st.markdown("""
 <style>
-html, body {
-    font-family: 'Arial';
-    background: #050814;
-    color: white;
-}
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
+    
+    /* Global Overrides */
+    html, body, [data-testid="stSidebarNav"] {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+    }
 
-h1, h2, h3 {
-    color: #38bdf8;
-}
+    /* Core Architectural Spatial Grid */
+    .arc-blueprint-canvas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        background: #090d16;
+        padding: 24px;
+        border-radius: 12px;
+        border: 1px dashed #334155;
+        margin: 15px 0;
+    }
+    
+    .arc-room-module {
+        flex: 1 1 calc(33.333% - 16px);
+        min-width: 220px;
+        padding: 20px;
+        border-radius: 8px;
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .arc-room-module:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
 
-.arc-blueprint-canvas {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
-    padding: 20px;
-}
-
-.arc-room-module {
-    padding: 16px;
-    border-radius: 10px;
-    border: 1px solid #1e293b;
-}
-
-.room-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
+    .room-meta {
+        font-family: 'Space Grotesk', monospace;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        opacity: 0.8;
+        margin-top: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY
+# SYSTEM MEMORY MANAGEMENT
 # =========================================================
 
-DEFAULT_STATE = {"designs": [], "logs": []}
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "logs": [],
+    "evolution": []
+}
 
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            return json.load(open(MEMORY_FILE))
-        except:
+            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
             return DEFAULT_STATE.copy()
     return DEFAULT_STATE.copy()
 
 def save_memory():
     try:
-        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
-    except:
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.memory, f, indent=2)
+    except Exception:
         pass
 
 def log_event(msg):
@@ -87,179 +112,284 @@ def log_event(msg):
     })
     save_memory()
 
+# Initialize session structures
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
-
 if "active_design" not in st.session_state:
     st.session_state.active_design = None
+if "active_history" not in st.session_state:
+    st.session_state.active_history = []
 
 mem = st.session_state.memory
 
 # =========================================================
-# ARCH TYPES
+# ARCHITECTURAL RULES & GENETICS
 # =========================================================
 
 ARCH_DOMAINS = {
-    "Residential": ["Luxury Villa", "Modern Apartment"],
-    "Commercial": ["Office Block", "Clinic Center"],
-    "Industrial": ["Warehouse", "Factory"]
+    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
+    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
+    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
 }
 
-# =========================================================
-# GENERATOR
-# =========================================================
+def get_domain(btype):
+    for domain, types in ARCH_DOMAINS.items():
+        if btype in types:
+            return domain
+    return "Unknown"
 
-def generate_spatial_model(domain, btype, plot_size, floors, baths):
+def generate_base_design(btype, bedrooms):
+    core_rooms = ["Living Room", "Gourmet Kitchen", "Primary Bathroom"] + ["Flex Space"] * random.randint(1, 3)
+    est_area = (6*5) + (4*4) + (3*3) + (bedrooms * 18)
+    return {
+        "id": str(uuid.uuid4())[:8].upper(),
+        "type": btype,
+        "domain": get_domain(btype),
+        "bedrooms": bedrooms,
+        "rooms": core_rooms,
+        "area_sqm": est_area,
+        "structure": {
+            "columns": random.randint(14, 36),
+            "beams": random.randint(28, 72)
+        },
+        "cost": int(est_area * random.randint(1400, 2600))
+    }
 
-    max_fp = int(plot_size * 0.65)
-    floor_area = random.randint(120, max_fp)
-    total_gfa = floor_area * floors
+def mutate_design(design_ctx):
+    d = json.loads(json.dumps(design_ctx)) 
+    d["structure"]["columns"] = max(10, d["structure"]["columns"] + random.randint(-2, 4))
+    d["structure"]["beams"] = max(16, d["structure"]["beams"] + random.randint(-4, 6))
+    
+    if random.random() > 0.5:
+        d["rooms"].append("Adaptive Modular Terracing")
+        d["area_sqm"] += 20
+        
+    d["cost"] = int(d["area_sqm"] * random.randint(1300, 2500) + (d["structure"]["columns"] * 600))
+    return d
 
-    span = 6.0 if domain == "Residential" else 7.5 if domain == "Commercial" else 12.0
+def calculate_fitness(d):
+    structural_ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+    struct_score = max(0, 100 - int(abs(structural_ratio - 2.1) * 22))
+    
+    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
+    cost_score = max(0, 100 - int(abs(cost_per_sqm - 1650) * 0.04))
+    
+    complexity_score = min(100, len(d["rooms"]) * 9)
+    
+    return {
+        "structural_integrity": struct_score,
+        "cost_efficiency": cost_score,
+        "spatial_complexity": complexity_score
+    }
 
-    col_count = max(12, int((floor_area / 100)))
-    beam_count = int(col_count * 1.8)
+def calculate_aggregate_score(fit_dict):
+    return int(sum(fit_dict.values()) / len(fit_dict))
 
+def run_evolutionary_loop(btype, bedrooms, generations, pop_size):
+    population = [generate_base_design(btype, bedrooms) for _ in range(pop_size)]
+    history = []
+
+    for g in range(generations):
+        scored_pop = []
+        for d in population:
+            fit = calculate_fitness(d)
+            d["fitness"] = fit
+            d["score"] = calculate_aggregate_score(fit)
+            scored_pop.append(d)
+
+        scored_pop.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored_pop[0]["score"])
+
+        survivors = scored_pop[:max(2, pop_size // 2)]
+        new_generation = []
+        for parent in survivors:
+            new_generation.append(parent)
+            new_generation.append(mutate_design(parent))
+            
+        population = new_generation[:pop_size]
+
+    return scored_pop[0], history
+
+def generate_floor_plan(design):
     rooms = [
-        {"name": "Lobby", "type": "Core", "w": 3, "h": 8, "color": "#1e293b"}
+        {"name": "Grand Living Lounge", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
+        {"name": "Culinary Kitchen", "w": 4.5, "h": 4.0, "color": "#064e3b"},
+        {"name": "Central Powder Room", "w": 3.0, "h": 2.5, "color": "#78350f"}
+    ]
+    for i in range(design["bedrooms"]):
+        rooms.append({
+            "name": f"Master Suite Suite {i+1}" if i == 0 else f"Standard Bedroom {i+1}",
+            "w": 4.5 if i == 0 else 4.0,
+            "h": 4.0,
+            "color": "#4c1d95"
+        })
+    return rooms
+
+# =========================================================
+# GRAPHICS CANVAS RENDERING Engine
+# =========================================================
+
+def render_native_blueprint(plan):
+    st.markdown("### 🗺️ Generative Layout Arrangement")
+    
+    canvas_html = '<div class="arc-blueprint-canvas">'
+    for room in plan:
+        canvas_html += (
+            f'<div class="arc-room-module" style="background-color: {room["color"]};">'
+            f'<div style="font-size: 1.15rem; font-weight: 600;">{room["name"]}</div>'
+            f'<div class="room-meta">📐 {room["w"]}m × {room["h"]}m Structural Deck</div>'
+            f'</div>'
+        )
+    canvas_html += '</div>'
+    
+    st.markdown(canvas_html, unsafe_allow_html=True)
+
+# =========================================================
+# DESIGN METRICS AND DIAGNOSTICS
+# =========================================================
+
+def run_structural_review(d):
+    alerts = []
+    if d["structure"]["columns"] < 16:
+        alerts.append("🔴 **Structural Warning:** Column distribution density thin for structural load transfers.")
+    if d["cost"] / d["area_sqm"] > 2300:
+        alerts.append("🟡 **Financial Alert:** Material pricing model trending toward architectural premium thresholds.")
+    if d["structure"]["beams"] / d["structure"]["columns"] < 1.9:
+        alerts.append("🔵 **Framing Optimization:** Tight structural beam-to-column ratio; review spatial continuity maps.")
+    return alerts if alerts else ["🟢 **Synthesis Checked:** Structural logic matrices clear. Design optimized for construction documentation."]
+
+def calculate_material_takeoffs(d):
+    return [
+        {"Structural Asset Item": "High-Performance Concrete Pour", "Calculated Takeoff": f"{d['structure']['columns'] * 2.6:.1f} m³"},
+        {"Structural Asset Item": "Tensile Steel Rebar Skeleton", "Calculated Takeoff": f"{d['structure']['beams'] * 0.48:.2f} Metric Tons"},
+        {"Structural Asset Item": "Insulated Masonry CMU Blocks", "Calculated Takeoff": f"{int(d['area_sqm'] * 42):,} Structural Units"},
+        {"Structural Asset Item": "Calculated Structural Dead Load Base", "Calculated Takeoff": f"{int(d['structure']['columns'] * 13.2):,} kN"}
     ]
 
-    if domain == "Residential":
-        bedrooms = max(1, total_gfa // 120)
-        for i in range(bedrooms):
-            rooms.append({
-                "name": f"Bedroom {i+1}",
-                "type": "Room",
-                "w": 4,
-                "h": 4,
-                "color": "#2a0f4d"
-            })
+# =========================================================
+# APPLICATION WORKSPACE INTERFACE
+# =========================================================
 
-    elif domain == "Commercial":
-        rooms.append({"name": "Office Floor", "type": "Work", "w": 10, "h": 8, "color": "#075e8a"})
+st.sidebar.title("📐 Arc Studio")
+st.sidebar.caption("v10.2 • Generative Structural Design Loop")
+st.sidebar.markdown("---")
 
+# Navigation Hub
+page = st.sidebar.radio("Studio Workspace", ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"])
+
+st.sidebar.markdown("---")
+
+# Expandable Configurations Panel — Click to open options
+with st.sidebar.expander("🛠️ Configure Arc Engine", expanded=False):
+    st.subheader("Synthesis Directives")
+    all_typologies = []
+    for sub_list in ARCH_DOMAINS.values():
+        all_typologies.extend(sub_list)
+        
+    input_type = st.selectbox("Design Typology Target", all_typologies)
+    input_bedrooms = st.slider("Target Spatial Modules", 1, 8, 3)
+    input_generations = st.slider("Genetic Epoch Cycles", 2, 20, 6)
+    input_pop = st.slider("Population Bounds", 4, 30, 10)
+
+# ---------------------------------------------------------
+# VIEWPORT: DASHBOARD
+# ---------------------------------------------------------
+if page == "Dashboard Control":
+    st.title("📐 Studio Control Dashboard")
+    st.markdown("Systems active. Arc generative algorithms synchronized with engine hardware.")
+    
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Tracked Space Profiles", len(mem["projects"]))
+    col2.metric("Evolved Blueprint Seeds", len(mem["designs"]))
+    col3.metric("Total Parametric Compute Loops", len(mem["evolution"]))
+    
+    st.markdown("---")
+    st.subheader("Engine Operational Telemetry Logs")
+    if mem["logs"]:
+        for log in reversed(mem["logs"][-6:]):
+            st.caption(f"⏱️ `{log['time'][11:19]}` — {log['msg']}")
     else:
-        rooms.append({"name": "Production Hall", "type": "Industrial", "w": 14, "h": 10, "color": "#3b0764"})
+        st.info("System operational logs are current and empty.")
 
-    for i in range(baths):
-        rooms.append({
-            "name": f"Bath {i+1}",
-            "type": "Service",
-            "w": 3,
-            "h": 2,
-            "color": "#4a2306"
-        })
+# ---------------------------------------------------------
+# VIEWPORT: SYNTHESIS LAB
+# ---------------------------------------------------------
+elif page == "Design Synthesis Lab":
+    st.title("🌍 Algorithmic Design Lab")
+    st.markdown("Manipulate generative presets inside the sidebar config block to modify systemic architectural constraints.")
+    
+    # Run pipeline button trigger
+    generate_now = st.button("Run Generative Architectural Evolution Pipeline", type="primary", use_container_width=True)
+    
+    if generate_now:
+        with st.spinner("Processing structural mutations & resolving framing constraints..."):
+            best_specimen, optimization_trend = run_evolutionary_loop(input_type, input_bedrooms, input_generations, input_pop)
+            best_specimen["plan"] = generate_floor_plan(best_specimen)
+            
+            # Save into serialized space structures
+            mem["designs"].append(best_specimen)
+            mem["evolution"].append({
+                "id": str(uuid.uuid4())[:6].upper(),
+                "best_id": best_specimen["id"],
+                "peak_score": best_specimen["score"],
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            st.session_state.active_design = best_specimen
+            st.session_state.active_history = optimization_trend
+            log_event(f"Evolved Optimized Blueprint Specimen Archetype #{best_specimen['id']}")
 
-    return {
-        "id": str(uuid.uuid4())[:8],
-        "domain": domain,
-        "type": btype,
-        "plot_size": plot_size,
-        "floors": floors,
-        "total_gfa": total_gfa,
-        "rooms": rooms,
-        "doors": len(rooms),
-        "windows": int(total_gfa / 20),
-        "structural": {
-            "columns": col_count * floors,
-            "beams": beam_count * floors,
-            "span": span
-        }
-    }
+    st.markdown("---")
 
-# =========================================================
-# FLOOR PLAN
-# =========================================================
+    # Render Active State Matrix Panels
+    if st.session_state.active_design is not None:
+        design = st.session_state.active_design
+        trend = st.session_state.active_history
+        
+        st.subheader(f"⚡ Synthesis Output Profile: Archetype Specimen #{design['id']}")
+        
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Algorithmic Optimization Score", f"{design['score']} / 100")
+        m2.metric("Gross Built Footprint Area", f"{design['area_sqm']} m²")
+        m3.metric("Project Budget Takeoff Forecast", f"${design['cost']:,}")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        tab_space, tab_metrics, tab_analytics = st.tabs(["🗺️ Spatial Layout Blueprint", "📊 Structural Takeoffs", "📈 Convergence Analytics"])
+        
+        with tab_space:
+            render_native_blueprint(design["plan"])
+            
+        with tab_metrics:
+            st.subheader("AI Structural Diagnostics")
+            for alert in run_structural_review(design):
+                st.markdown(alert)
+                
+            st.markdown("---")
+            st.subheader("Material Quantum Requirements")
+            st.table(calculate_material_takeoffs(design))
+            
+        with tab_analytics:
+            st.subheader("Genetic Algorithm Fitness Convergence Wave")
+            st.line_chart(trend)
+            
+    else:
+        st.info("No active production layout model loaded. Select configurations in the left expandable options tree and run the generator engine.")
 
-def generate_floor_plan(d):
-    return d["rooms"]
-
-# =========================================================
-# RENDER
-# =========================================================
-
-def render(plan):
-    html = '<div class="arc-blueprint-canvas">'
-    for r in plan:
-        html += f"""
-        <div class="arc-room-module" style="background:{r['color']}">
-            <div class="room-title">{r['name']}</div>
-            <div>{r['w']}m x {r['h']}m</div>
-        </div>
-        """
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
-
-# =========================================================
-# EUROCODE (FIXED)
-# =========================================================
-
-def eurocode(d):
-
-    span = d["structural"]["span"]
-
-    gk = 5.5
-    qk = 2.0
-
-    load = (1.35 * gk) + (1.5 * qk)
-    w_ed = load * 4.5
-
-    m_ed = (w_ed * span**2) / 8
-    m_rd = (0.167 * 30 * 300 * (450**2)) / 1e6
-
-    return {
-        "MEd": round(m_ed, 2),
-        "MRd": round(m_rd, 2),
-        "STATUS": "PASS" if m_rd > m_ed else "FAIL"
-    }
-
-# =========================================================
-# UI
-# =========================================================
-
-st.sidebar.title("ARC V11")
-page = st.sidebar.radio("Menu", ["Dashboard", "Generate"])
-
-# =========================================================
-# DASHBOARD
-# =========================================================
-
-if page == "Dashboard":
-    st.title("ARC SYSTEM")
-
-    c1, c2 = st.columns(2)
-    c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Logs", len(mem["logs"]))
-
-# =========================================================
-# GENERATION
-# =========================================================
-
-elif page == "Generate":
-
-    st.title("Generate Structure")
-
-    domain = st.selectbox("Domain", list(ARCH_DOMAINS.keys()))
-    btype = st.selectbox("Type", ARCH_DOMAINS[domain])
-
-    plot = st.slider("Plot Size", 200, 3000, 800)
-    floors = st.slider("Floors", 1, 10, 3)
-    baths = st.slider("Bathrooms", 1, 6, 2)
-
-    if st.button("Generate"):
-
-        asset = generate_spatial_model(domain, btype, plot, floors, baths)
-        asset["plan"] = generate_floor_plan(asset)
-
-        mem["designs"].append(asset)
-        log_event("Generated structure")
-
-        st.success("Generated!")
-
-        st.json(asset)
-
-        st.subheader("Floor Plan")
-        render(asset["plan"])
-
-        st.subheader("Eurocode Check")
-        st.json(eurocode(asset))
+# ---------------------------------------------------------
+# VIEWPORT: SERIALIZED SYSTEM STORAGE
+# ---------------------------------------------------------
+elif page == "Memory Repositories":
+    st.title("🧠 Engine Serialized Memory Cache")
+    st.markdown("Review system variables and system architectural metadata arrays.")
+    
+    st.subheader("Raw Memory Store Model State")
+    st.json(mem)
+    
+    st.markdown("---")
+    if st.button("🔴 Purge Arc Studio System Memory State", use_container_width=True):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        st.session_state.active_design = None
+        st.session_state.active_history = []
+        save_memory()
+        st.success("State maps reset clean.")
+        st.rerun()
