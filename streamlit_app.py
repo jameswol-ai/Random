@@ -1,12 +1,7 @@
-
 # =========================================================
-# RANDOM V10+ (MERGED CORE SYSTEM)
+# RANDOM V11 — FIXED UNIFIED BUILD
 # Evolutionary Architecture Intelligence System
-# + Constraint-Based Evolution Engine
-# + Eurocode Structural Analysis (Arc Layer)
-# + Procedural 2D + 3D + Isometric Visualization
-# + Bill of Quantities Engine
-# Single-File Streamlit Edition
+# + ARC Structural Engine (Integrated Cleanly)
 # =========================================================
 
 import streamlit as st
@@ -16,15 +11,13 @@ import random
 import math
 from pathlib import Path
 from datetime import datetime
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V10+",
+    page_title="RANDOM V11",
     page_icon="🧬",
     layout="wide"
 )
@@ -41,7 +34,7 @@ body {
     background: radial-gradient(circle at top, #0b1220, #050814);
 }
 h1 { color: #38bdf8; }
-h2, h3 { color: #7dd3fc; }
+h2,h3 { color: #7dd3fc; }
 
 .stButton>button {
     background: linear-gradient(135deg,#2563eb,#38bdf8);
@@ -52,15 +45,12 @@ h2, h3 { color: #7dd3fc; }
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY SYSTEM
+# MEMORY
 # =========================================================
 
-DEFAULT = {
-    "designs": [],
-    "logs": []
-}
+DEFAULT = {"designs": [], "logs": [], "evolution": []}
 
-def load_memory():
+def load():
     if MEMORY_FILE.exists():
         try:
             return json.load(open(MEMORY_FILE))
@@ -68,7 +58,7 @@ def load_memory():
             return DEFAULT.copy()
     return DEFAULT.copy()
 
-def save_memory():
+def save():
     try:
         json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
     except:
@@ -79,15 +69,15 @@ def log(msg):
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory()
+    save()
 
 if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
+    st.session_state.memory = load()
 
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURE DOMAIN SYSTEM
+# ARCH TYPES
 # =========================================================
 
 ARCH = {
@@ -97,22 +87,16 @@ ARCH = {
 }
 
 def domain_of(t):
-    for k, v in ARCH.items():
+    for k,v in ARCH.items():
         if t in v:
             return k
     return "Unknown"
 
 # =========================================================
-# BASE DESIGN (INTENT + STRUCTURAL DNA)
+# BASE DESIGN
 # =========================================================
 
-def base_design(btype, bedrooms, budget):
-    cost_range = {
-        "low": (200000, 900000),
-        "mid": (900000, 1800000),
-        "high": (1800000, 3200000)
-    }[budget]
-
+def base_design(btype, bedrooms):
     return {
         "id": str(uuid.uuid4())[:8],
         "type": btype,
@@ -120,72 +104,50 @@ def base_design(btype, bedrooms, budget):
         "bedrooms": bedrooms,
         "rooms": ["Core"] * random.randint(3, 6),
         "structure": {
-            "columns": random.randint(10, 35),
-            "beams": random.randint(18, 70)
+            "columns": random.randint(10, 30),
+            "beams": random.randint(20, 60)
         },
-        "cost": random.randint(*cost_range),
-        "intent": budget
+        "cost": random.randint(300000, 2000000)
     }
 
 # =========================================================
-# MUTATION ENGINE 🧬
+# MUTATION ENGINE
 # =========================================================
-
-def clamp(v, a, b):
-    return max(a, min(b, v))
 
 def mutate(d):
     d = json.loads(json.dumps(d))
 
-    strength = {"low": 0.4, "mid": 0.7, "high": 1.0}[d["intent"]]
+    d["structure"]["columns"] += random.randint(-2, 3)
+    d["structure"]["beams"] += random.randint(-5, 5)
 
-    d["structure"]["columns"] = clamp(
-        d["structure"]["columns"] + int(random.randint(-3, 3) * strength),
-        8, 60
-    )
-
-    d["structure"]["beams"] = clamp(
-        d["structure"]["beams"] + int(random.randint(-6, 6) * strength),
-        10, 120
-    )
-
-    if random.random() > 0.6:
+    if random.random() > 0.5:
         d["rooms"].append("Module")
 
-    d["cost"] = clamp(
-        d["cost"] + int(random.randint(-150000, 200000) * strength),
-        100000, 5000000
-    )
+    d["cost"] += random.randint(-100000, 150000)
 
     return d
 
 # =========================================================
-# FITNESS ENGINE (EVOLUTIONARY + STRUCTURAL BALANCE)
+# FITNESS
 # =========================================================
 
 def fitness(d):
-    target_cost = {"low": 600000, "mid": 1200000, "high": 2200000}[d["intent"]]
-
     structure = max(0, 100 - abs(d["structure"]["columns"] - 20))
-    cost = max(0, 100 - abs(d["cost"] - target_cost) / 25000)
-    complexity = min(100, len(d["rooms"]) * 12)
+    cost = max(0, 100 - d["cost"] // 50000)
+    complexity = min(100, len(d["rooms"]) * 10)
 
-    return {
-        "structure": structure,
-        "cost": cost,
-        "complexity": complexity
-    }
+    return {"structure": structure, "cost": cost, "complexity": complexity}
 
 def score(f):
-    return f["structure"] * 0.4 + f["cost"] * 0.4 + f["complexity"] * 0.2
+    return int((f["structure"] + f["cost"] + f["complexity"]) / 3)
 
 # =========================================================
-# EVOLUTION ENGINE 🌍
+# EVOLUTION ENGINE
 # =========================================================
 
-def evolve(btype, bedrooms, gens, pop, budget):
+def evolve(btype, bedrooms, gens, pop):
 
-    population = [base_design(btype, bedrooms, budget) for _ in range(pop)]
+    population = [base_design(btype, bedrooms) for _ in range(pop)]
     history = []
 
     for _ in range(gens):
@@ -212,7 +174,7 @@ def evolve(btype, bedrooms, gens, pop, budget):
     return scored[0], history
 
 # =========================================================
-# FLOOR PLAN ENGINE 🏠
+# FLOOR PLAN
 # =========================================================
 
 def floor_plan(d):
@@ -236,47 +198,22 @@ def floor_plan(d):
     return rooms
 
 # =========================================================
-# VISUALIZATION
+# VISUALS
 # =========================================================
 
 def draw_2d(plan):
     fig, ax = plt.subplots()
-
     for r in plan:
         ax.add_patch(plt.Rectangle((r["x"], r["y"]), r["w"], r["h"], fill=False))
-        ax.text(r["x"] + 0.5, r["y"] + 0.5, r["name"], fontsize=8)
-
-    ax.set_xlim(0, 18)
-    ax.set_ylim(0, 16)
+        ax.text(r["x"]+0.5, r["y"]+0.5, r["name"])
     st.pyplot(fig)
 
 def draw_3d(plan):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
-
     for r in plan:
         ax.bar3d(r["x"], r["y"], 0, r["w"], r["h"], 3)
-
     st.pyplot(fig)
-
-# =========================================================
-# ARC LAYER: EUROCODE ANALYSIS
-# =========================================================
-
-def eurocode(d):
-    span = 6 if d["domain"] == "Residential" else 8
-
-    load = 1.35 * 5 + 1.5 * (2 if d["domain"] == "Residential" else 4)
-    moment = (load * span ** 2) / 8
-
-    resistance = 0.167 * 30 * 300 * 450 ** 2 / 1e6
-
-    return {
-        "load": round(load, 2),
-        "moment": round(moment, 2),
-        "resistance": round(resistance, 2),
-        "status": "PASS" if resistance > moment else "FAIL"
-    }
 
 # =========================================================
 # MATERIALS
@@ -284,34 +221,58 @@ def eurocode(d):
 
 def materials(d):
     return {
-        "Concrete": d["structure"]["columns"] * 2.2,
-        "Steel": d["structure"]["beams"] * 0.55,
-        "Bricks": len(d["rooms"]) * 1800
+        "Concrete": d["structure"]["columns"] * 2,
+        "Steel": d["structure"]["beams"] * 0.5,
+        "Bricks": len(d["rooms"]) * 2000
     }
 
-def sustainability(d):
-    return clamp(100 - d["structure"]["columns"], 40, 100)
+# =========================================================
+# EUROCODE FIXED ENGINE
+# =========================================================
+
+def eurocode(d):
+
+    span = 6.0
+    gk = 5.5
+    qk = 2.0
+
+    design_load = (1.35 * gk) + (1.5 * qk)
+    w_ed = design_load * 4.5
+
+    m_ed = (w_ed * span ** 2) / 8
+    v_ed = (w_ed * span) / 2
+
+    b = 300
+    d_eff = 450
+    f_ck = 30
+
+    m_rd = (0.167 * f_ck * b * (d_eff ** 2)) / 1e6
+
+    return {
+        "m_ed": m_ed,
+        "m_rd": m_rd,
+        "v_ed": v_ed,
+        "status": "PASS" if m_rd > m_ed else "FAIL"
+    }
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🧬 RANDOM V10+")
-page = st.sidebar.radio("Navigation", ["Dashboard", "Evolution", "Memory"])
+st.sidebar.title("🧬 RANDOM V11")
+page = st.sidebar.radio("Menu", ["Dashboard", "Evolution"])
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
+    st.title("🧬 RANDOM V11 Core")
 
-    st.title("🧬 RANDOM V10+ CORE")
-
-    c1, c2, c3 = st.columns(3)
-
+    c1,c2,c3 = st.columns(3)
     c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Evolution Runs", len(mem["logs"]))
-    c3.metric("Memory Nodes", len(mem["designs"]) + len(mem["logs"]))
+    c2.metric("Evolution Runs", len(mem["evolution"]))
+    c3.metric("Logs", len(mem["logs"]))
 
 # =========================================================
 # EVOLUTION
@@ -319,62 +280,45 @@ if page == "Dashboard":
 
 elif page == "Evolution":
 
-    st.title("🧬 Evolution + Arc Structural Engine")
+    st.title("🧬 Evolution Engine")
 
     btype = st.selectbox("Type", sum(ARCH.values(), []))
-    bedrooms = st.slider("Bedrooms", 1, 10, 3)
-    gens = st.slider("Generations", 1, 8, 4)
-    pop = st.slider("Population", 3, 12, 6)
-    budget = st.selectbox("Budget", ["low", "mid", "high"])
+    bedrooms = st.slider("Bedrooms", 1, 8, 3)
+    gens = st.slider("Generations", 1, 6, 3)
+    pop = st.slider("Population", 3, 10, 5)
 
-    if st.button("Run Evolution Engine"):
+    if st.button("Run Evolution"):
 
-        best, history = evolve(btype, bedrooms, gens, pop, budget)
+        best, history = evolve(btype, bedrooms, gens, pop)
 
         plan = floor_plan(best)
         best["plan"] = plan
 
         mem["designs"].append(best)
-
-        mem["logs"].append({
-            "time": datetime.now().isoformat(),
-            "msg": "Evolution completed"
+        mem["evolution"].append({
+            "id": str(uuid.uuid4())[:8],
+            "best": best,
+            "history": history,
+            "time": datetime.now().isoformat()
         })
 
-        save_memory()
-        log("Evolution cycle executed")
+        save()
+        log("Evolution completed")
 
-        st.success("Evolution Complete")
+        st.success("Done")
 
-        st.subheader("Best Design")
         st.json(best)
 
-        st.subheader("Evolution Curve")
         st.line_chart(history)
-
-        st.subheader("Eurocode Structural Check")
-        st.json(eurocode(best))
-
-        st.subheader("AI Review")
-        st.write("✔ Stable evolutionary architecture")
 
         st.subheader("Materials")
         st.json(materials(best))
 
-        st.subheader("Sustainability Score")
-        st.metric("Score", sustainability(best))
-
-        st.subheader("2D Floor Plan")
+        st.subheader("2D")
         draw_2d(plan)
 
-        st.subheader("3D Model")
+        st.subheader("3D")
         draw_3d(plan)
 
-# =========================================================
-# MEMORY
-# =========================================================
-
-elif page == "Memory":
-
-    st.title("🧠 Memory Archive")
-    st.json(mem)
+        st.subheader("Eurocode")
+        st.json(eurocode(best))
