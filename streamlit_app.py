@@ -1,5 +1,5 @@
 # =========================================================
-# RANDOM V5
+# RANDOM V6
 # Autonomous Architecture Operating System
 # Single-File Streamlit Edition
 # =========================================================
@@ -8,7 +8,6 @@ import streamlit as st
 import json
 import uuid
 import random
-import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 
@@ -17,7 +16,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V5",
+    page_title="RANDOM V6",
     page_icon="🏗️",
     layout="wide"
 )
@@ -54,7 +53,7 @@ h1,h2,h3 {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY
+# MEMORY SYSTEM (ROBUST)
 # =========================================================
 
 DEFAULT = {
@@ -66,18 +65,24 @@ DEFAULT = {
     "settings": {}
 }
 
-def load_memory():
+def safe_load():
     if MEMORY_FILE.exists():
-        with open(MEMORY_FILE, "r") as f:
-            data = json.load(f)
-            for k in DEFAULT:
-                data.setdefault(k, DEFAULT[k])
-            return data
+        try:
+            with open(MEMORY_FILE, "r") as f:
+                data = json.load(f)
+                for k in DEFAULT:
+                    data.setdefault(k, DEFAULT[k])
+                return data
+        except:
+            return DEFAULT.copy()
     return DEFAULT.copy()
 
 def save():
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(st.session_state.memory, f, indent=2)
+    try:
+        with open(MEMORY_FILE, "w") as f:
+            json.dump(st.session_state.memory, f, indent=2)
+    except:
+        pass
 
 def log(msg):
     st.session_state.memory["logs"].append({
@@ -87,9 +92,25 @@ def log(msg):
     save()
 
 if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
+    st.session_state.memory = safe_load()
 
 mem = st.session_state.memory
+
+# =========================================================
+# ARCHITECTURE DOMAINS (NEW IN V6)
+# =========================================================
+
+ARCHITECTURE_DOMAINS = {
+    "Residential": ["House", "Apartment", "Villa"],
+    "Commercial": ["Office", "School", "Hospital", "Hotel"],
+    "Industrial": ["Warehouse", "Factory", "Plant"]
+}
+
+def get_domain(btype):
+    for d, items in ARCHITECTURE_DOMAINS.items():
+        if btype in items:
+            return d
+    return "Unknown"
 
 # =========================================================
 # ENGINE SYSTEM
@@ -104,19 +125,24 @@ class Engine:
 
 class RoomEngine(Engine):
     def run(self, data):
-        t = data["type"]
-        b = data.get("bedrooms", 1)
 
-        base = ["Living", "Kitchen", "Dining"]
+        btype = data.get("type")
+        domain = data.get("domain")
+        bedrooms = data.get("bedrooms", 1)
 
-        if t == "House":
-            rooms = base + [f"Bedroom {i+1}" for i in range(b)] + ["Bath"]
-        elif t == "School":
-            rooms = ["Classroom", "Lab", "Library", "Admin"]
-        elif t == "Hospital":
-            rooms = ["Ward", "ER", "Surgery", "Pharmacy"]
+        if domain == "Residential":
+            rooms = ["Living Room", "Kitchen", "Dining Room"]
+            rooms += [f"Bedroom {i+1}" for i in range(bedrooms)]
+            rooms.append("Bathroom")
+
+        elif domain == "Commercial":
+            rooms = ["Reception", "Office Area", "Meeting Room", "Storage"]
+
+        elif domain == "Industrial":
+            rooms = ["Production Floor", "Storage Zone", "Loading Bay", "Control Room"]
+
         else:
-            rooms = ["Workspace", "Meeting", "Open Area"]
+            rooms = ["Generic Space"]
 
         return {"rooms": rooms}
 
@@ -137,7 +163,7 @@ class StructureEngine(Engine):
                 "columns": random.randint(10, 30),
                 "beams": random.randint(20, 60),
                 "slabs": random.randint(5, 15),
-                "foundation": "Strip"
+                "foundation": "Strip Foundation"
             }
         }
 
@@ -174,35 +200,54 @@ AGENTS = [
 # =========================================================
 
 def generate_design(btype, bedrooms):
-    data = {"type": btype, "bedrooms": bedrooms}
+
+    domain = get_domain(btype)
+
+    data = {
+        "type": btype,
+        "domain": domain,
+        "bedrooms": bedrooms
+    }
+
     result = {}
 
     for e in ENGINES:
-        result.update(e.run(data))
+        try:
+            result.update(e.run(data))
+        except:
+            continue
 
+    result["domain"] = domain
     return result
 
 # =========================================================
-# PROJECTS
+# PROJECT SYSTEM
 # =========================================================
 
 def new_project(name, ptype):
+
+    if not name:
+        return None
+
     p = {
         "id": str(uuid.uuid4())[:8],
         "name": name,
         "type": ptype,
         "created": datetime.now().isoformat()
     }
+
     mem["projects"].append(p)
     save()
-    log(f"Project created {name}")
+    log(f"Project created: {name}")
+
     return p
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏗 RANDOM V5")
+st.sidebar.title("🏗 RANDOM V6")
+
 page = st.sidebar.radio("Navigate", [
     "Dashboard",
     "Projects",
@@ -218,9 +263,10 @@ page = st.sidebar.radio("Navigate", [
 
 if page == "Dashboard":
 
-    st.title("🏗 RANDOM V5 Control Center")
+    st.title("🏗 RANDOM V6 Control Center")
 
     c1,c2,c3,c4 = st.columns(4)
+
     c1.metric("Projects", len(mem["projects"]))
     c2.metric("Designs", len(mem["designs"]))
     c3.metric("Logs", len(mem["logs"]))
@@ -230,7 +276,9 @@ if page == "Dashboard":
     st.subheader("Activity Log")
 
     for l in mem["logs"][-8:]:
-        st.write(f"{l['time']} → {l['msg']}")
+        msg = l.get("msg", "")
+        time = l.get("time", "")
+        st.write(f"{time} → {msg}")
 
     st.success("System Operational")
 
@@ -243,7 +291,7 @@ elif page == "Projects":
     st.title("📁 Projects")
 
     name = st.text_input("Project Name")
-    ptype = st.selectbox("Type", ["House","School","Hospital","Office"])
+    ptype = st.selectbox("Type", sum(ARCHITECTURE_DOMAINS.values(), []))
 
     if st.button("Create Project"):
         new_project(name, ptype)
@@ -252,8 +300,8 @@ elif page == "Projects":
     st.divider()
 
     for p in mem["projects"]:
-        with st.expander(f"📁 {p['name']}"):
-            st.write(p)
+        with st.expander(f"📁 {p.get('name','Unnamed')}"):
+            st.json(p)
 
 # =========================================================
 # DESIGN STUDIO
@@ -263,15 +311,15 @@ elif page == "Design Studio":
 
     st.title("🏠 AI Design Studio")
 
-    left,right = st.columns([1,2])
+    left, right = st.columns([1,2])
 
     with left:
-        btype = st.selectbox("Building", ["House","School","Hospital","Office"])
-        bedrooms = st.slider("Bedrooms",1,10,3)
+        btype = st.selectbox("Building Type", sum(ARCHITECTURE_DOMAINS.values(), []))
+        bedrooms = st.slider("Bedrooms", 1, 10, 3)
         go = st.button("Generate Design")
 
     with right:
-        st.info("AI engines generate architectural systems automatically.")
+        st.info("AI engines simulate architectural systems across domains.")
 
     if go:
 
@@ -280,6 +328,7 @@ elif page == "Design Studio":
         entry = {
             "id": str(uuid.uuid4())[:8],
             "type": btype,
+            "domain": design["domain"],
             "bedrooms": bedrooms,
             "data": design,
             "created": datetime.now().isoformat()
