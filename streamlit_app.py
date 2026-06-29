@@ -1,6 +1,7 @@
 # =========================================================
-# RANDOM V6
-# Autonomous Architecture Operating System
+# RANDOM V7 (BEAUTIFIED)
+# Autonomous Architecture Intelligence System
+# Multi-Agent + Scoring + Optimization Engine
 # Single-File Streamlit Edition
 # =========================================================
 
@@ -16,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V6",
+    page_title="RANDOM V7",
     page_icon="🏗️",
     layout="wide"
 )
@@ -24,63 +25,89 @@ st.set_page_config(
 MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
-# THEME
+# 🎨 PREMIUM UI THEME
 # =========================================================
 
 st.markdown("""
 <style>
+
+/* Background */
 body {
-    background-color: #0b1220;
+    background: radial-gradient(circle at top, #0b1220, #050814);
 }
+
+/* Main container */
 .main {
-    background: linear-gradient(180deg,#0b1220,#0f172a);
+    background: transparent;
 }
-h1,h2,h3 {
+
+/* Headings */
+h1 {
     color: #38bdf8;
+    font-weight: 800;
+    letter-spacing: 1px;
 }
-.stMetric {
-    background: #111827;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #1f2937;
+
+h2, h3 {
+    color: #7dd3fc;
 }
+
+/* Cards (metrics) */
+div[data-testid="metric-container"] {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    padding: 14px;
+    border-radius: 14px;
+    backdrop-filter: blur(10px);
+}
+
+/* Buttons */
 .stButton>button {
-    background: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #38bdf8);
     color: white;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 0.6em 1em;
+    border: none;
+    font-weight: 600;
 }
+
+/* Expander */
+details {
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 10px;
+    padding: 10px;
+}
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: #0a1020;
+    border-right: 1px solid #1f2937;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY SYSTEM (ROBUST)
+# MEMORY SYSTEM
 # =========================================================
 
 DEFAULT = {
     "projects": [],
     "designs": [],
-    "logs": [],
-    "knowledge": [],
-    "agents": [],
-    "settings": {}
+    "logs": []
 }
 
-def safe_load():
+def load():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r") as f:
-                data = json.load(f)
-                for k in DEFAULT:
-                    data.setdefault(k, DEFAULT[k])
-                return data
+            return json.load(open(MEMORY_FILE))
         except:
             return DEFAULT.copy()
     return DEFAULT.copy()
 
 def save():
     try:
-        with open(MEMORY_FILE, "w") as f:
-            json.dump(st.session_state.memory, f, indent=2)
+        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
     except:
         pass
 
@@ -92,24 +119,24 @@ def log(msg):
     save()
 
 if "memory" not in st.session_state:
-    st.session_state.memory = safe_load()
+    st.session_state.memory = load()
 
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURE DOMAINS (NEW IN V6)
+# ARCHITECTURE DOMAINS
 # =========================================================
 
-ARCHITECTURE_DOMAINS = {
+ARCHITECTURE = {
     "Residential": ["House", "Apartment", "Villa"],
     "Commercial": ["Office", "School", "Hospital", "Hotel"],
     "Industrial": ["Warehouse", "Factory", "Plant"]
 }
 
 def get_domain(btype):
-    for d, items in ARCHITECTURE_DOMAINS.items():
-        if btype in items:
-            return d
+    for k, v in ARCHITECTURE.items():
+        if btype in v:
+            return k
     return "Unknown"
 
 # =========================================================
@@ -126,21 +153,15 @@ class Engine:
 class RoomEngine(Engine):
     def run(self, data):
 
-        btype = data.get("type")
-        domain = data.get("domain")
-        bedrooms = data.get("bedrooms", 1)
+        d = data["domain"]
+        b = data.get("bedrooms", 1)
 
-        if domain == "Residential":
-            rooms = ["Living Room", "Kitchen", "Dining Room"]
-            rooms += [f"Bedroom {i+1}" for i in range(bedrooms)]
-            rooms.append("Bathroom")
-
-        elif domain == "Commercial":
-            rooms = ["Reception", "Office Area", "Meeting Room", "Storage"]
-
-        elif domain == "Industrial":
-            rooms = ["Production Floor", "Storage Zone", "Loading Bay", "Control Room"]
-
+        if d == "Residential":
+            rooms = ["Living", "Kitchen", "Dining"] + [f"Bedroom {i+1}" for i in range(b)] + ["Bathroom"]
+        elif d == "Commercial":
+            rooms = ["Reception", "Office", "Meeting Room", "Storage"]
+        elif d == "Industrial":
+            rooms = ["Production Floor", "Storage", "Loading Bay", "Control Room"]
         else:
             rooms = ["Generic Space"]
 
@@ -160,10 +181,9 @@ class StructureEngine(Engine):
     def run(self, data):
         return {
             "structure": {
-                "columns": random.randint(10, 30),
-                "beams": random.randint(20, 60),
-                "slabs": random.randint(5, 15),
-                "foundation": "Strip Foundation"
+                "columns": random.randint(10, 40),
+                "beams": random.randint(20, 80),
+                "slabs": random.randint(5, 20)
             }
         }
 
@@ -171,7 +191,7 @@ class CostEngine(Engine):
     def run(self, data):
         return {
             "cost": {
-                "estimate": random.randint(200000, 3000000),
+                "estimate": random.randint(150000, 5000000),
                 "currency": "USD"
             }
         }
@@ -188,15 +208,27 @@ ENGINES = [
 # =========================================================
 
 AGENTS = [
-    "Chief Architect",
-    "Structural Engineer",
-    "Civil Engineer",
-    "Project Manager",
-    "Quantity Surveyor"
+    "Architect AI",
+    "Structural AI",
+    "Cost AI",
+    "Efficiency AI",
+    "Safety AI"
 ]
 
+def agent_score():
+    return {
+        "architecture": random.randint(60, 100),
+        "structure": random.randint(60, 100),
+        "cost": random.randint(50, 100),
+        "efficiency": random.randint(60, 100),
+        "safety": random.randint(70, 100)
+    }
+
+def total_score(s):
+    return int(sum(s.values()) / len(s))
+
 # =========================================================
-# PIPELINE
+# DESIGN ENGINE
 # =========================================================
 
 def generate_design(btype, bedrooms):
@@ -212,48 +244,56 @@ def generate_design(btype, bedrooms):
     result = {}
 
     for e in ENGINES:
-        try:
-            result.update(e.run(data))
-        except:
-            continue
+        result.update(e.run(data))
 
+    scores = agent_score()
+    result["scores"] = scores
+    result["score"] = total_score(scores)
     result["domain"] = domain
+
     return result
 
 # =========================================================
-# PROJECT SYSTEM
+# MULTI VARIANT ENGINE
+# =========================================================
+
+def generate_variants(btype, bedrooms, n=3):
+
+    variants = [generate_design(btype, bedrooms) for _ in range(n)]
+    best = max(variants, key=lambda x: x["score"])
+    return variants, best
+
+# =========================================================
+# PROJECTS
 # =========================================================
 
 def new_project(name, ptype):
-
     if not name:
-        return None
+        return
 
-    p = {
+    mem["projects"].append({
         "id": str(uuid.uuid4())[:8],
         "name": name,
         "type": ptype,
+        "domain": get_domain(ptype),
         "created": datetime.now().isoformat()
-    }
+    })
 
-    mem["projects"].append(p)
     save()
     log(f"Project created: {name}")
-
-    return p
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏗 RANDOM V6")
+st.sidebar.title("🏗 RANDOM V7")
+st.sidebar.caption("Autonomous Architecture Intelligence System")
 
-page = st.sidebar.radio("Navigate", [
+page = st.sidebar.radio("Navigation", [
     "Dashboard",
     "Projects",
-    "Design Studio",
+    "Design Lab",
     "Agents",
-    "Engines",
     "Memory"
 ])
 
@@ -263,24 +303,29 @@ page = st.sidebar.radio("Navigate", [
 
 if page == "Dashboard":
 
-    st.title("🏗 RANDOM V6 Control Center")
+    st.title("🏗 Control Center")
 
-    c1,c2,c3,c4 = st.columns(4)
+    c1,c2,c3 = st.columns(3)
 
-    c1.metric("Projects", len(mem["projects"]))
-    c2.metric("Designs", len(mem["designs"]))
-    c3.metric("Logs", len(mem["logs"]))
-    c4.metric("Agents", len(AGENTS))
+    c1.metric("📁 Projects", len(mem["projects"]))
+    c2.metric("🏗 Designs", len(mem["designs"]))
+    c3.metric("📜 Logs", len(mem["logs"]))
 
     st.divider()
-    st.subheader("Activity Log")
+    st.subheader("📡 System Activity Stream")
 
-    for l in mem["logs"][-8:]:
-        msg = l.get("msg", "")
-        time = l.get("time", "")
-        st.write(f"{time} → {msg}")
-
-    st.success("System Operational")
+    for l in mem["logs"][-10:][::-1]:
+        st.markdown(
+            f"""
+            <div style="padding:10px;margin:6px 0;
+            background:#0f172a;border-radius:10px;
+            border:1px solid #1f2937">
+            🕒 {l.get('time','')} <br>
+            ⚡ {l.get('msg','')}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 # =========================================================
 # PROJECTS
@@ -288,73 +333,69 @@ if page == "Dashboard":
 
 elif page == "Projects":
 
-    st.title("📁 Projects")
+    st.title("📁 Project Hub")
 
     name = st.text_input("Project Name")
-    ptype = st.selectbox("Type", sum(ARCHITECTURE_DOMAINS.values(), []))
+    ptype = st.selectbox("Type", sum(ARCHITECTURE.values(), []))
 
     if st.button("Create Project"):
         new_project(name, ptype)
-        st.success("Created")
+        st.success("Project Created")
 
     st.divider()
 
     for p in mem["projects"]:
-        with st.expander(f"📁 {p.get('name','Unnamed')}"):
+        with st.expander(f"📁 {p['name']} ({p['domain']})"):
             st.json(p)
 
 # =========================================================
-# DESIGN STUDIO
+# DESIGN LAB
 # =========================================================
 
-elif page == "Design Studio":
+elif page == "Design Lab":
 
-    st.title("🏠 AI Design Studio")
+    st.title("🧠 AI Design Lab")
 
-    left, right = st.columns([1,2])
+    left,right = st.columns([1,2])
 
     with left:
-        btype = st.selectbox("Building Type", sum(ARCHITECTURE_DOMAINS.values(), []))
+        btype = st.selectbox("Building Type", sum(ARCHITECTURE.values(), []))
         bedrooms = st.slider("Bedrooms", 1, 10, 3)
-        go = st.button("Generate Design")
+        run = st.button("Generate Variants")
 
-    with right:
-        st.info("AI engines simulate architectural systems across domains.")
+    if run:
 
-    if go:
+        variants, best = generate_variants(btype, bedrooms)
 
-        design = generate_design(btype, bedrooms)
-
-        entry = {
+        design_pack = {
             "id": str(uuid.uuid4())[:8],
             "type": btype,
-            "domain": design["domain"],
-            "bedrooms": bedrooms,
-            "data": design,
+            "domain": get_domain(btype),
+            "variants": variants,
+            "best": best,
             "created": datetime.now().isoformat()
         }
 
-        mem["designs"].append(entry)
+        mem["designs"].append(design_pack)
         save()
-        log("Design generated")
+        log("Design competition executed")
 
-        st.success("Design Created")
+        st.success("Competition Complete")
 
-        tab1,tab2,tab3,tab4 = st.tabs([
-            "Rooms","Grid","Structure","Cost"
-        ])
+        st.subheader("🏆 Winning Design")
 
-        with tab1:
-            st.write(design.get("rooms"))
+        st.json(best)
 
-        with tab2:
-            st.json(design.get("grid"))
+        st.subheader("📊 Scoreboard")
 
-        with tab3:
-            st.json(design.get("structure"))
+        cols = st.columns(len(AGENTS))
+        for i,(k,v) in enumerate(best["scores"].items()):
+            cols[i].metric(k.capitalize(), v)
 
-        with tab4:
-            st.json(design.get("cost"))
+        with st.expander("All Variants"):
+            for i,v in enumerate(variants):
+                st.markdown(f"### Variant {i+1} — Score: {v['score']}")
+                st.json(v)
 
 # =========================================================
 # AGENTS
@@ -368,23 +409,12 @@ elif page == "Agents":
         st.success(f"🟢 {a}")
 
 # =========================================================
-# ENGINES
-# =========================================================
-
-elif page == "Engines":
-
-    st.title("⚙ Engine Registry")
-
-    for e in ENGINES:
-        st.info(e.name)
-
-# =========================================================
 # MEMORY
 # =========================================================
 
 elif page == "Memory":
 
-    st.title("🧠 System Memory")
+    st.title("🧠 Memory System")
 
     tab1,tab2,tab3 = st.tabs(["Projects","Designs","Logs"])
 
