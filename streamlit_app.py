@@ -1,8 +1,9 @@
 # =========================================================
-# RANDOM V8
+# RANDOM V9
 # Evolutionary Architecture Intelligence System
-# Multi-Agent + Genetic Design Evolution Engine
-# + 2D/3D Design Visualization Layer
+# + Procedural 2D Floor Plans
+# + 3D Massing Model
+# + AI Design Review + Cost + Materials
 # Single-File Streamlit Edition
 # =========================================================
 
@@ -12,16 +13,15 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
-
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # 3D ENGINE 🌌
+from mpl_toolkits.mplot3d import Axes3D
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V8",
+    page_title="RANDOM V9",
     page_icon="🧬",
     layout="wide"
 )
@@ -37,15 +37,9 @@ st.markdown("""
 body {
     background: radial-gradient(circle at top, #0b1220, #050814);
 }
-.main { background: transparent; }
 h1 { color: #38bdf8; }
 h2,h3 { color: #7dd3fc; }
-.stMetric {
-    background: rgba(17,24,39,0.6);
-    border-radius: 12px;
-    border: 1px solid #1f2937;
-    padding: 12px;
-}
+
 .stButton>button {
     background: linear-gradient(135deg,#2563eb,#38bdf8);
     color: white;
@@ -55,7 +49,7 @@ h2,h3 { color: #7dd3fc; }
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY
+# MEMORY SYSTEM
 # =========================================================
 
 DEFAULT = {
@@ -92,7 +86,7 @@ if "memory" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURE DOMAINS
+# ARCHITECTURE TYPES
 # =========================================================
 
 ARCH = {
@@ -108,254 +102,271 @@ def domain_of(t):
     return "Unknown"
 
 # =========================================================
-# BASE DESIGN ENGINE
+# BASE DESIGN
 # =========================================================
 
 def base_design(btype, bedrooms):
-
     return {
         "id": str(uuid.uuid4())[:8],
         "type": btype,
         "domain": domain_of(btype),
-        "rooms": ["Space"] * random.randint(3,8),
-        "structure": {
-            "columns": random.randint(10,30),
-            "beams": random.randint(20,60)
-        },
         "bedrooms": bedrooms,
-        "cost": random.randint(200000, 3000000)
+        "rooms": ["Core"] * random.randint(3, 7),
+        "structure": {
+            "columns": random.randint(12, 30),
+            "beams": random.randint(20, 60)
+        },
+        "cost": random.randint(300000, 2500000)
     }
 
 # =========================================================
-# 🧬 MUTATION ENGINE
+# MUTATION ENGINE 🧬
 # =========================================================
 
-def mutate(design):
-    mutated = json.loads(json.dumps(design))
+def mutate(d):
+    d = json.loads(json.dumps(d))
 
-    mutated["structure"]["columns"] += random.randint(-2, 3)
-    mutated["structure"]["beams"] += random.randint(-5, 5)
+    d["structure"]["columns"] += random.randint(-2, 3)
+    d["structure"]["beams"] += random.randint(-5, 5)
 
     if random.random() > 0.5:
-        mutated["rooms"].append("Extra Module")
+        d["rooms"].append("Module")
 
-    mutated["cost"] += random.randint(-100000, 200000)
+    d["cost"] += random.randint(-100000, 200000)
 
-    return mutated
+    return d
 
 # =========================================================
 # FITNESS FUNCTION
 # =========================================================
 
 def fitness(d):
-    structure_score = max(0, 100 - abs(d["structure"]["columns"] - 20))
-    cost_score = max(0, 100 - (d["cost"] // 50000))
-    complexity_score = min(100, len(d["rooms"]) * 10)
-
     return {
-        "structure": structure_score,
-        "cost": cost_score,
-        "complexity": complexity_score
+        "structure": max(0, 100 - abs(d["structure"]["columns"] - 20)),
+        "cost": max(0, 100 - d["cost"] // 50000),
+        "complexity": min(100, len(d["rooms"]) * 10)
     }
 
-def total_score(f):
-    return int(sum(f.values()) / len(f))
+def score(f):
+    return int(sum(f.values()) / 3)
 
 # =========================================================
 # EVOLUTION ENGINE 🌍
 # =========================================================
 
-def evolve_population(btype, bedrooms, generations=3, pop_size=5):
+def evolve(btype, bedrooms, gens, pop):
 
-    population = [base_design(btype, bedrooms) for _ in range(pop_size)]
+    population = [base_design(btype, bedrooms) for _ in range(pop)]
     history = []
 
-    for g in range(generations):
+    for g in range(gens):
 
         scored = []
         for d in population:
             f = fitness(d)
             d["fitness"] = f
-            d["score"] = total_score(f)
+            d["score"] = score(f)
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
 
         best = scored[0]
-        history.append({"generation": g, "best_score": best["score"]})
+        history.append(best["score"])
 
-        survivors = scored[:max(2, pop_size // 2)]
+        survivors = scored[:max(2, pop // 2)]
 
-        new_population = []
+        new_pop = []
         for s in survivors:
-            new_population.append(s)
-            new_population.append(mutate(s))
+            new_pop.append(s)
+            new_pop.append(mutate(s))
 
-        population = new_population[:pop_size]
+        population = new_pop[:pop]
 
     return scored[0], history, scored
 
 # =========================================================
-# 🧠 2D + 3D DESIGN GENERATION ENGINE
+# 🏠 FLOOR PLAN ENGINE
 # =========================================================
 
-def generate_geometry(design):
-    cols = design["structure"]["columns"]
+def floor_plan(design):
+    bedrooms = design["bedrooms"]
 
-    # 2D + 3D points
-    points_2d = [(random.uniform(0, 10), random.uniform(0, 10)) for _ in range(cols)]
-    points_3d = [(x, y, random.uniform(0, 5)) for x, y in points_2d]
+    rooms = [
+        {"name":"Living", "x":0, "y":0, "w":6, "h":5},
+        {"name":"Kitchen", "x":6, "y":0, "w":4, "h":4},
+        {"name":"Bath", "x":6, "y":4, "w":2, "h":2}
+    ]
+
+    x = 0
+    for i in range(bedrooms):
+        rooms.append({
+            "name": f"Bedroom {i+1}",
+            "x": x,
+            "y": 5,
+            "w": 4,
+            "h": 4
+        })
+        x += 4
+
+    return rooms
+
+# =========================================================
+# 🏠 2D DRAW
+# =========================================================
+
+def draw_2d(plan):
+
+    fig, ax = plt.subplots()
+
+    for r in plan:
+        rect = plt.Rectangle(
+            (r["x"], r["y"]),
+            r["w"], r["h"],
+            fill=False
+        )
+        ax.add_patch(rect)
+        ax.text(r["x"]+1, r["y"]+1, r["name"])
+
+    ax.set_xlim(0, 15)
+    ax.set_ylim(0, 15)
+    ax.set_title("2D Floor Plan")
+
+    st.pyplot(fig)
+
+# =========================================================
+# 🏗️ 3D BUILDING MODEL
+# =========================================================
+
+def draw_3d(plan):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
+
+    for r in plan:
+        ax.bar3d(r["x"], r["y"], 0, r["w"], r["h"], 3)
+
+    ax.set_title("3D Building Massing")
+
+    st.pyplot(fig)
+
+# =========================================================
+# 🤖 AI REVIEW ENGINE
+# =========================================================
+
+def review(d):
+
+    r = []
+
+    if d["bedrooms"] >= 4:
+        r.append("Good for family housing")
+
+    if d["cost"] > 1500000:
+        r.append("High cost warning")
+
+    if d["structure"]["columns"] < 15:
+        r.append("Increase structural support")
+
+    if not r:
+        r.append("Balanced design")
+
+    return r
+
+# =========================================================
+# 📐 MATERIAL ESTIMATION
+# =========================================================
+
+def materials(d):
 
     return {
-        "2d": points_2d,
-        "3d": points_3d
+        "Concrete (m³)": d["structure"]["columns"] * 2,
+        "Steel (tons)": d["structure"]["beams"] * 0.5,
+        "Bricks": len(d["rooms"]) * 2000
     }
 
-def plot_2d(points):
-    fig, ax = plt.subplots()
-    x = [p[0] for p in points]
-    y = [p[1] for p in points]
-
-    ax.scatter(x, y, c="cyan")
-    ax.set_title("2D Architectural Layout")
-    ax.set_xlabel("X Axis")
-    ax.set_ylabel("Y Axis")
-
-    st.pyplot(fig)
-
-def plot_3d(points):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    x = [p[0] for p in points]
-    y = [p[1] for p in points]
-    z = [p[2] for p in points]
-
-    ax.scatter(x, y, z, c="orange")
-    ax.set_title("3D Structural Elevation")
-
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
-
-    st.pyplot(fig)
-
 # =========================================================
-# PROJECT SYSTEM
+# 🌱 SUSTAINABILITY
 # =========================================================
 
-def new_project(name, t):
-    mem["projects"].append({
-        "id": str(uuid.uuid4())[:8],
-        "name": name,
-        "type": t,
-        "domain": domain_of(t),
-        "created": datetime.now().isoformat()
-    })
-    save()
-    log("Project created")
+def sustainability(d):
+    return max(40, 100 - d["structure"]["columns"])
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🧬 RANDOM V8")
-page = st.sidebar.radio("Navigation", ["Dashboard","Projects","Evolution Lab","Memory"])
+st.sidebar.title("🧬 RANDOM V9")
+page = st.sidebar.radio("Navigation", ["Dashboard","Evolution","Memory"])
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🧬 RANDOM V8 Control Core")
+
+    st.title("🧬 RANDOM V9 Core")
 
     c1,c2,c3 = st.columns(3)
+
     c1.metric("Projects", len(mem["projects"]))
     c2.metric("Designs", len(mem["designs"]))
-    c3.metric("Evolution Runs", len(mem["evolution"]))
-
-    st.divider()
-    st.subheader("System Log")
-
-    for l in mem["logs"][-10:]:
-        st.write(f"{l.get('time')} → {l.get('msg')}")
+    c3.metric("Evolutions", len(mem["evolution"]))
 
 # =========================================================
-# PROJECTS
+# EVOLUTION LAB
 # =========================================================
 
-elif page == "Projects":
-    st.title("📁 Projects")
+elif page == "Evolution":
 
-    name = st.text_input("Name")
-    t = st.selectbox("Type", sum(ARCH.values(), []))
+    st.title("🧬 Evolution Lab V9")
 
-    if st.button("Create"):
-        new_project(name, t)
-        st.success("Created")
+    btype = st.selectbox("Type", sum(ARCH.values(), []))
+    bedrooms = st.slider("Bedrooms", 1, 10, 3)
+    gens = st.slider("Generations", 1, 6, 3)
+    pop = st.slider("Population", 3, 10, 5)
 
-    for p in mem["projects"]:
-        with st.expander(p["name"]):
-            st.json(p)
+    if st.button("Run Evolution"):
 
-# =========================================================
-# EVOLUTION LAB 🧬 + 2D/3D VISUALIZATION
-# =========================================================
+        best, history, pop_final = evolve(btype, bedrooms, gens, pop)
 
-elif page == "Evolution Lab":
+        plan = floor_plan(best)
 
-    st.title("🧬 Evolutionary Design Lab (2D + 3D Engine)")
+        best["plan"] = plan
 
-    left, right = st.columns([1,2])
-
-    with left:
-        btype = st.selectbox("Building Type", sum(ARCH.values(), []))
-        bedrooms = st.slider("Bedrooms", 1, 10, 3)
-        gens = st.slider("Generations", 1, 8, 3)
-        pop = st.slider("Population", 3, 10, 5)
-
-        run = st.button("Evolve Architecture")
-
-    if run:
-
-        best, history, final_pop = evolve_population(btype, bedrooms, gens, pop)
-
-        geometry = generate_geometry(best)
-
-        best["geometry"] = geometry
+        mem["designs"].append(best)
 
         mem["evolution"].append({
             "id": str(uuid.uuid4())[:8],
             "best": best,
             "history": history,
-            "created": datetime.now().isoformat()
+            "time": datetime.now().isoformat()
         })
 
         save()
-        log("Evolution run completed with 2D/3D modeling")
+        log("Evolution completed")
 
         st.success("Evolution Complete")
 
-        st.subheader("🏆 Best Evolved Design")
+        st.subheader("Best Design")
         st.json(best)
 
-        st.subheader("📈 Evolution Curve")
-        st.line_chart([h["best_score"] for h in history])
+        st.subheader("Evolution Curve")
+        st.line_chart(history)
 
-        # =========================
-        # 2D + 3D VISUALIZATION
-        # =========================
+        st.subheader("AI Review")
+        for r in review(best):
+            st.write("✔", r)
 
-        st.subheader("🗺️ 2D Architectural Layout")
-        plot_2d(geometry["2d"])
+        st.subheader("Sustainability")
+        st.metric("Score", sustainability(best))
 
-        st.subheader("🏗️ 3D Structural Model")
-        plot_3d(geometry["3d"])
+        st.subheader("Materials")
+        st.json(materials(best))
 
-        st.subheader("👥 Final Population")
-        for d in final_pop:
-            st.markdown(f"### Score: {d['score']}")
-            st.json(d)
+        st.subheader("2D Floor Plan")
+        draw_2d(plan)
+
+        st.subheader("3D Model")
+        draw_3d(plan)
 
 # =========================================================
 # MEMORY
@@ -363,15 +374,6 @@ elif page == "Evolution Lab":
 
 elif page == "Memory":
 
-    st.title("🧠 Memory System")
+    st.title("🧠 Memory")
 
-    tab1,tab2,tab3 = st.tabs(["Projects","Designs","Evolution"])
-
-    with tab1:
-        st.json(mem["projects"])
-
-    with tab2:
-        st.json(mem["designs"])
-
-    with tab3:
-        st.json(mem["evolution"])
+    st.json(mem)
