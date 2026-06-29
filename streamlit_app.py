@@ -1,5 +1,5 @@
 # =========================================================
-# ARC ARCHITECTURE INTELLIGENCE ENGINE
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
 # Evolutionary Spatial Layout Synthesis & Diagnostics
 # Zero-Dependency Single-File Streamlit Implementation
 # =========================================================
@@ -16,7 +16,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio Engine",
+    page_title="Random Studio Engine",
     page_icon="📐",
     layout="wide"
 )
