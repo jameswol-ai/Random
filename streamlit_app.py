@@ -1,13 +1,14 @@
 # =========================================================
-# RANDOM V4
+# RANDOM V5
 # Autonomous Architecture Operating System
-# Improved Single-File Streamlit Edition
+# Single-File Streamlit Edition
 # =========================================================
 
 import streamlit as st
 import json
-import random
 import uuid
+import random
+import matplotlib.pyplot as plt
 from pathlib import Path
 from datetime import datetime
 
@@ -16,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V4",
+    page_title="RANDOM V5",
     page_icon="🏗️",
     layout="wide"
 )
@@ -24,53 +25,71 @@ st.set_page_config(
 MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
-# MEMORY SYSTEM
+# THEME
 # =========================================================
 
-DEFAULT_MEMORY = {
+st.markdown("""
+<style>
+body {
+    background-color: #0b1220;
+}
+.main {
+    background: linear-gradient(180deg,#0b1220,#0f172a);
+}
+h1,h2,h3 {
+    color: #38bdf8;
+}
+.stMetric {
+    background: #111827;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+}
+.stButton>button {
+    background: #2563eb;
+    color: white;
+    border-radius: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# MEMORY
+# =========================================================
+
+DEFAULT = {
     "projects": [],
     "designs": [],
     "logs": [],
     "knowledge": [],
     "agents": [],
-    "engines": []
+    "settings": {}
 }
-
 
 def load_memory():
     if MEMORY_FILE.exists():
-        try:
-            with open(MEMORY_FILE, "r") as f:
-                data = json.load(f)
-                for k in DEFAULT_MEMORY:
-                    if k not in data:
-                        data[k] = DEFAULT_MEMORY[k]
-                return data
-        except:
-            return DEFAULT_MEMORY.copy()
-    return DEFAULT_MEMORY.copy()
+        with open(MEMORY_FILE, "r") as f:
+            data = json.load(f)
+            for k in DEFAULT:
+                data.setdefault(k, DEFAULT[k])
+            return data
+    return DEFAULT.copy()
 
-
-def save_memory():
+def save():
     with open(MEMORY_FILE, "w") as f:
-        json.dump(st.session_state.memory, f, indent=4)
+        json.dump(st.session_state.memory, f, indent=2)
 
-
-def log(message):
+def log(msg):
     st.session_state.memory["logs"].append({
         "time": datetime.now().isoformat(),
-        "message": message
+        "msg": msg
     })
-    save_memory()
-
-# =========================================================
-# INITIALIZE STATE
-# =========================================================
+    save()
 
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
-memory = st.session_state.memory
+mem = st.session_state.memory
 
 # =========================================================
 # ENGINE SYSTEM
@@ -81,66 +100,61 @@ class Engine:
         self.name = name
 
     def run(self, data):
-        return data
-
+        return {}
 
 class RoomEngine(Engine):
     def run(self, data):
-        btype = data["type"]
-        bedrooms = data.get("bedrooms", 1)
+        t = data["type"]
+        b = data.get("bedrooms", 1)
 
-        if btype == "House":
-            rooms = ["Living Room", "Kitchen", "Dining Room"]
-            rooms += [f"Bedroom {i+1}" for i in range(bedrooms)]
-            rooms.append("Bathroom")
+        base = ["Living", "Kitchen", "Dining"]
 
-        elif btype == "School":
-            rooms = ["Classroom", "Library", "Lab", "Admin", "Hall"]
-
+        if t == "House":
+            rooms = base + [f"Bedroom {i+1}" for i in range(b)] + ["Bath"]
+        elif t == "School":
+            rooms = ["Classroom", "Lab", "Library", "Admin"]
+        elif t == "Hospital":
+            rooms = ["Ward", "ER", "Surgery", "Pharmacy"]
         else:
-            rooms = ["Open Office", "Meeting Room", "Workspace"]
+            rooms = ["Workspace", "Meeting", "Open Area"]
 
         return {"rooms": rooms}
-
 
 class GridEngine(Engine):
     def run(self, data):
         return {
             "grid": {
-                "x": ["A", "B", "C", "D"],
-                "y": ["1", "2", "3", "4"],
+                "x": list("ABCDE"),
+                "y": [1,2,3,4,5],
                 "spacing": "6m x 6m"
             }
         }
-
 
 class StructureEngine(Engine):
     def run(self, data):
         return {
             "structure": {
-                "columns": random.randint(12, 24),
-                "beams": random.randint(20, 40),
-                "slabs": random.randint(6, 12),
-                "foundation": "Strip Foundation"
+                "columns": random.randint(10, 30),
+                "beams": random.randint(20, 60),
+                "slabs": random.randint(5, 15),
+                "foundation": "Strip"
             }
         }
-
 
 class CostEngine(Engine):
     def run(self, data):
         return {
             "cost": {
-                "estimate": random.randint(500000, 2500000),
+                "estimate": random.randint(200000, 3000000),
                 "currency": "USD"
             }
         }
 
-
 ENGINES = [
-    RoomEngine("Room Engine"),
-    GridEngine("Grid Engine"),
-    StructureEngine("Structure Engine"),
-    CostEngine("Cost Engine")
+    RoomEngine("Room"),
+    GridEngine("Grid"),
+    StructureEngine("Structure"),
+    CostEngine("Cost")
 ]
 
 # =========================================================
@@ -148,57 +162,55 @@ ENGINES = [
 # =========================================================
 
 AGENTS = [
-    "Architect Agent",
-    "Engineer Agent",
-    "Planner Agent",
-    "Supervisor Agent"
+    "Chief Architect",
+    "Structural Engineer",
+    "Civil Engineer",
+    "Project Manager",
+    "Quantity Surveyor"
 ]
 
 # =========================================================
-# CORE GENERATOR
+# PIPELINE
 # =========================================================
 
-def run_engine_pipeline(project_type, bedrooms):
-    data = {"type": project_type, "bedrooms": bedrooms}
+def generate_design(btype, bedrooms):
+    data = {"type": btype, "bedrooms": bedrooms}
     result = {}
 
-    for engine in ENGINES:
-        output = engine.run(data)
-        result.update(output)
+    for e in ENGINES:
+        result.update(e.run(data))
 
     return result
-
 
 # =========================================================
 # PROJECTS
 # =========================================================
 
-def create_project(name, ptype):
-    project = {
+def new_project(name, ptype):
+    p = {
         "id": str(uuid.uuid4())[:8],
         "name": name,
         "type": ptype,
-        "created": datetime.now().isoformat(),
-        "designs": 0
+        "created": datetime.now().isoformat()
     }
-
-    memory["projects"].append(project)
-    save_memory()
-    log(f"Project created: {name}")
-
-    return project
-
+    mem["projects"].append(p)
+    save()
+    log(f"Project created {name}")
+    return p
 
 # =========================================================
 # SIDEBAR
 # =========================================================
 
-st.sidebar.title("🏗 RANDOM V4")
-
-page = st.sidebar.radio(
-    "Navigation",
-    ["Dashboard", "Projects", "Design Studio", "Agents", "Engines", "Memory"]
-)
+st.sidebar.title("🏗 RANDOM V5")
+page = st.sidebar.radio("Navigate", [
+    "Dashboard",
+    "Projects",
+    "Design Studio",
+    "Agents",
+    "Engines",
+    "Memory"
+])
 
 # =========================================================
 # DASHBOARD
@@ -206,22 +218,21 @@ page = st.sidebar.radio(
 
 if page == "Dashboard":
 
-    st.title("🏗 RANDOM V4 Core System")
+    st.title("🏗 RANDOM V5 Control Center")
 
-    c1, c2, c3 = st.columns(3)
+    c1,c2,c3,c4 = st.columns(4)
+    c1.metric("Projects", len(mem["projects"]))
+    c2.metric("Designs", len(mem["designs"]))
+    c3.metric("Logs", len(mem["logs"]))
+    c4.metric("Agents", len(AGENTS))
 
-    c1.metric("Projects", len(memory["projects"]))
-    c2.metric("Designs", len(memory["designs"]))
-    c3.metric("Logs", len(memory["logs"]))
+    st.divider()
+    st.subheader("Activity Log")
 
-    st.markdown("---")
+    for l in mem["logs"][-8:]:
+        st.write(f"{l['time']} → {l['msg']}")
 
-    st.subheader("Recent Activity")
-
-    for log_item in memory["logs"][-5:]:
-        st.write(f"🕒 {log_item['time']} → {log_item['message']}")
-
-    st.success("System Online")
+    st.success("System Operational")
 
 # =========================================================
 # PROJECTS
@@ -231,19 +242,18 @@ elif page == "Projects":
 
     st.title("📁 Projects")
 
-    with st.form("project_form"):
-        name = st.text_input("Project Name")
-        ptype = st.selectbox("Type", ["House", "School", "Office"])
-        submit = st.form_submit_button("Create")
+    name = st.text_input("Project Name")
+    ptype = st.selectbox("Type", ["House","School","Hospital","Office"])
 
-    if submit and name:
-        create_project(name, ptype)
-        st.success("Project Created")
+    if st.button("Create Project"):
+        new_project(name, ptype)
+        st.success("Created")
 
-    st.markdown("---")
+    st.divider()
 
-    for p in memory["projects"]:
-        st.write(p)
+    for p in mem["projects"]:
+        with st.expander(f"📁 {p['name']}"):
+            st.write(p)
 
 # =========================================================
 # DESIGN STUDIO
@@ -251,44 +261,51 @@ elif page == "Projects":
 
 elif page == "Design Studio":
 
-    st.title("🏠 Design Studio")
+    st.title("🏠 AI Design Studio")
 
-    building = st.selectbox("Building Type", ["House", "School", "Office"])
-    bedrooms = st.slider("Bedrooms", 1, 10, 3)
+    left,right = st.columns([1,2])
 
-    if st.button("Generate Design"):
+    with left:
+        btype = st.selectbox("Building", ["House","School","Hospital","Office"])
+        bedrooms = st.slider("Bedrooms",1,10,3)
+        go = st.button("Generate Design")
 
-        result = run_engine_pipeline(building, bedrooms)
+    with right:
+        st.info("AI engines generate architectural systems automatically.")
 
-        design = {
+    if go:
+
+        design = generate_design(btype, bedrooms)
+
+        entry = {
             "id": str(uuid.uuid4())[:8],
-            "type": building,
+            "type": btype,
             "bedrooms": bedrooms,
-            "rooms": result.get("rooms", []),
-            "grid": result.get("grid", {}),
-            "structure": result.get("structure", {}),
-            "cost": result.get("cost", {}),
+            "data": design,
             "created": datetime.now().isoformat()
         }
 
-        memory["designs"].append(design)
-        save_memory()
-
+        mem["designs"].append(entry)
+        save()
         log("Design generated")
 
-        st.success("Design Generated")
+        st.success("Design Created")
 
-        st.subheader("Rooms")
-        st.write(design["rooms"])
+        tab1,tab2,tab3,tab4 = st.tabs([
+            "Rooms","Grid","Structure","Cost"
+        ])
 
-        st.subheader("Grid")
-        st.json(design["grid"])
+        with tab1:
+            st.write(design.get("rooms"))
 
-        st.subheader("Structure")
-        st.json(design["structure"])
+        with tab2:
+            st.json(design.get("grid"))
 
-        st.subheader("Cost")
-        st.json(design["cost"])
+        with tab3:
+            st.json(design.get("structure"))
+
+        with tab4:
+            st.json(design.get("cost"))
 
 # =========================================================
 # AGENTS
@@ -296,10 +313,10 @@ elif page == "Design Studio":
 
 elif page == "Agents":
 
-    st.title("🤖 Agents")
+    st.title("🤖 AI Agents")
 
     for a in AGENTS:
-        st.info(a)
+        st.success(f"🟢 {a}")
 
 # =========================================================
 # ENGINES
@@ -307,10 +324,10 @@ elif page == "Agents":
 
 elif page == "Engines":
 
-    st.title("⚙ Engines")
+    st.title("⚙ Engine Registry")
 
     for e in ENGINES:
-        st.success(e.name)
+        st.info(e.name)
 
 # =========================================================
 # MEMORY
@@ -318,6 +335,15 @@ elif page == "Engines":
 
 elif page == "Memory":
 
-    st.title("🧠 Memory System")
+    st.title("🧠 System Memory")
 
-    st.json(memory)
+    tab1,tab2,tab3 = st.tabs(["Projects","Designs","Logs"])
+
+    with tab1:
+        st.json(mem["projects"])
+
+    with tab2:
+        st.json(mem["designs"])
+
+    with tab3:
+        st.json(mem["logs"])
