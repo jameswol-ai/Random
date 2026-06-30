@@ -1,395 +1,337 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# Evolutionary Spatial Layout Synthesis & Diagnostics
-# Zero-Dependency Single-File Streamlit Implementation
+# ARC BIM CORE — LEVEL 5 (REVIT-STYLE DIGITAL TWIN ENGINE)
+# Parametric BIM Graph + Structural Intelligence + Versioning
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
+import math
 from pathlib import Path
 from datetime import datetime
 
 # =========================================================
-# CONFIG & GLOBAL STUDIO STYLING
+# CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine",
-    page_icon="📐",
+    page_title="ARC BIM CORE L5",
+    page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("arc_bim_core_l5.json")
 
-# Custom Architectural Studio UI Skin
+# =========================================================
+# STYLE (REVIT-LIKE DARK UI)
+# =========================================================
+
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-    
-    /* Global Overrides */
-    html, body, [data-testid="stSidebarNav"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Space Grotesk', sans-serif;
-        font-weight: 700;
-        letter-spacing: -0.03em;
-    }
+body {
+    background-color: #0b0f1a;
+    color: #e5e7eb;
+    font-family: Inter, sans-serif;
+}
 
-    /* Core Architectural Spatial Grid */
-    .arc-blueprint-canvas {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 16px;
-        background: #090d16;
-        padding: 24px;
-        border-radius: 12px;
-        border: 1px dashed #334155;
-        margin: 15px 0;
-    }
-    
-    .arc-room-module {
-        flex: 1 1 calc(33.333% - 16px);
-        min-width: 220px;
-        padding: 20px;
-        border-radius: 8px;
-        color: #ffffff;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    .arc-room-module:hover {
-        transform: translateY(-3px);
-        border-color: rgba(255, 255, 255, 0.3);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
+h1, h2, h3 {
+    color: #60a5fa;
+}
 
-    .room-meta {
-        font-family: 'Space Grotesk', monospace;
-        font-size: 0.85rem;
-        letter-spacing: 0.05em;
-        opacity: 0.8;
-        margin-top: 8px;
-    }
+.bim-canvas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 15px;
+}
+
+.bim-element {
+    background: #111827;
+    border: 1px solid #1f2937;
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.tag {
+    font-size: 11px;
+    color: #93c5fd;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# SYSTEM MEMORY MANAGEMENT
+# MEMORY SYSTEM (REVIT PROJECT FILES)
 # =========================================================
 
-DEFAULT_STATE = {
+DEFAULT = {
     "projects": [],
-    "designs": [],
-    "logs": [],
-    "evolution": []
+    "active_project": None,
+    "logs": []
 }
 
-def load_memory():
+def load():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+            return json.load(open(MEMORY_FILE))
+        except:
+            return DEFAULT.copy()
+    return DEFAULT.copy()
 
-def save_memory():
-    try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(st.session_state.memory, f, indent=2)
-    except Exception:
-        pass
+def save():
+    json.dump(st.session_state.mem, open(MEMORY_FILE, "w"), indent=2)
 
-def log_event(msg):
-    st.session_state.memory["logs"].append({
+def log(msg):
+    st.session_state.mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory()
+    save()
 
-# Initialize session structures
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
-if "active_history" not in st.session_state:
-    st.session_state.active_history = []
+if "mem" not in st.session_state:
+    st.session_state.mem = load()
 
-mem = st.session_state.memory
+mem = st.session_state.mem
 
 # =========================================================
-# ARCHITECTURAL RULES & GENETICS
+# BIM OBJECT MODEL (REVIT-LIKE FAMILY SYSTEM)
 # =========================================================
 
-ARCH_DOMAINS = {
-    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
-    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
-    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
-}
+def nid(prefix):
+    return f"{prefix}-{str(uuid.uuid4())[:8]}"
 
-def get_domain(btype):
-    for domain, types in ARCH_DOMAINS.items():
-        if btype in types:
-            return domain
-    return "Unknown"
-
-def generate_base_design(btype, bedrooms):
-    core_rooms = ["Living Room", "Gourmet Kitchen", "Primary Bathroom"] + ["Flex Space"] * random.randint(1, 3)
-    est_area = (6*5) + (4*4) + (3*3) + (bedrooms * 18)
+def create_level(i):
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": btype,
-        "domain": get_domain(btype),
-        "bedrooms": bedrooms,
-        "rooms": core_rooms,
-        "area_sqm": est_area,
-        "structure": {
-            "columns": random.randint(14, 36),
-            "beams": random.randint(28, 72)
-        },
-        "cost": int(est_area * random.randint(1400, 2600))
+        "id": nid("LVL"),
+        "type": "Level",
+        "elevation": i * 3.2,
+        "index": i
     }
 
-def mutate_design(design_ctx):
-    d = json.loads(json.dumps(design_ctx)) 
-    d["structure"]["columns"] = max(10, d["structure"]["columns"] + random.randint(-2, 4))
-    d["structure"]["beams"] = max(16, d["structure"]["beams"] + random.randint(-4, 6))
-    
-    if random.random() > 0.5:
-        d["rooms"].append("Adaptive Modular Terracing")
-        d["area_sqm"] += 20
-        
-    d["cost"] = int(d["area_sqm"] * random.randint(1300, 2500) + (d["structure"]["columns"] * 600))
-    return d
-
-def calculate_fitness(d):
-    structural_ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    struct_score = max(0, 100 - int(abs(structural_ratio - 2.1) * 22))
-    
-    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
-    cost_score = max(0, 100 - int(abs(cost_per_sqm - 1650) * 0.04))
-    
-    complexity_score = min(100, len(d["rooms"]) * 9)
-    
+def create_wall(level_id):
     return {
-        "structural_integrity": struct_score,
-        "cost_efficiency": cost_score,
-        "spatial_complexity": complexity_score
+        "id": nid("WAL"),
+        "type": "Wall",
+        "level": level_id,
+        "height": 3.2,
+        "material": random.choice(["Concrete", "Glass", "Brick"]),
+        "length": random.randint(4, 12)
     }
 
-def calculate_aggregate_score(fit_dict):
-    return int(sum(fit_dict.values()) / len(fit_dict))
+def create_column(level_id):
+    return {
+        "id": nid("COL"),
+        "type": "Column",
+        "level": level_id,
+        "load_capacity": random.randint(500, 2500),
+        "stress": random.randint(100, 1800)
+    }
 
-def run_evolutionary_loop(btype, bedrooms, generations, pop_size):
-    population = [generate_base_design(btype, bedrooms) for _ in range(pop_size)]
-    history = []
-
-    for g in range(generations):
-        scored_pop = []
-        for d in population:
-            fit = calculate_fitness(d)
-            d["fitness"] = fit
-            d["score"] = calculate_aggregate_score(fit)
-            scored_pop.append(d)
-
-        scored_pop.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored_pop[0]["score"])
-
-        survivors = scored_pop[:max(2, pop_size // 2)]
-        new_generation = []
-        for parent in survivors:
-            new_generation.append(parent)
-            new_generation.append(mutate_design(parent))
-            
-        population = new_generation[:pop_size]
-
-    return scored_pop[0], history
-
-def generate_floor_plan(design):
-    rooms = [
-        {"name": "Grand Living Lounge", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
-        {"name": "Culinary Kitchen", "w": 4.5, "h": 4.0, "color": "#064e3b"},
-        {"name": "Central Powder Room", "w": 3.0, "h": 2.5, "color": "#78350f"}
-    ]
-    for i in range(design["bedrooms"]):
-        rooms.append({
-            "name": f"Master Suite Suite {i+1}" if i == 0 else f"Standard Bedroom {i+1}",
-            "w": 4.5 if i == 0 else 4.0,
-            "h": 4.0,
-            "color": "#4c1d95"
-        })
-    return rooms
+def create_room(level_id, name):
+    return {
+        "id": nid("RM"),
+        "type": "Room",
+        "level": level_id,
+        "area": random.randint(12, 80),
+        "occupancy": random.randint(1, 6),
+        "lighting": random.uniform(0.3, 1.0),
+        "heat_gain": random.uniform(0.2, 1.0),
+        "name": name
+    }
 
 # =========================================================
-# GRAPHICS CANVAS RENDERING Engine
+# BIM PROJECT GENERATOR (REVIT PROJECT FILE SIMULATION)
 # =========================================================
 
-def render_native_blueprint(plan):
-    st.markdown("### 🗺️ Generative Layout Arrangement")
-    
-    canvas_html = '<div class="arc-blueprint-canvas">'
-    for room in plan:
-        canvas_html += (
-            f'<div class="arc-room-module" style="background-color: {room["color"]};">'
-            f'<div style="font-size: 1.15rem; font-weight: 600;">{room["name"]}</div>'
-            f'<div class="room-meta">📐 {room["w"]}m × {room["h"]}m Structural Deck</div>'
-            f'</div>'
+def generate_project(levels=3, rooms_per_level=4):
+
+    nodes = []
+    relations = []
+
+    level_ids = []
+
+    for i in range(levels):
+        lvl = create_level(i)
+        nodes.append(lvl)
+        level_ids.append(lvl["id"])
+
+        # structural system
+        for _ in range(random.randint(6, 10)):
+            col = create_column(lvl["id"])
+            nodes.append(col)
+            relations.append((lvl["id"], col["id"], "supports"))
+
+        for _ in range(random.randint(4, 8)):
+            wall = create_wall(lvl["id"])
+            nodes.append(wall)
+            relations.append((lvl["id"], wall["id"], "hosts"))
+
+        # rooms
+        for r in range(rooms_per_level):
+            room = create_room(lvl["id"], f"Room {i}-{r}")
+            nodes.append(room)
+            relations.append((lvl["id"], room["id"], "contains"))
+
+    return {
+        "id": nid("PRJ"),
+        "created": datetime.now().isoformat(),
+        "nodes": nodes,
+        "relations": relations,
+        "levels": levels
+    }
+
+# =========================================================
+# STRUCTURAL ANALYSIS ENGINE (REVIT ANALYTICAL MODEL)
+# =========================================================
+
+def structural_analysis(project):
+
+    stress_values = []
+    overload = 0
+
+    for n in project["nodes"]:
+        if n["type"] == "Column":
+            stress_values.append(n["stress"])
+            if n["stress"] > n["load_capacity"] * 0.75:
+                overload += 1
+
+    return {
+        "avg_stress": round(sum(stress_values) / max(1, len(stress_values)), 2),
+        "max_stress": max(stress_values) if stress_values else 0,
+        "overloaded_elements": overload
+    }
+
+# =========================================================
+# ENVIRONMENT SIMULATION (LIGHT BIM TWIN LAYER)
+# =========================================================
+
+def env_analysis(project):
+
+    heat = []
+    light = []
+
+    for n in project["nodes"]:
+        if n["type"] == "Room":
+            heat.append(n["heat_gain"])
+            light.append(n["lighting"])
+
+    return {
+        "avg_heat": round(sum(heat) / max(1, len(heat)), 3),
+        "avg_light": round(sum(light) / max(1, len(light)), 3),
+        "comfort_index": round((sum(light) - sum(heat)) * 10, 2)
+    }
+
+# =========================================================
+# BIM SELF-HEALING ENGINE (REVIT OPTIMIZATION LOOP)
+# =========================================================
+
+def optimize(project):
+
+    for n in project["nodes"]:
+        if n["type"] == "Column" and n["stress"] > n["load_capacity"]:
+            n["load_capacity"] += 200
+
+        if n["type"] == "Room" and n["heat_gain"] > 0.8:
+            n["lighting"] += 0.1
+
+    return project
+
+# =========================================================
+# REVIT-STYLE VISUALIZER
+# =========================================================
+
+def render_project(project):
+
+    st.markdown("### 🏗️ BIM Model Explorer")
+
+    for n in project["nodes"][:80]:
+        st.markdown(
+            f"""
+            <div class="bim-element">
+                <div><b>{n['type']}</b></div>
+                <div class="tag">{n['id']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-    canvas_html += '</div>'
-    
-    st.markdown(canvas_html, unsafe_allow_html=True)
 
 # =========================================================
-# DESIGN METRICS AND DIAGNOSTICS
+# UI (REVIT PROJECT BROWSER)
 # =========================================================
 
-def run_structural_review(d):
-    alerts = []
-    if d["structure"]["columns"] < 16:
-        alerts.append("🔴 **Structural Warning:** Column distribution density thin for structural load transfers.")
-    if d["cost"] / d["area_sqm"] > 2300:
-        alerts.append("🟡 **Financial Alert:** Material pricing model trending toward architectural premium thresholds.")
-    if d["structure"]["beams"] / d["structure"]["columns"] < 1.9:
-        alerts.append("🔵 **Framing Optimization:** Tight structural beam-to-column ratio; review spatial continuity maps.")
-    return alerts if alerts else ["🟢 **Synthesis Checked:** Structural logic matrices clear. Design optimized for construction documentation."]
-
-def calculate_material_takeoffs(d):
-    return [
-        {"Structural Asset Item": "High-Performance Concrete Pour", "Calculated Takeoff": f"{d['structure']['columns'] * 2.6:.1f} m³"},
-        {"Structural Asset Item": "Tensile Steel Rebar Skeleton", "Calculated Takeoff": f"{d['structure']['beams'] * 0.48:.2f} Metric Tons"},
-        {"Structural Asset Item": "Insulated Masonry CMU Blocks", "Calculated Takeoff": f"{int(d['area_sqm'] * 42):,} Structural Units"},
-        {"Structural Asset Item": "Calculated Structural Dead Load Base", "Calculated Takeoff": f"{int(d['structure']['columns'] * 13.2):,} kN"}
-    ]
+st.sidebar.title("ARC BIM CORE L5")
+page = st.sidebar.radio("Workspace", [
+    "Project Browser",
+    "Model Generator",
+    "Digital Twin"
+])
 
 # =========================================================
-# APPLICATION WORKSPACE INTERFACE
+# PROJECT BROWSER
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio")
-st.sidebar.caption("v10.2 • Generative Structural Design Loop")
-st.sidebar.markdown("---")
+if page == "Project Browser":
 
-# Navigation Hub
-page = st.sidebar.radio("Studio Workspace", ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"])
+    st.title("📁 BIM Project Browser")
 
-st.sidebar.markdown("---")
+    st.metric("Total Projects", len(mem["projects"]))
 
-# Expandable Configurations Panel — Click to open options
-with st.sidebar.expander("🛠️ Configure Arc Engine", expanded=False):
-    st.subheader("Synthesis Directives")
-    all_typologies = []
-    for sub_list in ARCH_DOMAINS.values():
-        all_typologies.extend(sub_list)
-        
-    input_type = st.selectbox("Design Typology Target", all_typologies)
-    input_bedrooms = st.slider("Target Spatial Modules", 1, 8, 3)
-    input_generations = st.slider("Genetic Epoch Cycles", 2, 20, 6)
-    input_pop = st.slider("Population Bounds", 4, 30, 10)
+    for p in reversed(mem["projects"][-5:]):
+        st.markdown(f"**{p['id']}** | Levels: {p['levels']} | Nodes: {len(p['nodes'])}")
 
-# ---------------------------------------------------------
-# VIEWPORT: DASHBOARD
-# ---------------------------------------------------------
-if page == "Dashboard Control":
-    st.title("📐 Studio Control Dashboard")
-    st.markdown("Systems active. Arc generative algorithms synchronized with engine hardware.")
-    
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Tracked Space Profiles", len(mem["projects"]))
-    col2.metric("Evolved Blueprint Seeds", len(mem["designs"]))
-    col3.metric("Total Parametric Compute Loops", len(mem["evolution"]))
-    
-    st.markdown("---")
-    st.subheader("Engine Operational Telemetry Logs")
-    if mem["logs"]:
-        for log in reversed(mem["logs"][-6:]):
-            st.caption(f"⏱️ `{log['time'][11:19]}` — {log['msg']}")
+    if st.button("Load Latest Project"):
+        mem["active_project"] = mem["projects"][-1]
+        log("Loaded project")
+
+# =========================================================
+# MODEL GENERATOR
+# =========================================================
+
+elif page == "Model Generator":
+
+    st.title("🏗️ Parametric BIM Generator")
+
+    levels = st.slider("Levels", 1, 10, 3)
+    rooms = st.slider("Rooms per Level", 1, 8, 3)
+
+    if st.button("Generate BIM Model"):
+
+        project = generate_project(levels, rooms)
+        project = optimize(project)
+
+        mem["projects"].append(project)
+        mem["active_project"] = project
+
+        log("Generated BIM model")
+
+        st.success("BIM Model Generated")
+
+        st.json(project)
+
+# =========================================================
+# DIGITAL TWIN VIEW
+# =========================================================
+
+elif page == "Digital Twin":
+
+    st.title("🧠 BIM Digital Twin")
+
+    project = mem.get("active_project")
+
+    if not project:
+        st.warning("No active model loaded.")
     else:
-        st.info("System operational logs are current and empty.")
 
-# ---------------------------------------------------------
-# VIEWPORT: SYNTHESIS LAB
-# ---------------------------------------------------------
-elif page == "Design Synthesis Lab":
-    st.title("🌍 Algorithmic Design Lab")
-    st.markdown("Manipulate generative presets inside the sidebar config block to modify systemic architectural constraints.")
-    
-    # Run pipeline button trigger
-    generate_now = st.button("Run Generative Architectural Evolution Pipeline", type="primary", use_container_width=True)
-    
-    if generate_now:
-        with st.spinner("Processing structural mutations & resolving framing constraints..."):
-            best_specimen, optimization_trend = run_evolutionary_loop(input_type, input_bedrooms, input_generations, input_pop)
-            best_specimen["plan"] = generate_floor_plan(best_specimen)
-            
-            # Save into serialized space structures
-            mem["designs"].append(best_specimen)
-            mem["evolution"].append({
-                "id": str(uuid.uuid4())[:6].upper(),
-                "best_id": best_specimen["id"],
-                "peak_score": best_specimen["score"],
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            st.session_state.active_design = best_specimen
-            st.session_state.active_history = optimization_trend
-            log_event(f"Evolved Optimized Blueprint Specimen Archetype #{best_specimen['id']}")
+        st.subheader("Structural Analysis")
+        st.json(structural_analysis(project))
 
-    st.markdown("---")
+        st.subheader("Environmental Analysis")
+        st.json(env_analysis(project))
 
-    # Render Active State Matrix Panels
-    if st.session_state.active_design is not None:
-        design = st.session_state.active_design
-        trend = st.session_state.active_history
-        
-        st.subheader(f"⚡ Synthesis Output Profile: Archetype Specimen #{design['id']}")
-        
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Algorithmic Optimization Score", f"{design['score']} / 100")
-        m2.metric("Gross Built Footprint Area", f"{design['area_sqm']} m²")
-        m3.metric("Project Budget Takeoff Forecast", f"${design['cost']:,}")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        tab_space, tab_metrics, tab_analytics = st.tabs(["🗺️ Spatial Layout Blueprint", "📊 Structural Takeoffs", "📈 Convergence Analytics"])
-        
-        with tab_space:
-            render_native_blueprint(design["plan"])
-            
-        with tab_metrics:
-            st.subheader("AI Structural Diagnostics")
-            for alert in run_structural_review(design):
-                st.markdown(alert)
-                
-            st.markdown("---")
-            st.subheader("Material Quantum Requirements")
-            st.table(calculate_material_takeoffs(design))
-            
-        with tab_analytics:
-            st.subheader("Genetic Algorithm Fitness Convergence Wave")
-            st.line_chart(trend)
-            
-    else:
-        st.info("No active production layout model loaded. Select configurations in the left expandable options tree and run the generator engine.")
+        st.subheader("Model Explorer")
+        render_project(project)
 
-# ---------------------------------------------------------
-# VIEWPORT: SERIALIZED SYSTEM STORAGE
-# ---------------------------------------------------------
-elif page == "Memory Repositories":
-    st.title("🧠 Engine Serialized Memory Cache")
-    st.markdown("Review system variables and system architectural metadata arrays.")
-    
-    st.subheader("Raw Memory Store Model State")
-    st.json(mem)
-    
-    st.markdown("---")
-    if st.button("🔴 Purge Arc Studio System Memory State", use_container_width=True):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        st.session_state.active_design = None
-        st.session_state.active_history = []
-        save_memory()
-        st.success("State maps reset clean.")
-        st.rerun()
+        if st.button("Run Self-Optimization Loop"):
+            mem["active_project"] = optimize(project)
+            log("Self-optimization executed")
+            st.rerun()
