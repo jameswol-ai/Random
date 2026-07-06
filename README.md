@@ -220,3 +220,11 @@ v33-simulation-os/
     ├── test_agents.py
     ├── test_architecture.py
     └── test_evolution.py
+
+plugins/
+    council/
+        structural_agent.py
+        cost_agent.py
+        spatial_agent.py
+        aesthetic_agent.py
+        council_orchestrator.py
