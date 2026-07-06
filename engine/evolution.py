@@ -6,6 +6,20 @@ from engine.generator import generate_base_design
 from plugins.structural_critic import StructuralCritic
 
 from plugins.council.council_orchestrator import ArchitectureCouncil
+council = ArchitectureCouncil()
+
+for d in pop:
+    f = calculate_fitness(d)
+    d["fitness"] = f
+
+    base_score = score(f)
+
+    # 🧠 COUNCIL EVALUATION
+    review = council.evaluate(d)
+    d["council"] = review
+
+    # blended intelligence
+    d["score"] = int((base_score + review["final_score"]) / 2)
 
 def mutate(d):
     d = json.loads(json.dumps(d))
