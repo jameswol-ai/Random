@@ -464,14 +464,19 @@ with st.sidebar:
         5,
         2
     )
+units = st.radio(
 
+    "📐 Drawing Units",
 
-    units = st.selectbox(
-        "Unit System",
-        [
-            "Metric",
-            "Imperial"
-        ]
+    [
+        "Metric",
+        "Imperial",
+        "Dual"
+    ],
+
+    horizontal=True
+
+)
     )
 
 
