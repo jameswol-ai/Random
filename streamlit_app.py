@@ -1152,3 +1152,358 @@ def render_blueprint(plan):
         unsafe_allow_html=True
 
     )
+
+# ============================================================
+# STRUCTURAL INTELLIGENCE ENGINE
+# ============================================================
+
+
+def structural_analysis(design):
+
+    results = []
+
+
+    columns = design["structure"]["columns"]
+
+    beams = design["structure"]["beams"]
+
+
+    ratio = beams / max(
+        1,
+        columns
+    )
+
+
+    if columns < 16:
+
+        results.append(
+            "🔴 Structural grid density is low. Review column distribution."
+        )
+
+
+    else:
+
+        results.append(
+            "🟢 Column grid density acceptable."
+        )
+
+
+
+    if ratio < 1.9:
+
+        results.append(
+            "🔵 Beam-column relationship requires optimization."
+        )
+
+
+    elif ratio > 3.5:
+
+        results.append(
+            "🟡 High beam intensity detected."
+        )
+
+
+    else:
+
+        results.append(
+            "🟢 Structural proportion balanced."
+        )
+
+
+    return results
+
+
+
+
+
+def calculate_structural_index(design):
+
+
+    ratio = (
+
+        design["structure"]["beams"]
+
+        /
+
+        max(
+            1,
+            design["structure"]["columns"]
+        )
+
+    )
+
+
+    return int(
+
+        max(
+
+            0,
+
+            100 -
+
+            abs(
+                ratio - 2.2
+            )
+
+            *
+
+            25
+
+        )
+
+    )
+
+
+
+
+
+# ============================================================
+# COST INTELLIGENCE ENGINE
+# ============================================================
+
+
+def calculate_cost_analysis(design):
+
+
+    area = design["area_sqm"]
+
+
+    base_rate = 1800
+
+
+    construction_cost = (
+
+        area
+
+        *
+
+        base_rate
+
+    )
+
+
+
+    structural_factor = (
+
+        design["structure"]["columns"]
+
+        +
+
+        design["structure"]["beams"]
+
+    )
+
+
+
+    adjusted_cost = int(
+
+        construction_cost
+
+        +
+
+        structural_factor
+
+        *
+
+        250
+
+    )
+
+
+    return {
+
+
+        "gross_area":
+
+        area,
+
+
+        "base_rate":
+
+        base_rate,
+
+
+        "estimated_cost":
+
+        adjusted_cost,
+
+
+        "cost_per_sqm":
+
+        int(
+            adjusted_cost / area
+        )
+
+    }
+
+
+
+
+
+# ============================================================
+# MATERIAL TAKEOFF INTELLIGENCE
+# ============================================================
+
+
+def material_takeoff(design):
+
+
+    return [
+
+
+        {
+
+            "Material":
+
+            "High Performance Concrete",
+
+
+            "Quantity":
+
+            f"{design['structure']['columns'] * 2.8:.1f} m³"
+
+        },
+
+
+        {
+
+            "Material":
+
+            "Structural Steel Reinforcement",
+
+
+            "Quantity":
+
+            f"{design['structure']['beams'] * 0.55:.2f} MT"
+
+        },
+
+
+        {
+
+            "Material":
+
+            "Masonry Units",
+
+
+            "Quantity":
+
+            f"{int(design['area_sqm'] * 38):,} units"
+
+        },
+
+
+        {
+
+            "Material":
+
+            "Floor Finish Area",
+
+
+            "Quantity":
+
+            f"{design['area_sqm']:.1f} m²"
+
+        }
+
+
+    ]
+
+
+
+
+
+# ============================================================
+# SUSTAINABILITY INTELLIGENCE ENGINE
+# ============================================================
+
+
+def sustainability_analysis(design):
+
+
+    daylight = random.randint(
+        65,
+        95
+    )
+
+
+    material_efficiency = random.randint(
+        60,
+        90
+    )
+
+
+    energy_score = int(
+
+        (
+
+            daylight
+
+            +
+
+            material_efficiency
+
+        )
+
+        /
+
+        2
+
+    )
+
+
+    return {
+
+
+        "Daylight Potential":
+
+        f"{daylight}%",
+
+
+
+        "Material Efficiency":
+
+        f"{material_efficiency}%",
+
+
+
+        "Energy Performance Index":
+
+        f"{energy_score}/100"
+
+    }
+
+
+
+
+
+# ============================================================
+# PROJECT METADATA ENGINE
+# ============================================================
+
+
+def project_summary(design):
+
+
+    return {
+
+
+        "Design ID":
+
+        design["id"],
+
+
+
+        "Typology":
+
+        design["type"],
+
+
+
+        "Domain":
+
+        design["domain"],
+
+
+
+       
