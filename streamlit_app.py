@@ -935,3 +935,62 @@ def mm_to_feet_inches(mm):
     remaining_inches = round(inches % 12, 1)
 
     return f"{feet}'-{remaining_inches}\""
+
+# ============================================================
+# UNIT CONVERSION ENGINE
+# ============================================================
+
+def mm_to_metric(mm):
+    return f"{mm} mm"
+
+
+def mm_to_imperial(mm):
+
+    inches = mm / 25.4
+
+    feet = int(inches // 12)
+
+    remaining = round(inches % 12, 1)
+
+    return f"{feet}'-{remaining}\""
+
+
+def sqm_to_sqft(area):
+
+    return round(area * 10.7639, 2)
+
+
+def display_length(mm, mode):
+
+    if mode == "Metric":
+
+        return mm_to_metric(mm)
+
+    elif mode == "Imperial":
+
+        return mm_to_imperial(mm)
+
+    else:
+
+        return (
+            f"{mm_to_metric(mm)} "
+            f"({mm_to_imperial(mm)})"
+        )
+
+
+def display_area(area, mode):
+
+    if mode == "Metric":
+
+        return f"{area} m²"
+
+    elif mode == "Imperial":
+
+        return f"{sqm_to_sqft(area)} ft²"
+
+    else:
+
+        return (
+            f"{area} m² "
+            f"({sqm_to_sqft(area)} ft²)"
+        )
