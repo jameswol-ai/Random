@@ -1593,7 +1593,7 @@ elif page == "📦 Export":
     if st.session_state.active_design:
 
 
-        export=json.dumps(
+        export_data = json.dumps(
 
             st.session_state.active_design,
 
@@ -1602,32 +1602,56 @@ elif page == "📦 Export":
         )
 
 
-
         st.download_button(
 
-            "Download Design JSON",
+            label="⬇️ Download Design JSON",
 
-            export,
+            data=export_data,
 
-            "random_design.json",
+            file_name="random_design.json",
 
-            "application/json"
+            mime="application/json"
 
         )
 
+
+        st.subheader(
+
+            "Preview"
+
+        )
+
+
+        st.json(
+
+            st.session_state.active_design
+
+        )
 
 
     else:
 
+
         st.info(
 
-            "No design available."
+            "Generate a design before exporting."
 
         )
 
 
 
 
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+
+st.caption(
+
+    "RANDOM AI Architecture Intelligence Engine | Evolutionary Spatial Synthesis"
+
+)
 
 # ============================================================
 # FOOTER
