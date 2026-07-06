@@ -12,6 +12,151 @@ from pathlib import Path
 from datetime import datetime
 
 # =========================================================
+# 🛠️ ARC ENGINE — AEC CONFIGURATION MODULE (UPGRADED)
+# =========================================================
+
+st.markdown("## 🛠️ Configure Arc Engine — AEC Intelligence Layer")
+
+with st.sidebar.expander("🛠️ Configure Arc Engine (AEC + MEP + HVAC)", expanded=False):
+    st.subheader("Synthesis Directives")
+
+    all_typologies = []
+    for sub_list in ARCH_DOMAINS.values():
+        all_typologies.extend(sub_list)
+
+    design_typology = st.selectbox(
+        "🏢 Building Typology Target",
+        ["Residential", "Commercial", "Industrial"]
+    )
+
+    st.markdown("### 🧬 Genetic Engine Controls")
+
+    population_size = st.slider(
+        "Population Bounds (Agents)",
+        10, 200, 40
+    )
+
+    mutation_rate = st.slider(
+        "Mutation Rate",
+        0.0, 1.0, 0.35
+    )
+
+    epoch_cycles = st.slider(
+        "Genetic Epoch Cycles",
+        2, 50, 12
+    )
+
+    st.markdown("### 🏗️ Spatial Structure")
+
+    floors = st.slider(
+        "Floors per Building",
+        1, 80, 8
+    )
+
+    rooms_per_floor = st.slider(
+        "Rooms per Floor",
+        1, 20, 5
+    )
+
+    population_units = st.slider(
+        "Occupant Population Load",
+        0, 5000, 300
+    )
+
+    st.markdown("### 🌬️ MEP + HVAC SYSTEMS")
+
+    hvac_mode = st.selectbox(
+        "HVAC Strategy",
+        ["Natural Ventilation", "Hybrid System", "Full Mechanical HVAC"]
+    )
+
+    ventilation_efficiency = st.slider(
+        "Ventilation Efficiency (%)",
+        0, 100, 72
+    )
+
+    energy_model = st.selectbox(
+        "MEP Energy Model",
+        ["Low Energy", "Standard Grid", "Smart Grid Optimized"]
+    )
+
+    water_system = st.selectbox(
+        "Water System Design",
+        ["Basic Supply", "Greywater Recycling", "Closed Loop Sustainable"]
+    )
+
+with st.sidebar:
+    st.markdown("### 🧠 Synthesis Directives")
+
+    design_typology = st.selectbox(
+        "🏢 Building Typology Target",
+        ["Residential", "Commercial", "Industrial"]
+    )
+
+    st.markdown("### 🧬 Genetic Engine Controls")
+
+    population_size = st.slider(
+        "Population Bounds (Agents)",
+        min_value=10,
+        max_value=500,
+        value=120,
+        step=10
+    )
+
+    mutation_rate = st.slider(
+        "Mutation Rate",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.35
+    )
+
+    epoch_cycles = st.number_input(
+        "Genetic Epoch Cycles",
+        min_value=1,
+        max_value=500,
+        value=25
+    )
+
+    st.markdown("### 🏗️ Spatial Structure")
+
+    floors = st.slider(
+        "Floors per Building",
+        1, 100, 12
+    )
+
+    rooms_per_floor = st.slider(
+        "Rooms per Floor",
+        1, 50, 6
+    )
+
+    population_units = st.slider(
+        "Occupant Population (Load Simulation)",
+        0, 5000, 250
+    )
+
+    st.markdown("### 🌬️ Systems Layer (AEC + MEP + HVAC)")
+
+    hvac_mode = st.selectbox(
+        "HVAC Strategy",
+        ["Natural Ventilation", "Hybrid System", "Full Mechanical HVAC"]
+    )
+
+    ventilation_efficiency = st.slider(
+        "Ventilation Efficiency (%)",
+        0, 100, 70
+    )
+
+    energy_model = st.selectbox(
+        "MEP Energy Model",
+        ["Low Energy", "Standard Grid", "Smart Grid Optimized"]
+    )
+
+    water_system = st.selectbox(
+        "Water System Design",
+        ["Basic Supply", "Greywater Recycling", "Closed Loop Sustainable"]
+    )
+
+# =========================================================
 # CONFIG & GLOBAL STUDIO STYLING
 # =========================================================
 
@@ -77,6 +222,27 @@ margin-top: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
+
+arc_engine_state = {
+    "aec": {
+        "typology": design_typology,
+        "floors": floors,
+        "rooms_per_floor": rooms_per_floor,
+        "total_rooms": floors * rooms_per_floor,
+        "occupant_load": population_units
+    },
+    "genetics": {
+        "population_size": population_size,
+        "mutation_rate": mutation_rate,
+        "epochs": epoch_cycles
+    },
+    "systems": {
+        "hvac": hvac_mode,
+        "ventilation_efficiency": ventilation_efficiency,
+        "energy_model": energy_model,
+        "water_system": water_system
+    }
+}
 
 # =========================================================
 # SYSTEM MEMORY MANAGEMENT
@@ -400,6 +566,27 @@ elif page == "Design Synthesis Lab":
 
     else:
         st.info("No active production layout model loaded. Select configurations in the left expandable options tree and run the generator engine.")
+
+arc_engine_state = {
+    "typology": design_typology,
+    "genetics": {
+        "population_size": population_size,
+        "mutation_rate": mutation_rate,
+        "epochs": epoch_cycles
+    },
+    "structure": {
+        "floors": floors,
+        "rooms_per_floor": rooms_per_floor,
+        "total_rooms": floors * rooms_per_floor,
+        "occupants": population_units
+    },
+    "systems": {
+        "hvac": hvac_mode,
+        "ventilation_efficiency": ventilation_efficiency,
+        "energy_model": energy_model,
+        "water_system": water_system
+    }
+}
 
 # =========================================================
 # VIEWPORT: MEMORY REPOSITORIES
