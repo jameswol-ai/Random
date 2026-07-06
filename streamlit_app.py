@@ -1,8 +1,9 @@
 # =========================================================
-# RANDOM V16
-# Autonomous Architecture Intelligence System
-# Evolutionary Spatial + Agentic Design Engine
-# Single-File Streamlit Edition
+# RANDOM V40
+# Architectural Intelligence + Engineering + BOQ System
+# East Africa Cost Estimation Engine
+# 2D/3D Spatial Generator (Matplotlib)
+# Single File Streamlit BIM-like Simulator
 # =========================================================
 
 import streamlit as st
@@ -11,36 +12,33 @@ import uuid
 import random
 from datetime import datetime
 from pathlib import Path
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="RANDOM V16",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="RANDOM V40",
+    layout="wide"
 )
 
 # =========================================================
-# MEMORY CORE
+# MEMORY
 # =========================================================
 
-MEMORY_FILE = Path("random_memory.json")
+MEMORY_FILE = Path("random_v40_memory.json")
 
 def load_memory():
     if MEMORY_FILE.exists():
         return json.loads(MEMORY_FILE.read_text())
-    return {"projects": [], "logs": [], "agents": []}
+    return {"projects": [], "logs": []}
 
-def save_memory(mem):
-    MEMORY_FILE.write_text(json.dumps(mem, indent=2))
+def save_memory(m):
+    MEMORY_FILE.write_text(json.dumps(m, indent=2))
 
 memory = load_memory()
-
-# =========================================================
-# UTILS
-# =========================================================
 
 def uid():
     return str(uuid.uuid4())[:8]
@@ -54,174 +52,218 @@ def log(event):
     save_memory(memory)
 
 # =========================================================
-# AGENT SYSTEM
+# EAST AFRICA COST ENGINE
 # =========================================================
 
-AGENT_LIBRARY = {
-    "planner": "Breaks design into modular subsystems",
-    "critic": "Detects structural inefficiencies",
-    "evolver": "Mutates architecture configurations",
-    "visualizer": "Generates spatial representations",
-    "optimizer": "Improves system coherence score"
+CURRENCY = {
+    "UGX": 1,
+    "KES": 0.032,
+    "TZS": 0.029,
+    "RWF": 0.31
 }
 
-def run_agent(agent, context):
-    if agent == "planner":
-        return {
-            "modules": ["core", "data_layer", "ui_layer", "ai_layer", "storage"],
-            "strategy": "modular decomposition"
-        }
+MATERIALS = {
+    "cement_bag": {"ugx": 42000},
+    "steel_kg": {"ugx": 3800},
+    "sand_m3": {"ugx": 60000},
+    "brick": {"ugx": 900},
+    "glass_m2": {"ugx": 120000},
+    "tile_m2": {"ugx": 85000},
+    "paint_litre": {"ugx": 28000},
+    "timber_m3": {"ugx": 950000}
+}
 
-    if agent == "critic":
-        issues = ["tight coupling risk", "missing abstraction layer"]
-        return {"issues": issues, "score": random.randint(60, 85)}
-
-    if agent == "evolver":
-        return {
-            "mutation": random.choice(["add_cache", "split_module", "introduce_event_bus"]),
-            "generation": random.randint(1, 10)
-        }
-
-    if agent == "visualizer":
-        return {
-            "nodes": random.randint(5, 12),
-            "edges": random.randint(6, 18),
-            "layout": "force-directed-simulated"
-        }
-
-    if agent == "optimizer":
-        return {
-            "improvements": ["reduced coupling", "enhanced modularity"],
-            "efficiency_gain": f"{random.randint(5, 35)}%"
-        }
-
-    return {"error": "unknown agent"}
+def convert(ugx, currency):
+    return ugx * CURRENCY[currency]
 
 # =========================================================
-# ARCHITECTURE ENGINE
+# ARCHITECTURE GENERATOR
 # =========================================================
 
-def generate_architecture(name):
-    base = {
+SPACE_LIBRARY = [
+    "Living Room",
+    "Kitchen",
+    "Bedroom",
+    "Bathroom",
+    "Office",
+    "Lobby",
+    "Storage",
+    "Balcony"
+]
+
+def generate_architecture(name, floors=2):
+    spaces = []
+    for f in range(floors):
+        for _ in range(random.randint(3, 6)):
+            space = {
+                "floor": f+1,
+                "type": random.choice(SPACE_LIBRARY),
+                "area_sqm": random.randint(10, 60),
+                "height_m": random.choice([2.7, 3.0, 3.3])
+            }
+            spaces.append(space)
+
+    return {
         "id": uid(),
         "name": name,
-        "timestamp": datetime.utcnow().isoformat(),
-        "modules": [],
-        "score": 0,
-        "evolution": []
+        "floors": floors,
+        "spaces": spaces,
+        "created": datetime.utcnow().isoformat()
     }
 
-    planner = run_agent("planner", base)
-    critic = run_agent("critic", planner)
-    evolver = run_agent("evolver", critic)
-    optimizer = run_agent("optimizer", evolver)
-
-    base["modules"] = planner["modules"]
-    base["score"] = critic["score"]
-    base["evolution"].append(evolver)
-    base["optimization"] = optimizer
-
-    return base
-
 # =========================================================
-# UI HEADER
+# ENGINEERING + BOQ ENGINE
 # =========================================================
 
-st.title("🧠 RANDOM V16 — Architecture Intelligence Engine")
-st.caption("Evolutionary spatial synthesis + multi-agent reasoning core")
+def compute_boq(project):
+    boq = {
+        "cement_bags": 0,
+        "steel_kg": 0,
+        "sand_m3": 0,
+        "bricks": 0,
+        "tiles_m2": 0,
+        "paint_l": 0
+    }
+
+    total_area = sum(s["area_sqm"] for s in project["spaces"])
+
+    boq["cement_bags"] = int(total_area * 0.8)
+    boq["steel_kg"] = int(total_area * 12)
+    boq["sand_m3"] = int(total_area * 0.5)
+    boq["bricks"] = int(total_area * 45)
+    boq["tiles_m2"] = int(total_area * 0.6)
+    boq["paint_l"] = int(total_area * 0.3)
+
+    return boq
 
 # =========================================================
-# SIDEBAR CONTROL PANEL
+# COST ENGINE
 # =========================================================
 
-st.sidebar.header("⚙️ Control Panel")
+def estimate_cost(boq, currency="UGX"):
+    total = 0
 
-project_name = st.sidebar.text_input("Project Name", "Neural Tower")
+    total += boq["cement_bags"] * MATERIALS["cement_bag"]["ugx"]
+    total += boq["steel_kg"] * MATERIALS["steel_kg"]["ugx"]
+    total += boq["sand_m3"] * MATERIALS["sand_m3"]["ugx"]
+    total += boq["bricks"] * MATERIALS["brick"]["ugx"]
+    total += boq["tiles_m2"] * MATERIALS["tile_m2"]["ugx"]
+    total += boq["paint_l"] * MATERIALS["paint_litre"]["ugx"]
 
-if st.sidebar.button("🚀 Generate Architecture"):
-    arch = generate_architecture(project_name)
-    memory["projects"].append(arch)
-    log(f"Generated architecture: {project_name}")
+    converted = convert(total, currency)
+
+    return total, converted
+
+# =========================================================
+# 2D PLAN VISUALIZER
+# =========================================================
+
+def plot_2d(project):
+    fig, ax = plt.subplots()
+
+    x, y = 0, 0
+    for i, s in enumerate(project["spaces"]):
+        w = s["area_sqm"] ** 0.5
+        h = w
+
+        ax.add_patch(plt.Rectangle((x, y), w, h, fill=None))
+        ax.text(x, y, s["type"], fontsize=6)
+
+        x += w * 0.5
+        y += h * 0.2
+
+    ax.set_title("2D Spatial Layout")
+    return fig
+
+# =========================================================
+# 3D MASSING MODEL
+# =========================================================
+
+def plot_3d(project):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    x, y = 0, 0
+    for s in project["spaces"]:
+        z = s["floor"] * 3
+        size = s["area_sqm"] ** 0.5
+
+        ax.scatter(x, y, z, s=size * 10)
+
+        x += random.uniform(1, 3)
+        y += random.uniform(1, 3)
+
+    ax.set_title("3D Massing Model")
+    return fig
+
+# =========================================================
+# UI
+# =========================================================
+
+st.title("🧠 RANDOM V40 — Architecture + Engineering Intelligence Engine")
+st.caption("BOQ • Cost Estimation • 2D/3D Design • East Africa Construction Economics")
+
+# SIDEBAR
+st.sidebar.header("Control Panel")
+
+name = st.sidebar.text_input("Project Name", "Neural Complex")
+floors = st.sidebar.slider("Floors", 1, 10, 3)
+currency = st.sidebar.selectbox("Currency", ["UGX", "KES", "TZS", "RWF"])
+
+if st.sidebar.button("🏗 Generate Project"):
+    proj = generate_architecture(name, floors)
+    memory["projects"].append(proj)
     save_memory(memory)
-    st.session_state["latest"] = arch
-
-if st.sidebar.button("🧬 Run Evolution Cycle"):
-    if memory["projects"]:
-        target = memory["projects"][-1]
-        mutation = run_agent("evolver", target)
-        target["evolution"].append(mutation)
-        log("Evolution cycle executed")
-        save_memory(memory)
-        st.session_state["latest"] = target
-
-if st.sidebar.button("📊 Run Diagnostics"):
-    log("Diagnostics executed")
+    st.session_state["project"] = proj
+    log("Project generated")
 
 # =========================================================
 # MAIN VIEW
 # =========================================================
 
-tab1, tab2, tab3 = st.tabs(["🏗 Architecture", "🧠 Agents", "📜 Memory Log"])
+if "project" in st.session_state:
+    project = st.session_state["project"]
 
-# ---------------------------------------------------------
-# ARCHITECTURE VIEW
-# ---------------------------------------------------------
+    st.subheader("📦 Project Overview")
+    st.json(project)
 
-with tab1:
-    st.subheader("Generated Architecture")
+    # BOQ
+    boq = compute_boq(project)
+    st.subheader("🧱 Bill of Quantities (BOQ)")
+    st.json(boq)
 
-    if "latest" in st.session_state:
-        arch = st.session_state["latest"]
+    # COST
+    total_ugx, converted = estimate_cost(boq, currency)
 
-        st.json(arch)
+    st.subheader("💰 Cost Estimation")
+    st.metric("Total (UGX)", f"{total_ugx:,}")
+    st.metric(f"Total ({currency})", f"{converted:,.2f}")
 
-        st.markdown("### Modules")
-        for m in arch["modules"]:
-            st.write("•", m)
+    # 2D
+    st.subheader("📐 2D Layout")
+    st.pyplot(plot_2d(project))
 
-        st.markdown("### System Score")
-        st.metric("Coherence Score", arch["score"])
+    # 3D
+    st.subheader("🧊 3D Massing Model")
+    st.pyplot(plot_3d(project))
 
-        st.markdown("### Evolution Trace")
-        st.json(arch.get("evolution", []))
-
-    else:
-        st.info("Generate an architecture to begin the simulation.")
-
-# ---------------------------------------------------------
-# AGENTS VIEW
-# ---------------------------------------------------------
-
-with tab2:
-    st.subheader("Agent Registry")
-
-    for k, v in AGENT_LIBRARY.items():
-        st.markdown(f"**{k.upper()}**")
-        st.caption(v)
-
-    st.markdown("### Live Agent Test")
-
-    selected = st.selectbox("Select Agent", list(AGENT_LIBRARY.keys()))
-    if st.button("Run Agent"):
-        result = run_agent(selected, {})
-        st.json(result)
-
-# ---------------------------------------------------------
-# MEMORY VIEW
-# ---------------------------------------------------------
-
-with tab3:
-    st.subheader("System Memory")
-
-    st.write("Projects stored:", len(memory["projects"]))
-    st.write("Events logged:", len(memory["logs"]))
-
-    st.markdown("### Recent Logs")
-    st.json(memory["logs"][-10:])
+else:
+    st.info("Generate a project to activate engineering simulation.")
 
 # =========================================================
-# FOOTER STATUS
+# MATERIAL COST PANEL
 # =========================================================
 
 st.sidebar.markdown("---")
-st.sidebar.caption("RANDOM V16 running in autonomous simulation mode")
+st.sidebar.subheader("🧱 Material Prices (UGX)")
+
+for k, v in MATERIALS.items():
+    st.sidebar.write(f"{k}: {v['ugx']:,}")
+
+# =========================================================
+# LOG VIEW
+# =========================================================
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("📜 Logs")
+st.sidebar.json(memory["logs"][-5:])
