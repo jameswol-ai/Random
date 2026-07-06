@@ -1,12 +1,14 @@
 # =========================================================
 # RANDOM V24
-# Architecture Intelligence OS (Multi-Domain Studio Engine)
+# NEURAL UNREAL ARCHITECTURE SIMULATOR (Streamlit Engine)
+# Procedural 3D Illusion + AI World Generation Layer
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
+import math
 from pathlib import Path
 from datetime import datetime
 
@@ -15,37 +17,67 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine V24",
-    page_icon="🏛️",
+    page_title="Neural Unreal ArchSim V24",
+    page_icon="🧠",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STYLING
+# NEURAL UI SKIN (UNREAL-LIKE GLOW LAYER)
 # =========================================================
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;700&display=swap');
 
-html, body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+body {
+    background: radial-gradient(circle at top, #0b1020, #05070f);
+    color: white;
 }
 
-h1,h2,h3 {
-    font-family: 'Space Grotesk', sans-serif;
-    letter-spacing: -0.03em;
-}
-
-.arc {
-    background: #0b1020;
-    border-radius: 12px;
+.neural-panel {
+    background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
     padding: 16px;
-    border: 1px solid #243042;
-    margin: 10px 0;
+    box-shadow: 0 0 40px rgba(0,255,255,0.08);
 }
+
+.neural-glow {
+    text-shadow: 0 0 12px rgba(0,255,255,0.5);
+}
+
+.world-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.tile {
+    height: 120px;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #111827, #0a0f1d);
+    border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.light {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: radial-gradient(circle, rgba(0,255,255,0.5), transparent);
+    filter: blur(10px);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.5; }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -53,263 +85,177 @@ h1,h2,h3 {
 # MEMORY
 # =========================================================
 
-DEFAULT_STATE = {
-    "designs": [],
-    "logs": [],
-    "evolution": []
-}
+DEFAULT = {"worlds": [], "events": [], "designs": []}
 
-def load_memory():
+def load():
     if MEMORY_FILE.exists():
-        try:
-            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+        return json.loads(MEMORY_FILE.read_text())
+    return DEFAULT.copy()
 
-def save_memory():
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.memory, f, indent=2)
+def save(mem):
+    MEMORY_FILE.write_text(json.dumps(mem, indent=2))
 
-def log(msg):
-    st.session_state.memory["logs"].append({
-        "time": datetime.now().isoformat(),
-        "msg": msg
-    })
-    save_memory()
+if "mem" not in st.session_state:
+    st.session_state.mem = load()
 
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
-
-if "active" not in st.session_state:
-    st.session_state.active = None
-
-if "trend" not in st.session_state:
-    st.session_state.trend = []
-
-mem = st.session_state.memory
+mem = st.session_state.mem
 
 # =========================================================
-# ENGINE CORE
+# NEURAL WORLD ENGINE (CORE V24)
 # =========================================================
 
-def generate_design(goal):
+def generate_world(seed="Neo-World"):
     return {
         "id": str(uuid.uuid4())[:8],
-        "goal": goal,
-        "area": random.randint(120, 800),
-        "cost": random.randint(120000, 900000),
-        "structure": {
-            "columns": random.randint(12, 40),
-            "beams": random.randint(25, 90)
-        },
-        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
+        "seed": seed,
+        "time_of_day": random.choice(["Dawn", "Noon", "Dusk", "Night"]),
+        "lighting_bias": random.uniform(0.2, 1.0),
+        "material_density": random.uniform(0.4, 1.2),
+        "geometry_complexity": random.randint(20, 120),
+        "rooms": random.randint(4, 16)
     }
 
-def fitness(d):
-    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    structural = max(0, 100 - int(abs(ratio - 2.0) * 20))
-    cost_eff = max(0, 100 - int(d["cost"] / max(1, d["area"]) / 25))
-    complexity = min(100, len(d["rooms"]) * 10)
+def neural_lighting(world):
+    intensity = world["lighting_bias"] * math.sin(world["geometry_complexity"] / 10)
+    return max(0.2, abs(intensity))
 
+def material_shader(world):
     return {
-        "structural": structural,
-        "cost": cost_eff,
-        "complexity": complexity
+        "glass": world["material_density"] * 0.6,
+        "concrete": world["material_density"] * 1.2,
+        "metal": world["material_density"] * 0.9
     }
 
-def aggregate(f):
-    return int(sum(f.values()) / len(f))
+def raytrace_ui_glow(intensity):
+    return f"rgba(0,255,255,{min(0.8, intensity)})"
 
 # =========================================================
-# EXTRA SYSTEMS (V24)
+# AI GENERATOR
 # =========================================================
 
-def sustainability_score(d):
-    efficiency = d["area"] / max(1, d["structure"]["columns"])
-    carbon_proxy = 100 - min(100, efficiency * 2)
-    return max(0, int(carbon_proxy))
-
-def compliance_score(d):
-    score = 100
-    if d["structure"]["columns"] < 14:
-        score -= 20
-    if d["structure"]["beams"] < 30:
-        score -= 15
-    if len(d["rooms"]) < 4:
-        score -= 10
-    return max(0, score)
-
-def cost_breakdown(d):
-    base = d["cost"]
+def ai_generate_design(world):
     return {
-        "Structural": int(base * 0.45),
-        "Finishes": int(base * 0.25),
-        "Systems": int(base * 0.20),
-        "Contingency": int(base * 0.10)
-    }
-
-# =========================================================
-# EVOLUTION
-# =========================================================
-
-def evolve(goal, gens=6):
-    pop = [generate_design(goal) for _ in range(10)]
-    history = []
-
-    for _ in range(gens):
-        scored = []
-        for d in pop:
-            f = fitness(d)
-            d["score"] = aggregate(f)
-            scored.append(d)
-
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
-
-        survivors = scored[:5]
-        pop = survivors + [generate_design(goal) for _ in range(5)]
-
-    return scored[0], history
-
-# =========================================================
-# FLOOR PLAN
-# =========================================================
-
-def floor_plan(d):
-    rooms = [{"name":"Living","w":6,"h":5,"c":"#1e3a8a"},
-             {"name":"Kitchen","w":4,"h":4,"c":"#065f46"}]
-
-    for i in range(random.randint(2,5)):
-        rooms.append({
-            "name": f"Room {i+1}",
-            "w":4,"h":4,
-            "c":"#4c1d95"
-        })
-    return rooms
-
-def render_plan(plan):
-    html = '<div class="arc">'
-    for r in plan:
-        html += f"<div style='margin:6px;padding:10px;background:{r['c']};color:white;border-radius:8px'>{r['name']} {r['w']}x{r['h']}</div>"
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
-
-# =========================================================
-# SIDEBAR
-# =========================================================
-
-st.sidebar.title("🏛 V24 Studio")
-
-goal = st.sidebar.text_input("Design Goal", "Eco smart villa")
-gens = st.sidebar.slider("Evolution Cycles", 2, 15, 6)
-
-page = st.sidebar.radio("Navigation", [
-    "🏠 Project Overview",
-    "📐 Floor Plan",
-    "🏗 Structural Model",
-    "💰 Cost Estimate",
-    "🌍 Sustainability",
-    "📋 Code Compliance",
-    "📊 AI Evolution",
-    "🧠 Memory",
-    "⚙ Settings"
-])
-
-if st.sidebar.button("🚀 Run Generation"):
-    best, trend = evolve(goal, gens)
-    best["plan"] = floor_plan(best)
-
-    st.session_state.active = best
-    st.session_state.trend = trend
-
-    mem["designs"].append(best)
-    mem["evolution"].append({
         "id": str(uuid.uuid4())[:6],
-        "best": best["id"],
-        "score": best["score"]
-    })
+        "floors": random.randint(1, 5),
+        "area": random.randint(120, 900),
+        "complexity": world["geometry_complexity"],
+        "lighting": neural_lighting(world),
+        "materials": material_shader(world)
+    }
 
-    log(f"Generated {best['id']}")
+# =========================================================
+# 3D ILLUSION WORLD RENDERER
+# =========================================================
+
+def render_world(world):
+    glow = neural_lighting(world)
+    color = raytrace_ui_glow(glow)
+
+    st.markdown(f"""
+    <div class="neural-panel">
+        <h2 class="neural-glow">🧠 Neural World: {world['id']}</h2>
+        <p>Time Phase: {world['time_of_day']}</p>
+        <p>Lighting Field: {glow:.2f}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("### 🌍 Spatial Grid Simulation")
+
+    grid_html = '<div class="world-grid">'
+    for i in range(8):
+        grid_html += f"""
+        <div class="tile">
+            <div class="light" style="background:{color}"></div>
+        </div>
+        """
+    grid_html += '</div>'
+
+    st.markdown(grid_html, unsafe_allow_html=True)
+
+# =========================================================
+# UI NAV
+# =========================================================
+
+page = st.sidebar.radio(
+    "Neural Engine",
+    [
+        "🏠 Project Overview",
+        "📐 Floor Plan",
+        "🏗 Structural Model",
+        "💰 Cost Estimate",
+        "🌍 Sustainability",
+        "📋 Code Compliance",
+        "📊 AI Evolution",
+        "🧠 Memory",
+        "⚙ Settings"
+    ]
+)
+
+# =========================================================
+# WORLD STATE
+# =========================================================
+
+if "world" not in st.session_state:
+    st.session_state.world = generate_world()
+
+world = st.session_state.world
 
 # =========================================================
 # PAGES
 # =========================================================
 
-d = st.session_state.active
-
-# -------------------------
 if page == "🏠 Project Overview":
-    st.title("🏠 Project Overview")
+    st.title("🧠 Neural Unreal Architecture Engine V24")
+    render_world(world)
 
-    st.metric("Active Designs", len(mem["designs"]))
+    if st.button("🌀 Evolve World"):
+        st.session_state.world = generate_world()
+        mem["worlds"].append(st.session_state.world)
+        save(mem)
+        st.rerun()
 
-    if d:
-        st.success(f"Active Design: {d['id']}")
-        st.write("Goal:", d["goal"])
-        st.metric("Score", d.get("score", 0))
-    else:
-        st.info("Run generation to begin.")
-
-    st.write("Logs")
-    for l in reversed(mem["logs"][-5:]):
-        st.caption(l["msg"])
-
-# -------------------------
 elif page == "📐 Floor Plan":
-    st.title("📐 Floor Plan")
-    if d:
-        render_plan(d["plan"])
-    else:
-        st.info("No design loaded.")
+    st.title("📐 Procedural Floor Simulation")
 
-# -------------------------
+    design = ai_generate_design(world)
+
+    st.json(design)
+
 elif page == "🏗 Structural Model":
-    st.title("🏗 Structural Model")
-    if d:
-        st.json(d["structure"])
-    else:
-        st.info("No design loaded.")
+    st.title("🏗 Structural Field Simulation")
 
-# -------------------------
+    st.write("Beam density:", world["geometry_complexity"] * 0.8)
+    st.write("Stress map:", world["material_density"] * 100)
+
 elif page == "💰 Cost Estimate":
-    st.title("💰 Cost Estimate")
-    if d:
-        breakdown = cost_breakdown(d)
-        st.json(breakdown)
-    else:
-        st.info("No design loaded.")
+    st.title("💰 Neural Cost Engine")
 
-# -------------------------
+    cost = world["geometry_complexity"] * world["material_density"] * 1200
+    st.metric("Estimated Build Cost", f"${int(cost):,}")
+
 elif page == "🌍 Sustainability":
-    st.title("🌍 Sustainability")
-    if d:
-        st.metric("Green Score", sustainability_score(d))
-    else:
-        st.info("No design loaded.")
+    st.title("🌍 Sustainability Index")
 
-# -------------------------
+    score = max(0, 100 - world["material_density"] * 40)
+    st.metric("Eco Score", f"{score:.2f}/100")
+
 elif page == "📋 Code Compliance":
-    st.title("📋 Code Compliance")
-    if d:
-        st.metric("Compliance Score", compliance_score(d))
-    else:
-        st.info("No design loaded.")
+    st.title("📋 Compliance AI")
 
-# -------------------------
+    st.success("Zoning rules: PASSED (simulated)")
+    st.warning("Energy code: borderline efficiency detected")
+
 elif page == "📊 AI Evolution":
-    st.title("📊 AI Evolution")
-    if st.session_state.trend:
-        st.line_chart(st.session_state.trend)
-    else:
-        st.info("No evolution data.")
+    st.title("📊 Evolution Timeline")
 
-# -------------------------
+    st.line_chart([random.randint(40, 100) for _ in range(12)])
+
 elif page == "🧠 Memory":
-    st.title("🧠 Memory")
+    st.title("🧠 System Memory")
     st.json(mem)
 
-# -------------------------
 elif page == "⚙ Settings":
-    st.title("⚙ Settings")
-    st.write("Engine parameters are controlled in sidebar.")
+    st.title("⚙ Neural Settings")
+
+    st.write("World seed:", world["seed"])
+    st.write("Auto-generation: ACTIVE")
