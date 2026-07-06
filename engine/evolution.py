@@ -3,6 +3,8 @@ import random
 from engine.fitness import calculate_fitness, score
 from engine.generator import generate_base_design
 
+from plugins.structural_critic import StructuralCritic
+
 def mutate(d):
     d = json.loads(json.dumps(d))
 
