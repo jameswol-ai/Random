@@ -414,3 +414,741 @@ def convert_length(value):
 
 
     return f"{value:.2f} m"
+
+# ============================================================
+# ARCHITECTURAL KNOWLEDGE DOMAINS
+# ============================================================
+
+
+ARCH_DOMAINS = {
+
+
+    "Residential":
+
+    [
+
+        "Luxury Villa",
+
+        "Modern Apartment",
+
+        "Townhouse"
+
+    ],
+
+
+
+    "Commercial":
+
+    [
+
+        "Boutique Office",
+
+        "Corporate Hub",
+
+        "Hotel Resort",
+
+        "Medical Clinic"
+
+    ],
+
+
+
+    "Industrial":
+
+    [
+
+        "Distribution Warehouse",
+
+        "Advanced Manufacturing Plant"
+
+    ]
+
+}
+
+
+
+
+
+def get_domain(building_type):
+
+    for domain, types in ARCH_DOMAINS.items():
+
+        if building_type in types:
+
+            return domain
+
+
+    return "Unknown"
+
+
+
+
+
+# ============================================================
+# AI DESIGN GENETICS ENGINE
+# ============================================================
+
+
+def generate_base_design(
+        building_type,
+        spatial_modules
+):
+
+
+    rooms = (
+
+        [
+
+            "Living Core",
+
+            "Kitchen Hub",
+
+            "Primary Service Zone"
+
+        ]
+
+        +
+
+        [
+
+            "Adaptive Flex Module"
+
+        ]
+
+        *
+
+        random.randint(1,3)
+
+    )
+
+
+    base_area = (
+
+        120
+
+        +
+
+        spatial_modules * 18
+
+    )
+
+
+
+    design = {
+
+
+        "id":
+
+        str(uuid.uuid4())[:8].upper(),
+
+
+
+        "type":
+
+        building_type,
+
+
+
+        "domain":
+
+        get_domain(building_type),
+
+
+
+        "modules":
+
+        spatial_modules,
+
+
+
+        "rooms":
+
+        rooms,
+
+
+
+        "area_sqm":
+
+        base_area,
+
+
+
+        "structure":
+
+        {
+
+
+            "columns":
+
+            random.randint(
+                14,
+                40
+            ),
+
+
+
+            "beams":
+
+            random.randint(
+                30,
+                90
+            )
+
+        },
+
+
+
+        "cost":
+
+        0
+
+    }
+
+
+    return design
+
+
+
+
+
+# ============================================================
+# GENETIC MUTATION
+# ============================================================
+
+
+def mutate_design(design):
+
+
+    child = json.loads(
+
+        json.dumps(design)
+
+    )
+
+
+
+    child["structure"]["columns"] += random.randint(
+        -2,
+        4
+    )
+
+
+
+    child["structure"]["columns"] = max(
+
+        10,
+
+        child["structure"]["columns"]
+
+    )
+
+
+
+    child["structure"]["beams"] += random.randint(
+        -5,
+        8
+    )
+
+
+
+    child["structure"]["beams"] = max(
+
+        16,
+
+        child["structure"]["beams"]
+
+    )
+
+
+
+    if random.random() > 0.5:
+
+
+        child["rooms"].append(
+
+            "AI Generated Adaptive Space"
+
+        )
+
+
+        child["area_sqm"] += 20
+
+
+
+    child["cost"] = int(
+
+        child["area_sqm"]
+
+        *
+
+        random.randint(
+            1400,
+            2600
+        )
+
+    )
+
+
+    return child
+
+
+
+
+
+# ============================================================
+# FITNESS INTELLIGENCE
+# ============================================================
+
+
+def calculate_fitness(design):
+
+
+    beam_ratio = (
+
+        design["structure"]["beams"]
+
+        /
+
+        max(
+            1,
+            design["structure"]["columns"]
+        )
+
+    )
+
+
+
+    structural_score = max(
+
+        0,
+
+        100 -
+
+        int(
+
+            abs(
+                beam_ratio - 2.2
+            )
+
+            *
+
+            20
+
+        )
+
+    )
+
+
+
+    cost_ratio = (
+
+        design["cost"]
+
+        /
+
+        max(
+            1,
+            design["area_sqm"]
+        )
+
+    )
+
+
+
+    cost_score = max(
+
+        0,
+
+        100 -
+
+        int(
+
+            abs(
+                cost_ratio - 1800
+            )
+
+            *
+
+            0.04
+
+        )
+
+    )
+
+
+
+    spatial_score = min(
+
+        100,
+
+        len(
+            design["rooms"]
+        )
+
+        *
+
+        10
+
+    )
+
+
+
+    return {
+
+
+        "structural":
+
+        structural_score,
+
+
+
+        "economic":
+
+        cost_score,
+
+
+
+        "spatial":
+
+        spatial_score
+
+    }
+
+
+
+
+
+def calculate_score(metrics):
+
+    return int(
+
+        sum(
+            metrics.values()
+        )
+
+        /
+
+        len(metrics)
+
+    )
+
+
+
+
+
+# ============================================================
+# EVOLUTION PIPELINE
+# ============================================================
+
+
+def run_evolution(
+
+        building_type,
+
+        modules,
+
+        generations,
+
+        population_size
+
+):
+
+
+    population = [
+
+        generate_base_design(
+            building_type,
+            modules
+        )
+
+        for _ in range(population_size)
+
+    ]
+
+
+    history = []
+
+
+
+    for cycle in range(generations):
+
+
+        scored = []
+
+
+
+        for design in population:
+
+
+            design["fitness"] = calculate_fitness(
+                design
+            )
+
+
+            design["score"] = calculate_score(
+
+                design["fitness"]
+
+            )
+
+
+            scored.append(design)
+
+
+
+        scored.sort(
+
+            key=lambda x:
+
+            x["score"],
+
+            reverse=True
+
+        )
+
+
+
+        history.append(
+
+            scored[0]["score"]
+
+        )
+
+
+
+        survivors = scored[
+
+            :
+
+            max(
+                2,
+                population_size // 2
+            )
+
+        ]
+
+
+
+        next_population = []
+
+
+
+        for parent in survivors:
+
+
+            next_population.append(
+
+                parent
+
+            )
+
+
+            next_population.append(
+
+                mutate_design(
+                    parent
+                )
+
+            )
+
+
+
+        population = next_population[
+
+            :
+
+            population_size
+
+        ]
+
+
+
+    return scored[0], history
+
+
+
+
+
+# ============================================================
+# PARAMETRIC BIM SPACE GENERATOR
+# ============================================================
+
+
+def generate_floor_plan(design):
+
+
+    rooms = [
+
+        {
+
+            "name":
+
+            "Central Living Atrium",
+
+            "width":
+
+            6.5,
+
+            "height":
+
+            5.5,
+
+            "color":
+
+            "#1e40af"
+
+        },
+
+
+        {
+
+            "name":
+
+            "Smart Kitchen Hub",
+
+            "width":
+
+            4.5,
+
+            "height":
+
+            4.0,
+
+            "color":
+
+            "#047857"
+
+        },
+
+
+        {
+
+            "name":
+
+            "Service Core",
+
+            "width":
+
+            3.0,
+
+            "height":
+
+            3.0,
+
+            "color":
+
+            "#92400e"
+
+        }
+
+    ]
+
+
+
+    for i in range(
+
+        design["modules"]
+
+    ):
+
+
+        rooms.append(
+
+            {
+
+                "name":
+
+                f"Spatial Module {i+1}",
+
+
+                "width":
+
+                4.2,
+
+
+                "height":
+
+                4.0,
+
+
+                "color":
+
+                "#6b21a8"
+
+            }
+
+        )
+
+
+
+    return rooms
+
+
+
+
+
+# ============================================================
+# BIM BLUEPRINT RENDERER
+# ============================================================
+
+
+def render_blueprint(plan):
+
+
+    st.markdown(
+
+        "### 🏛️ AI Generated Spatial Blueprint"
+
+    )
+
+
+
+    html = (
+
+        "<div class='arc-blueprint-canvas'>"
+
+    )
+
+
+
+    for room in plan:
+
+
+        html += f"""
+
+        <div class="arc-room-module"
+
+        style="background:{room['color']}">
+
+
+        <b>
+
+        {room['name']}
+
+        </b>
+
+
+        <div class="room-meta">
+
+        📐 {room['width']}m × {room['height']}m
+
+        </div>
+
+
+        </div>
+
+        """
+
+
+
+    html += "</div>"
+
+
+
+    st.markdown(
+
+        html,
+
+        unsafe_allow_html=True
+
+    )
