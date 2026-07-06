@@ -1,13 +1,14 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V7 — ARC STUDIO CORE (STABLE EDITION)
-# Evolutionary Design Generator + Simple Studio UI
+# V15 — ARC STUDIO OPERATING SYSTEM
+# Multi-Agent Evolution + BIM-like Intelligence Layer
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
+import copy
 from pathlib import Path
 from datetime import datetime
 
@@ -16,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio V7",
+    page_title="Arc Studio OS V15",
     page_icon="🏗",
     layout="wide"
 )
@@ -24,7 +25,7 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STYLE LAYER
+# STYLE
 # =========================================================
 
 st.markdown("""
@@ -37,13 +38,14 @@ html, body {
 
 h1, h2, h3 {
     font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.03em;
 }
 
-.card {
+.arc-card {
     background: #0b1220;
     border: 1px solid rgba(255,255,255,0.08);
-    padding: 12px;
-    border-radius: 12px;
+    padding: 14px;
+    border-radius: 14px;
     margin: 10px 0;
 }
 </style>
@@ -55,7 +57,9 @@ h1, h2, h3 {
 
 DEFAULT_STATE = {
     "designs": [],
-    "logs": []
+    "logs": [],
+    "sessions": [],
+    "analytics": []
 }
 
 def load_memory():
@@ -80,92 +84,139 @@ def log(msg):
     })
     save_memory()
 
-# Init
+# init
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
 if "active_design" not in st.session_state:
     st.session_state.active_design = None
 
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 mem = st.session_state.memory
 
 # =========================================================
-# CORE GENERATIVE ENGINE
+# CORE ARCHITECTURE ENGINE
 # =========================================================
 
-def generate_design(goal):
-    area = random.randint(100, 800)
+def base_design(goal):
+    area = random.randint(120, 1000)
 
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "goal": goal,
         "area": area,
-        "cost": area * random.randint(1000, 2200),
+        "cost": area * random.randint(900, 2400),
         "structure": {
-            "columns": random.randint(10, 40),
-            "beams": random.randint(15, 80)
+            "columns": random.randint(10, 60),
+            "beams": random.randint(20, 120)
         },
-        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(1, 5)
+        "rooms": ["Living", "Kitchen", "Bath"] + ["Module"] * random.randint(2, 7)
     }
 
-def fitness(d):
-    return (
-        d["area"] * 0.2 +
-        d["structure"]["columns"] * 1.3 +
-        d["structure"]["beams"] * 1.1 -
-        d["cost"] * 0.0001
-    )
+# =========================================================
+# MULTI-AGENT SYSTEM
+# =========================================================
 
-def mutate(d):
-    d = json.loads(json.dumps(d))
-    d["structure"]["columns"] += random.randint(-2, 2)
-    d["structure"]["beams"] += random.randint(-3, 3)
-    d["cost"] += random.randint(-3000, 3000)
+def planner(goal):
+    return base_design(goal)
 
-    if random.random() > 0.7:
-        d["rooms"].append("Adaptive Module")
-        d["area"] += 10
+def critic(d):
+    issues = []
+
+    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+    if ratio < 1.5:
+        issues.append("Weak beam-column ratio")
+
+    if d["cost"] / max(1, d["area"]) > 2000:
+        issues.append("High cost efficiency risk")
+
+    if len(d["rooms"]) < 5:
+        issues.append("Low spatial complexity")
+
+    return issues
+
+def mutator(d):
+    d = copy.deepcopy(d)
+
+    d["structure"]["columns"] += random.randint(-3, 4)
+    d["structure"]["beams"] += random.randint(-5, 6)
+
+    if random.random() > 0.6:
+        d["rooms"].append("Adaptive Spatial Pod")
+        d["area"] += 15
+
+    d["cost"] = int(d["area"] * random.randint(900, 2400))
 
     return d
 
-def evolve(goal, generations=5, pop_size=6):
-    pop = [generate_design(goal) for _ in range(pop_size)]
+def score(d):
+    return (
+        d["area"] * 0.15 +
+        d["structure"]["columns"] * 1.6 +
+        d["structure"]["beams"] * 1.2 -
+        d["cost"] * 0.00009
+    )
+
+# =========================================================
+# EVOLUTION LOOP
+# =========================================================
+
+def evolve(goal, generations=6, pop_size=8):
+    population = [planner(goal) for _ in range(pop_size)]
     history = []
 
     for _ in range(generations):
-        pop.sort(key=fitness, reverse=True)
-        history.append(fitness(pop[0]))
 
-        survivors = pop[:max(2, pop_size // 2)]
+        # critique phase
+        scored = []
+        for d in population:
+            d["issues"] = critic(d)
+            d["score"] = score(d)
+            scored.append(d)
+
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored[0]["score"])
+
+        survivors = scored[:max(2, pop_size // 2)]
+
         new_pop = []
-
         for s in survivors:
             new_pop.append(s)
-            new_pop.append(mutate(s))
+            new_pop.append(mutator(s))
 
-        pop = new_pop[:pop_size]
+        population = new_pop[:pop_size]
 
-    return pop[0], history
+    best = max(population, key=score)
+    return best, history
+
+# =========================================================
+# FLOOR PLAN GENERATOR
+# =========================================================
 
 def floor_plan(d):
-    return [{"room": r, "size": random.randint(20, 60)} for r in d["rooms"]]
+    return [
+        {"room": r, "area": random.randint(20, 90)}
+        for r in d["rooms"]
+    ]
 
 # =========================================================
-# UI NAVIGATION
+# UI
 # =========================================================
 
-st.sidebar.title("🏗 Arc Studio V7")
+st.sidebar.title("🏗 Arc Studio OS V15")
 
 page = st.sidebar.radio(
     "Workspace",
-    ["Dashboard", "Design Lab", "Memory"]
+    ["Dashboard", "Design Lab", "AI Architect", "Analytics", "Memory"]
 )
 
-goal = st.sidebar.text_input("Design Goal", "Eco House")
-run = st.sidebar.button("Generate")
+goal = st.sidebar.text_input("Design Goal", "Eco Smart Tower")
+run = st.sidebar.button("Run Evolution Engine")
 
 # =========================================================
-# GENERATION
+# EXECUTION
 # =========================================================
 
 if run:
@@ -175,8 +226,15 @@ if run:
 
     mem["designs"].append(best)
     st.session_state.active_design = best
+    st.session_state.history = hist
 
-    log(f"Generated design {best['id']}")
+    mem["sessions"].append({
+        "id": str(uuid.uuid4())[:6],
+        "goal": goal,
+        "time": datetime.now().isoformat()
+    })
+
+    log(f"Evolved design {best['id']}")
 
 # =========================================================
 # ACTIVE DESIGN
@@ -189,14 +247,16 @@ d = st.session_state.active_design
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🏗 Arc Studio Dashboard")
+    st.title("🏗 Arc Studio OS Dashboard")
 
-    st.metric("Total Designs", len(mem["designs"]))
-    st.metric("Logs", len(mem["logs"]))
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Designs", len(mem["designs"]))
+    col2.metric("Sessions", len(mem["sessions"]))
+    col3.metric("Logs", len(mem["logs"]))
 
-    st.markdown("---")
+    st.markdown("### Recent System Activity")
 
-    for l in mem["logs"][-5:]:
+    for l in mem["logs"][-6:]:
         st.write(l)
 
 # =========================================================
@@ -212,27 +272,59 @@ elif page == "Design Lab":
         c1, c2, c3 = st.columns(3)
         c1.metric("Area", f"{d['area']} m²")
         c2.metric("Cost", f"${d['cost']:,}")
-        c3.metric("Rooms", len(d["rooms"]))
+        c3.metric("Score", round(d.get("score", 0), 2))
+
+        st.markdown("### Issues Detected by AI Critic")
+        st.write(d.get("issues", []))
 
         st.markdown("### Structure")
         st.json(d["structure"])
 
         st.markdown("### Floor Plan")
         st.json(d["plan"])
+
+        st.markdown("### Evolution Curve")
+        st.line_chart(st.session_state.history)
+
     else:
-        st.info("Generate a design first.")
+        st.info("Run the evolution engine to generate a design.")
+
+# =========================================================
+# AI ARCHITECT
+# =========================================================
+
+elif page == "AI Architect":
+    st.title("🧠 AI Architect Layer")
+
+    if d:
+        st.json({
+            "structural_balance": d["structure"]["beams"] / max(1, d["structure"]["columns"]),
+            "complexity": len(d["rooms"]) * 10,
+            "cost_efficiency": d["cost"] / max(1, d["area"])
+        })
+
+# =========================================================
+# ANALYTICS
+# =========================================================
+
+elif page == "Analytics":
+    st.title("📊 Evolution Analytics")
+
+    if d:
+        st.line_chart([random.randint(60, 100) for _ in range(15)])
 
 # =========================================================
 # MEMORY
 # =========================================================
 
 elif page == "Memory":
-    st.title("🧠 Memory Core")
+    st.title("🧠 Arc Memory Core")
 
     st.json(mem)
 
-    if st.button("Reset Memory"):
+    if st.button("Reset System"):
         st.session_state.memory = DEFAULT_STATE.copy()
         st.session_state.active_design = None
+        st.session_state.history = []
         save_memory()
         st.rerun()
