@@ -432,3 +432,480 @@ def generate_windows():
         }
 
     ]
+
+# ============================================================
+# STRUCTURAL GENERATORS
+# ============================================================
+
+def generate_grid(spacing):
+
+    grid = []
+
+    letters = [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+    ]
+
+
+    for row in letters:
+
+        for number in range(1,6):
+
+            grid.append(
+
+            {
+            "name":
+            f"{row}{number}",
+
+            "spacing":
+            spacing,
+
+            "x":
+            number * spacing,
+
+            "y":
+            letters.index(row) * spacing
+
+            }
+
+            )
+
+
+    return grid
+
+
+
+def generate_columns(grid):
+
+    columns = []
+
+    for point in grid:
+
+        columns.append(
+
+        {
+        "id":
+        f"C-{point['name']}",
+
+        "grid":
+        point["name"],
+
+        "size":
+        "300x300mm",
+
+        "material":
+        "Reinforced Concrete"
+
+        }
+
+        )
+
+
+    return columns
+
+
+
+def generate_beams():
+
+    return [
+
+        {
+        "id":"B001",
+
+        "span":"6000mm",
+
+        "size":"250x450mm"
+
+        },
+
+        {
+        "id":"B002",
+
+        "span":"5000mm",
+
+        "size":"250x450mm"
+
+        }
+
+    ]
+
+
+
+def generate_foundation():
+
+    return {
+
+        "type":
+        "Pad Foundation",
+
+        "depth":
+        1200,
+
+        "material":
+        "Concrete C25"
+
+    }
+
+
+
+def generate_roof():
+
+    return {
+
+        "type":
+        "Pitched Roof",
+
+        "pitch":
+        "30 degrees",
+
+        "covering":
+        "Metal Sheet"
+
+    }
+
+
+
+# ============================================================
+# COST ENGINE
+# ============================================================
+
+def generate_cost(area):
+
+    return {
+
+        "Floor Area":
+        area,
+
+
+        "Concrete Volume":
+        round(
+            area * 0.25,
+            2
+        ),
+
+
+        "Steel Quantity":
+        round(
+            area * 0.04,
+            2
+        ),
+
+
+        "Floor Finish":
+        area,
+
+
+        "Estimated Cost USD":
+        round(
+            area * 650,
+            2
+        )
+
+    }
+
+
+
+# ============================================================
+# RANDOM AI HEADER
+# ============================================================
+
+st.markdown(
+
+"""
+<div class="hero">
+
+<div class="logo">
+
+🏛️ RANDOM AI BIM STUDIO V55.1
+
+</div>
+
+
+<div class="subtitle">
+
+Artificial Intelligence • Architecture • BIM • Documentation
+
+</div>
+
+
+</div>
+
+""",
+
+unsafe_allow_html=True
+
+)
+
+
+
+# ============================================================
+# SIDEBAR CONTROLS
+# ============================================================
+
+with st.sidebar:
+
+
+    st.header(
+        "🏗️ BIM PROJECT SETUP"
+    )
+
+
+    project_name = st.text_input(
+
+        "Project Name",
+
+        "AI Residence"
+
+    )
+
+
+    bedrooms = st.slider(
+
+        "Bedrooms",
+
+        1,
+
+        12,
+
+        4
+
+    )
+
+
+    bathrooms = st.slider(
+
+        "Bathrooms",
+
+        1,
+
+        10,
+
+        3
+
+    )
+
+
+    floors = st.slider(
+
+        "Floors",
+
+        1,
+
+        5,
+
+        2
+
+    )
+
+
+    units = st.radio(
+
+        "📐 Drawing Units",
+
+        [
+
+        "Metric",
+
+        "Imperial",
+
+        "Dual"
+
+        ],
+
+        horizontal=True
+
+    )
+
+
+    grid_spacing = st.selectbox(
+
+        "📏 Grid Spacing",
+
+        [
+
+        1,
+
+        1.5,
+
+        3
+
+        ]
+
+    )
+
+
+    generate = st.button(
+
+        "🚀 GENERATE BIM MODEL"
+
+    )
+
+
+
+# ============================================================
+# AI BUILDING GENERATION
+# ============================================================
+
+if generate:
+
+
+    spaces = generate_spaces(
+
+        bedrooms,
+
+        bathrooms
+
+    )
+
+
+    area = sum(
+
+        item["area"]
+
+        for item in spaces
+
+    )
+
+
+    grid = generate_grid(
+
+        grid_spacing
+
+    )
+
+
+    st.session_state.bim.update(
+
+    {
+
+
+    "project":
+    project_name,
+
+
+    "units":
+    units,
+
+
+    "levels":
+
+    [
+
+        {
+        "name":
+        f"Level {i+1}",
+
+        "height":
+        3000
+
+        }
+
+        for i in range(floors)
+
+    ],
+
+
+    "spaces":
+    spaces,
+
+
+    "walls":
+    generate_walls(),
+
+
+    "doors":
+    generate_doors(),
+
+
+    "windows":
+    generate_windows(),
+
+
+    "grid":
+    grid,
+
+
+    "columns":
+    generate_columns(grid),
+
+
+    "beams":
+    generate_beams(),
+
+
+    "foundation":
+    generate_foundation(),
+
+
+    "roof":
+    generate_roof(),
+
+
+    "cost":
+    generate_cost(area)
+
+
+    }
+
+    )
+
+
+    st.success(
+
+        "🏛️ RANDOM AI BIM model generated"
+
+    )
+
+
+
+# ============================================================
+# DASHBOARD METRICS
+# ============================================================
+
+bim = st.session_state.bim
+
+
+col1,col2,col3,col4 = st.columns(4)
+
+
+metrics = [
+
+(col1,"ROOMS",len(bim["spaces"])),
+
+(col2,"WALLS",len(bim["walls"])),
+
+(col3,"STRUCTURE",
+len(bim["columns"])),
+
+(col4,"GRID",
+len(bim["grid"]))
+
+]
+
+
+for col,title,value in metrics:
+
+    col.markdown(
+
+    f"""
+
+<div class="card">
+
+<h3>{title}</h3>
+
+<div class="metric">
+
+{value}
+
+</div>
+
+</div>
+
+""",
+
+    unsafe_allow_html=True
+
+)
