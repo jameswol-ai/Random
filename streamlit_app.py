@@ -1,13 +1,14 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE v9
-# Evolutionary Spatial Layout Synthesis & Diagnostics
-# Core Generative Streamlit System (No BIM / No IFC / No AI agents)
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
+# V30 — FINAL NEURAL ARCHITECTURE OS (MERGED BUILD)
+# Evolutionary + BIM + AI Studio + Blueprint Visualization
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
+import math
 from pathlib import Path
 from datetime import datetime
 
@@ -16,20 +17,20 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine v9",
-    page_icon="📐",
+    page_title="Random Neural Architecture OS V30",
+    page_icon="🏗",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STYLING
+# STYLE LAYER (Merged Arc Studio + V30)
 # =========================================================
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600&family=Space+Grotesk:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
 
 html, body {
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -37,58 +38,75 @@ html, body {
 
 h1, h2, h3 {
     font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.03em;
 }
 
-.arc-blueprint {
+.card {
+    background: #0b1220;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 16px;
+    border-radius: 12px;
+    margin: 10px 0;
+}
+
+/* Blueprint Canvas */
+.arc-blueprint-canvas {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
-    padding: 20px;
-    background: #0b1020;
+    gap: 16px;
+    background: #090d16;
+    padding: 24px;
     border-radius: 12px;
     border: 1px dashed #334155;
+    margin-top: 15px;
 }
 
-.arc-room {
-    flex: 1 1 calc(33% - 10px);
-    min-width: 200px;
-    padding: 16px;
+.arc-room-module {
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 220px;
+    padding: 20px;
     border-radius: 10px;
     color: white;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: 0.25s;
 }
 
-.meta {
-    font-size: 0.8rem;
+.arc-room-module:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.room-meta {
+    font-size: 0.85rem;
     opacity: 0.8;
-    margin-top: 6px;
+    margin-top: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY SYSTEM (v9 simple)
+# MEMORY
 # =========================================================
 
 DEFAULT_STATE = {
+    "projects": [],
     "designs": [],
     "logs": [],
-    "evolution": []
+    "evolution": [],
+    "plugins": []
 }
-
 
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            return json.loads(MEMORY_FILE.read_text())
+            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
         except:
             return DEFAULT_STATE.copy()
     return DEFAULT_STATE.copy()
 
-
 def save_memory():
-    MEMORY_FILE.write_text(json.dumps(st.session_state.memory, indent=2))
-
+    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.memory, f, indent=2)
 
 def log(msg):
     st.session_state.memory["logs"].append({
@@ -97,7 +115,7 @@ def log(msg):
     })
     save_memory()
 
-
+# Init
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -107,112 +125,67 @@ if "active" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# CORE GENERATIVE ENGINE
+# CORE ENGINE
 # =========================================================
 
-ARCH_TYPES = [
-    "Luxury Villa",
-    "Modern Apartment",
-    "Townhouse",
-    "Boutique Office",
-    "Warehouse"
-]
-
-
-def generate_design():
+def generate_design(goal):
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": random.choice(ARCH_TYPES),
-        "bedrooms": random.randint(1, 6),
-        "area": random.randint(120, 600),
+        "id": str(uuid.uuid4())[:8],
+        "goal": goal,
+        "area": random.randint(120, 900),
+        "cost": random.randint(80_000, 950_000),
         "structure": {
-            "columns": random.randint(12, 40),
-            "beams": random.randint(20, 80)
+            "columns": random.randint(12, 55),
+            "beams": random.randint(20, 110)
         },
-        "cost": random.randint(120000, 800000),
-        "rooms": ["Living Room", "Kitchen", "Bathroom"]
+        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
     }
-
-
-def mutate(d):
-    d = json.loads(json.dumps(d))
-
-    d["structure"]["columns"] += random.randint(-2, 3)
-    d["structure"]["beams"] += random.randint(-3, 5)
-
-    if random.random() > 0.6:
-        d["rooms"].append("Flex Space")
-        d["area"] += 15
-
-    d["cost"] = d["area"] * random.randint(1200, 2600)
-
-    return d
-
 
 def fitness(d):
-    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    structural = max(0, 100 - abs(ratio - 2.0) * 20)
+    return (
+        d["area"] * 0.2 +
+        d["structure"]["columns"] * 1.5 +
+        d["structure"]["beams"] * 1.2 -
+        d["cost"] * 0.0001
+    )
 
-    cost_sqm = d["cost"] / max(1, d["area"])
-    cost = max(0, 100 - abs(cost_sqm - 1500) * 0.05)
-
-    space = min(100, len(d["rooms"]) * 12)
-
-    return {
-        "structural": structural,
-        "cost": cost,
-        "space": space
-    }
-
-
-def score(f):
-    return int(sum(f.values()) / len(f))
-
-
-def evolve(bedrooms, gens, pop):
-    population = []
-
-    for _ in range(pop):
-        d = generate_design()
-        d["bedrooms"] = bedrooms
-        population.append(d)
-
+def evolve(goal, generations=6):
+    pop = [generate_design(goal) for _ in range(8)]
     history = []
 
-    for _ in range(gens):
-        scored = []
+    for _ in range(generations):
+        pop.sort(key=fitness, reverse=True)
+        history.append(fitness(pop[0]))
 
-        for d in population:
-            f = fitness(d)
-            d["fitness"] = f
-            d["score"] = score(f)
-            scored.append(d)
-
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
-
-        survivors = scored[:max(2, pop // 2)]
-
+        survivors = pop[:4]
         new_pop = []
+
         for s in survivors:
             new_pop.append(s)
-            new_pop.append(mutate(s))
+            mutated = json.loads(json.dumps(s))
+            mutated["structure"]["columns"] += random.randint(-2, 3)
+            mutated["structure"]["beams"] += random.randint(-3, 4)
+            mutated["cost"] += random.randint(-5000, 5000)
+            new_pop.append(mutated)
 
-        population = new_pop[:pop]
+        pop = new_pop[:8]
 
-    return scored[0], history
+    return pop[0], history
 
+# =========================================================
+# FLOOR + BLUEPRINT VISUAL ENGINE
+# =========================================================
 
 def floor_plan(d):
     rooms = [
-        {"name": "Living Room", "w": 6, "h": 5, "color": "#1e3a8a"},
-        {"name": "Kitchen", "w": 4, "h": 4, "color": "#064e3b"},
-        {"name": "Bathroom", "w": 3, "h": 2, "color": "#78350f"}
+        {"name": "Living Lounge", "w": 6, "h": 5, "color": "#1e3a8a"},
+        {"name": "Kitchen Core", "w": 4, "h": 4, "color": "#065f46"},
+        {"name": "Bath Node", "w": 3, "h": 2, "color": "#78350f"}
     ]
 
-    for i in range(d["bedrooms"]):
+    for i in range(len(d["rooms"])):
         rooms.append({
-            "name": f"Bedroom {i+1}",
+            "name": f"Room {i+1}",
             "w": 4,
             "h": 4,
             "color": "#4c1d95"
@@ -220,101 +193,163 @@ def floor_plan(d):
 
     return rooms
 
+def render_blueprint(plan):
+    st.markdown("### 🗺️ Spatial Blueprint Simulation")
+
+    html = '<div class="arc-blueprint-canvas">'
+    for r in plan:
+        html += f"""
+        <div class="arc-room-module" style="background:{r['color']}">
+            <div style="font-weight:700">{r['name']}</div>
+            <div class="room-meta">{r['w']}m × {r['h']}m module</div>
+        </div>
+        """
+    html += "</div>"
+
+    st.markdown(html, unsafe_allow_html=True)
+
 # =========================================================
-# UI
+# EVOLUTION ENGINE
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio")
+def run(goal):
+    return evolve(goal)
+
+# =========================================================
+# SIDEBAR NAV
+# =========================================================
+
+st.sidebar.title("🏗 Neural Architecture OS V30")
 
 page = st.sidebar.radio(
     "Workspace",
-    ["Dashboard", "Synthesis Lab", "Memory"]
+    [
+        "🏠 Dashboard",
+        "📂 Projects",
+        "📐 Design Studio",
+        "🧠 AI Architect",
+        "🏗 Structural Analysis",
+        "💰 Cost Estimation",
+        "🌱 Sustainability",
+        "📋 Code Compliance",
+        "🏢 BIM Manager",
+        "📊 Analytics",
+        "🧠 Memory",
+        "🔌 Plugins",
+        "⚙ Settings"
+    ]
 )
 
-with st.sidebar.expander("Engine Config"):
-    bedrooms = st.slider("Bedrooms", 1, 6, 3)
-    gens = st.slider("Generations", 2, 15, 6)
-    pop = st.slider("Population", 4, 20, 10)
+goal = st.sidebar.text_input("Design Goal", "Neo Eco Tower")
+run_btn = st.sidebar.button("Generate Architecture")
 
 # =========================================================
-# DASHBOARD
+# GENERATION
 # =========================================================
 
-if page == "Dashboard":
-    st.title("📐 Control Dashboard")
+if run_btn:
+    design, history = run(goal)
+    design["plan"] = floor_plan(design)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Evolution Runs", len(mem["evolution"]))
-    c3.metric("Logs", len(mem["logs"]))
+    mem["designs"].append(design)
+    st.session_state.active = design
 
-    st.subheader("Recent Logs")
-
-    for log_entry in mem["logs"][-6:]:
-        st.caption(f"{log_entry['time'][11:19]} — {log_entry['msg']}")
+    log(f"Generated design {design['id']}")
 
 # =========================================================
-# SYNTHESIS LAB
+# ACTIVE DESIGN
 # =========================================================
 
-elif page == "Synthesis Lab":
-    st.title("🌍 Evolution Engine v9")
+d = st.session_state.get("active", None)
 
-    if st.button("Generate Design"):
-        best, history = evolve(bedrooms, gens, pop)
+# =========================================================
+# PAGES
+# =========================================================
 
-        best["plan"] = floor_plan(best)
+if page == "🏠 Dashboard":
+    st.title("🏠 System Dashboard")
 
-        mem["designs"].append(best)
-        mem["evolution"].append({
-            "id": str(uuid.uuid4())[:6].upper(),
-            "best": best["id"],
-            "score": best["score"],
-            "time": datetime.now().isoformat()
+    st.metric("Designs", len(mem["designs"]))
+    st.metric("Logs", len(mem["logs"]))
+    st.metric("Plugins Loaded", len(mem["plugins"]))
+
+    st.markdown("---")
+    for l in mem["logs"][-6:]:
+        st.write(l)
+
+elif page == "📂 Projects":
+    st.title("📂 Projects")
+    st.json(mem["projects"])
+
+elif page == "📐 Design Studio":
+    st.title("📐 Design Studio")
+
+    if d:
+        st.json(d)
+        render_blueprint(d["plan"])
+    else:
+        st.info("Generate a design first.")
+
+elif page == "🧠 AI Architect":
+    st.title("🧠 AI Architect")
+
+    if d:
+        st.json({
+            "complexity": len(d["rooms"]) * 10,
+            "efficiency": 100 - (d["cost"] / 10000)
         })
 
-        st.session_state.active = best
-        st.session_state.history = history
+elif page == "🏗 Structural Analysis":
+    st.title("🏗 Structural Analysis")
 
-        log(f"Generated {best['id']}")
+    if d:
+        st.json(d["structure"])
 
-    if st.session_state.active:
-        d = st.session_state.active
+elif page == "💰 Cost Estimation":
+    st.title("💰 Cost Estimation")
 
-        st.subheader(f"Design {d['id']}")
+    if d:
+        st.metric("Cost", f"${d['cost']:,}")
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Score", d["score"])
-        c2.metric("Area", d["area"])
-        c3.metric("Cost", d["cost"])
+elif page == "🌱 Sustainability":
+    st.title("🌱 Sustainability")
 
-        st.markdown("### Floor Plan")
+    if d:
+        score = max(0, 100 - d["structure"]["columns"])
+        st.metric("Score", f"{score}/100")
 
-        canvas = '<div class="arc-blueprint">'
-        for r in d["plan"]:
-            canvas += f"""
-            <div class="arc-room" style="background:{r['color']}">
-                <b>{r['name']}</b>
-                <div class="meta">{r['w']}m × {r['h']}m</div>
-            </div>
-            """
-        canvas += "</div>"
+elif page == "📋 Code Compliance":
+    st.success("Simulated BIM compliance PASSED")
 
-        st.markdown(canvas, unsafe_allow_html=True)
+elif page == "🏢 BIM Manager":
+    st.title("🏢 BIM Manager")
 
-        st.line_chart(st.session_state.history)
+    if d:
+        st.json({"materials": ["Concrete", "Steel", "Glass"], "structure": d["structure"]})
 
-# =========================================================
-# MEMORY
-# =========================================================
+elif page == "📊 Analytics":
+    st.title("📊 Analytics")
 
-elif page == "Memory":
-    st.title("🧠 Memory Store")
+    if d:
+        st.line_chart([random.randint(60, 100) for _ in range(10)])
 
+elif page == "🧠 Memory":
+    st.title("🧠 Memory")
     st.json(mem)
 
-    if st.button("Reset Memory"):
+elif page == "🔌 Plugins":
+    st.title("🔌 Plugins")
+
+    if "BIM_CORE_V30" not in mem["plugins"]:
+        mem["plugins"].append("BIM_CORE_V30")
+
+    st.json(mem["plugins"])
+
+elif page == "⚙ Settings":
+    st.title("⚙ Settings")
+
+    if st.button("Reset System"):
         st.session_state.memory = DEFAULT_STATE.copy()
         st.session_state.active = None
         save_memory()
-        st.rerun()
+        st.success("Reset complete")
