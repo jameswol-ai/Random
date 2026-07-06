@@ -1,31 +1,25 @@
-# core/memory.py
 import json
 from pathlib import Path
-from datetime import datetime
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("arc_v32_memory.json")
 
 DEFAULT_STATE = {
-    "projects": [],
     "designs": [],
+    "evolution": [],
     "logs": [],
-    "evolution": []
+    "dna_bias": {
+        "avg_columns": 22,
+        "avg_beams": 45
+    }
 }
 
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
-        except Exception:
+            return json.load(open(MEMORY_FILE))
+        except:
             return DEFAULT_STATE.copy()
     return DEFAULT_STATE.copy()
 
-def save_memory(memory):
-    MEMORY_FILE.write_text(json.dumps(memory, indent=2), encoding="utf-8")
-
-def log_event(memory, msg: str):
-    memory["logs"].append({
-        "time": datetime.now().isoformat(),
-        "msg": msg
-    })
-    save_memory(memory)
+def save_memory(mem):
+    json.dump(mem, open(MEMORY_FILE, "w"), indent=2)
