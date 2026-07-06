@@ -542,3 +542,176 @@ if st.session_state.active_design:
 
         st.subheader("Cost Breakdown")
         st.dataframe(cost_breakdown(bim))
+
+
+import pandas as pd
+from datetime import timedelta
+
+# =========================================================
+# 🌍 SUSTAINABILITY ENGINE (CARBON + MATERIAL IMPACT)
+# =========================================================
+
+def sustainability_model(bim):
+    area = bim["architecture"]["floors"] * 120
+
+    carbon = {
+        "concrete_kgCO2": area * 320,
+        "steel_kgCO2": area * 180,
+        "glass_kgCO2": area * 90,
+        "total_kgCO2": 0
+    }
+
+    carbon["total_kgCO2"] = sum([
+        carbon["concrete_kgCO2"],
+        carbon["steel_kgCO2"],
+        carbon["glass_kgCO2"]
+    ])
+
+    return carbon
+
+
+# =========================================================
+# 📆 CONSTRUCTION TIMELINE SIMULATION ENGINE
+# =========================================================
+
+def construction_timeline(bim):
+    floors = bim["architecture"]["floors"]
+
+    base_days = 120
+    complexity_factor = floors * 18
+
+    phases = [
+        {"phase": "Site Preparation", "days": 15},
+        {"phase": "Foundation Works", "days": 30},
+        {"phase": "Structural Frame", "days": base_days + complexity_factor},
+        {"phase": "MEP Installation", "days": 45 + floors * 5},
+        {"phase": "Finishing Works", "days": 60},
+        {"phase": "Commissioning", "days": 20}
+    ]
+
+    start = pd.Timestamp.today()
+
+    timeline = []
+
+    for p in phases:
+        end = start + timedelta(days=p["days"])
+        timeline.append({
+            "Phase": p["phase"],
+            "Duration (days)": p["days"],
+            "Start": start.date(),
+            "End": end.date()
+        })
+        start = end
+
+    return pd.DataFrame(timeline)
+
+
+# =========================================================
+# 📦 EXPORT ENGINE (JSON / BIM SNAPSHOT)
+# =========================================================
+
+def export_bim_snapshot(bim):
+    return {
+        "project_id": bim["id"],
+        "architecture": bim["architecture"],
+        "structure_analysis": bim.get("structure_analysis", {}),
+        "hvac": bim.get("hvac_zones", []),
+        "cost": bim["cost_model"],
+        "sustainability": sustainability_model(bim)
+    }
+
+
+# =========================================================
+# 🌳 BIM TREE EXPLORER (HIERARCHICAL VIEW)
+# =========================================================
+
+def build_bim_tree(bim):
+    tree = {
+        "Project": {
+            "ID": bim["id"],
+            "Type": bim["type"],
+            "Floors": bim["architecture"]["floors"],
+            "Rooms": len(bim.get("rooms", []))
+        },
+        "Systems": {
+            "Structure": bim.get("structure_analysis", {}),
+            "HVAC Zones": len(bim.get("hvac_zones", [])),
+            "MEP Nodes": len(list(bim.get("mep_graph", []).nodes)) if bim.get("mep_graph") else 0
+        },
+        "Economics": {
+            "Total Cost": bim["cost_model"]["total"],
+            "Cost per m²": bim["cost_model"]["total"] / max(1, bim["architecture"]["floors"] * 120)
+        }
+    }
+
+    return tree
+
+
+# =========================================================
+# 🧠 BIM INTELLIGENCE SUMMARY PANEL
+# =========================================================
+
+def bim_summary(bim):
+    carbon = sustainability_model(bim)
+    timeline = construction_timeline(bim)
+
+    return {
+        "carbon_footprint_tons": carbon["total_kgCO2"] / 1000,
+        "estimated_duration_days": int(timeline["Duration (days)"].sum()),
+        "efficiency_index": round(
+            (bim["structure_analysis"]["structural_efficiency"] if "structure_analysis" in bim else 75) * 0.9,
+            2
+        )
+    }
+
+
+# =========================================================
+# 🧩 UI EXTENSION: FINAL BIM DASHBOARD LAYER
+# =========================================================
+
+if st.session_state.active_design:
+
+    design = st.session_state.active_design
+    bim = build_full_bim(design)
+    bim = enrich_bim(bim)
+
+    st.markdown("---")
+    st.subheader("🧠 BIM Intelligence Command Center")
+
+    col1, col2, col3 = st.columns(3)
+
+    summary = bim_summary(bim)
+
+    col1.metric("🌍 Carbon Footprint (tons CO₂)", summary["carbon_footprint_tons"])
+    col2.metric("📆 Project Duration (days)", summary["estimated_duration_days"])
+    col3.metric("⚡ Efficiency Index", summary["efficiency_index"])
+
+    tab1, tab2, tab3 = st.tabs([
+        "🌍 Sustainability",
+        "📆 Timeline",
+        "📦 Export / BIM Snapshot"
+    ])
+
+    # -------------------------
+    # 🌍 SUSTAINABILITY
+    # -------------------------
+    with tab1:
+        st.subheader("Carbon Emissions Breakdown")
+        st.json(sustainability_model(bim))
+
+    # -------------------------
+    # 📆 TIMELINE
+    # -------------------------
+    with tab2:
+        st.subheader("Construction Timeline Simulation")
+        st.dataframe(construction_timeline(bim))
+
+    # -------------------------
+    # 📦 EXPORT
+    # -------------------------
+    with tab3:
+        st.subheader("BIM Export Snapshot")
+        st.json(export_bim_snapshot(bim))
+
+        st.subheader("BIM Tree Explorer")
+        st.json(build_bim_tree(bim))
