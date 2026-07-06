@@ -1,8 +1,9 @@
 # ============================================================
-# RANDOM V53 AI BUILDER
-# Parametric Architecture + BIM Core
+# RANDOM V54 BIM VISUALIZATION STUDIO
 #
-# Single File Streamlit Edition
+# AI Architecture + BIM Intelligence Engine
+#
+# Streamlit Single File Edition
 # ============================================================
 
 import streamlit as st
@@ -12,7 +13,7 @@ from datetime import datetime
 try:
     import plotly.graph_objects as go
     PLOTLY = True
-except:
+except Exception:
     PLOTLY = False
 
 
@@ -21,14 +22,14 @@ except:
 # ============================================================
 
 st.set_page_config(
-    page_title="RANDOM AI Builder",
+    page_title="RANDOM AI BIM Studio",
     page_icon="🏛️",
     layout="wide"
 )
 
 
 # ============================================================
-# STYLE
+# UI DESIGN
 # ============================================================
 
 st.markdown(
@@ -41,8 +42,14 @@ background:#070b18;
 
 .hero {
 
-background:#111a33;
-padding:30px;
+background:
+linear-gradient(
+135deg,
+#111936,
+#080d20
+);
+
+padding:35px;
 border-radius:25px;
 border:1px solid #27304d;
 
@@ -50,16 +57,18 @@ border:1px solid #27304d;
 
 .logo {
 
-font-size:50px;
+font-size:55px;
 font-weight:900;
 
 }
 
 .subtitle {
 
-color:#a8b4d8;
+color:#aab6d8;
+font-size:20px;
 
 }
+
 
 .card {
 
@@ -70,10 +79,11 @@ border:1px solid #27304d;
 
 }
 
-.big {
 
-font-size:32px;
-font-weight:800;
+.metric {
+
+font-size:35px;
+font-weight:900;
 color:#8fa7ff;
 
 }
@@ -81,13 +91,16 @@ color:#8fa7ff;
 
 .stButton button {
 
-border-radius:15px;
-height:45px;
-
-background:#4155ff;
+background:#4255ff;
 color:white;
 
+height:45px;
+
+border-radius:15px;
+
 font-weight:bold;
+
+width:100%;
 
 }
 
@@ -100,25 +113,27 @@ unsafe_allow_html=True
 
 
 # ============================================================
-# BUILDING DATABASE
+# DATA MODEL
 # ============================================================
 
-if "model" not in st.session_state:
+if "project" not in st.session_state:
 
-    st.session_state.model = {
+    st.session_state.project = {
 
         "id":str(uuid.uuid4()),
 
-        "created":str(datetime.now()),
+        "created":
+        str(datetime.now()),
 
         "spaces":[],
         "walls":[],
         "doors":[],
         "windows":[],
+        "columns":[],
+        "beams":[],
         "grid":[],
-        "structure":{},
-        "roof":{},
         "foundation":{},
+        "roof":{},
         "cost":{}
 
     }
@@ -129,116 +144,133 @@ if "model" not in st.session_state:
 # GENERATORS
 # ============================================================
 
-def generate_spaces(bedrooms,bathrooms):
+def create_spaces(bedrooms,bathrooms):
 
-    spaces=[]
+    spaces=[
 
-    base=[
-
-        ("Living Room",30),
-        ("Kitchen",15),
-        ("Dining",15),
+        ("Living Room",35),
+        ("Kitchen",18),
+        ("Dining",16),
         ("Corridor",12),
         ("Laundry",8),
         ("Balcony",10)
 
     ]
 
-    for name,area in base:
-
-        spaces.append(
-            {
-            "name":name,
-            "area":area
-            }
-        )
-
-
     for i in range(bedrooms):
 
         spaces.append(
-            {
-            "name":f"Bedroom {i+1}",
-            "area":16
-            }
+            (
+            f"Bedroom {i+1}",
+            16
+            )
         )
 
 
     for i in range(bathrooms):
 
         spaces.append(
-            {
-            "name":f"Bathroom {i+1}",
-            "area":6
-            }
+            (
+            f"Bathroom {i+1}",
+            6
+            )
         )
 
-
-    return spaces
-
-
-
-def generate_walls():
 
     return [
 
         {
-        "id":"W001",
-        "length":6000,
-        "height":3000,
-        "thickness":200
+        "name":n,
+        "area":a
+        }
+
+        for n,a in spaces
+
+    ]
+
+
+
+def create_walls():
+
+    return [
+
+        {
+        "id":"W01",
+        "length":"6000mm",
+        "height":"3000mm",
+        "thickness":"200mm"
         },
 
         {
-        "id":"W002",
-        "length":5000,
-        "height":3000,
-        "thickness":200
+        "id":"W02",
+        "length":"5000mm",
+        "height":"3000mm",
+        "thickness":"200mm"
         }
 
     ]
 
 
 
-def generate_openings():
+def create_doors():
 
-    return {
-
-    "doors":[
+    return [
 
         {
         "id":"D01",
+        "type":"Internal Door",
         "size":"900x2100mm"
-        }
-
-    ],
-
-    "windows":[
+        },
 
         {
-        "id":"WIN01",
-        "size":"1500x1200mm"
+        "id":"D02",
+        "type":"Entrance Door",
+        "size":"1200x2400mm"
         }
 
     ]
 
-    }
+
+
+def create_windows():
+
+    return [
+
+        {
+        "id":"WIN01",
+        "size":"1500x1200mm",
+        "sill":"900mm"
+        },
+
+        {
+        "id":"WIN02",
+        "size":"1200x1200mm",
+        "sill":"900mm"
+        }
+
+    ]
 
 
 
-def generate_grid(spacing):
+def create_grid(spacing):
 
     grid=[]
 
-    for x in range(6):
+    letters=["A","B","C","D"]
 
-        for y in range(6):
+    for row in letters:
+
+        for number in range(1,5):
 
             grid.append(
 
             {
-            "axis_x":x*spacing,
-            "axis_y":y*spacing
+            "grid":
+            f"{row}{number}",
+
+            "spacing":
+            spacing
+
             }
 
             )
@@ -247,41 +279,43 @@ def generate_grid(spacing):
 
 
 
-def generate_structure():
+def create_structure():
 
     return {
 
-    "columns":
-    "300x300mm RC Columns",
+    "Columns":
+    "300x300mm Reinforced Concrete",
 
-    "beams":
-    "250x450mm RC Beams",
+    "Beams":
+    "250x450mm Reinforced Concrete",
 
-    "slab":
-    "150mm Reinforced Concrete Slab"
+    "Slab":
+    "150mm Concrete Slab"
 
     }
 
 
 
-def calculate_cost(area):
+def create_cost(area):
 
     return {
 
-    "Area":
+    "Floor Area":
     f"{area} m²",
 
     "Concrete":
-    f"{round(area*0.25,2)} m³",
+    f"{area*0.25:.2f} m³",
 
     "Steel":
-    f"{round(area*0.04,2)} tonnes",
+    f"{area*0.04:.2f} tonnes",
+
+    "Flooring":
+    f"{area} m²",
 
     "Estimated Cost":
     f"${area*600:,.0f}"
 
     }
-
 
 
 
@@ -296,12 +330,14 @@ st.markdown(
 <div class="hero">
 
 <div class="logo">
-🏛️ RANDOM AI BUILDER
+
+🏛️ RANDOM AI BIM STUDIO
+
 </div>
 
 <div class="subtitle">
 
-Parametric Architecture • BIM • Structural Intelligence
+Architecture Intelligence • Parametric BIM • Automated Documentation
 
 </div>
 
@@ -316,25 +352,37 @@ unsafe_allow_html=True
 
 
 # ============================================================
-# CONTROL PANEL
+# SIDEBAR
 # ============================================================
 
 with st.sidebar:
 
-    st.header("🏠 Building Generator")
+    st.header("🏠 Building Parameters")
+
+
+    project_name=st.text_input(
+        "Project Name",
+        "AI Residence"
+    )
 
 
     bedrooms=st.slider(
         "Bedrooms",
-        1,10,4
+        1,
+        10,
+        4
     )
+
 
     bathrooms=st.slider(
         "Bathrooms",
-        1,8,3
+        1,
+        8,
+        3
     )
 
-    floors=st.number_input(
+
+    floors=st.slider(
         "Floors",
         1,
         5,
@@ -342,81 +390,84 @@ with st.sidebar:
     )
 
 
-    spacing=st.selectbox(
-
-        "Grid Spacing",
-
+    grid_spacing=st.selectbox(
+        "Structural Grid",
         [
         1,
         1.5,
         3
         ]
-
     )
 
 
     generate=st.button(
-        "🚀 GENERATE BIM HOUSE"
+        "🚀 GENERATE BIM MODEL"
     )
 
 
+
+# ============================================================
+# BUILD GENERATION
+# ============================================================
+
 if generate:
 
-    spaces=generate_spaces(
+
+    spaces=create_spaces(
         bedrooms,
         bathrooms
     )
 
-    st.session_state.model["spaces"]=spaces
-
-    st.session_state.model["walls"]=generate_walls()
-
-    openings=generate_openings()
-
-    st.session_state.model["doors"]=openings["doors"]
-
-    st.session_state.model["windows"]=openings["windows"]
-
-    st.session_state.model["grid"]=generate_grid(
-        spacing
-    )
-
-    st.session_state.model["structure"]=generate_structure()
-
-
-    st.session_state.model["foundation"]={
-
-        "type":
-        "Pad Foundation",
-
-        "depth":
-        "1200mm"
-
-    }
-
-
-    st.session_state.model["roof"]={
-
-        "type":
-        "Pitched Roof",
-
-        "pitch":
-        "30 degrees"
-
-    }
-
 
     area=sum(
-        x["area"]
-        for x in spaces
+        s["area"]
+        for s in spaces
     )
 
 
-    st.session_state.model["cost"]=calculate_cost(area)
+    st.session_state.project.update(
 
+    {
+
+    "name":project_name,
+
+    "spaces":spaces,
+
+    "walls":create_walls(),
+
+    "doors":create_doors(),
+
+    "windows":create_windows(),
+
+    "grid":create_grid(grid_spacing),
+
+    "columns":
+    ["A1","A2","B1","B2"],
+
+    "beams":
+    ["Beam B01","Beam B02"],
+
+    "foundation":
+    {
+    "type":"Pad Foundation",
+    "depth":"1200mm"
+    },
+
+    "roof":
+    {
+    "type":"Pitched Roof",
+    "pitch":"30 degrees"
+    },
+
+    "cost":
+    create_cost(area)
+
+    }
+
+    )
 
     st.success(
-        "RANDOM AI created BIM model"
+        "RANDOM BIM Model Generated"
     )
 
 
@@ -425,38 +476,23 @@ if generate:
 # DASHBOARD
 # ============================================================
 
-spaces=len(
-st.session_state.model["spaces"]
-)
-
-objects=(
-
-len(st.session_state.model["walls"])
-
-+
-
-len(st.session_state.model["doors"])
-
-+
-
-len(st.session_state.model["windows"])
-
-)
+p=st.session_state.project
 
 
-
-a,b,c,d=st.columns(4)
+c1,c2,c3,c4=st.columns(4)
 
 
 for col,title,value in [
 
-(a,"SPACES",spaces),
+(c1,"Rooms",len(p["spaces"])),
 
-(b,"BIM OBJECTS",objects),
+(c2,"Walls",len(p["walls"])),
 
-(c,"GRID",len(st.session_state.model["grid"])),
+(c3,"Openings",
+len(p["doors"])+len(p["windows"])),
 
-(d,"ENGINE","ONLINE")
+(c4,"Grid Points",
+len(p["grid"]))
 
 ]:
 
@@ -464,46 +500,48 @@ for col,title,value in [
 
     f"""
 
-    <div class="card">
+<div class="card">
 
-    <h3>{title}</h3>
+<h3>{title}</h3>
 
-    <div class="big">
-    {value}
-    </div>
+<div class="metric">
+{value}
+</div>
 
-    </div>
+</div>
 
-    """,
+""",
 
-    unsafe_allow_html=True
+unsafe_allow_html=True
 
-    )
+)
 
 
 
 # ============================================================
-# OUTPUTS
+# OUTPUT TABS
 # ============================================================
 
-tab1,tab2,tab3,tab4,tab5=st.tabs(
+tabs=st.tabs(
 
 [
-"🏠 Architecture",
-"📐 Grid",
+"📐 Floor Plan",
+"🏠 Elevation",
+"✂️ Section",
 "🧱 BIM",
-"🏗 Structure",
+"📊 Schedules",
 "💰 Cost"
+
 ]
 
 )
 
 
 
-with tab1:
+with tabs[0]:
 
-    st.json(
-        st.session_state.model["spaces"]
+    st.subheader(
+        "Generated Floor Plan"
     )
 
 
@@ -512,20 +550,15 @@ with tab1:
         fig=go.Figure()
 
 
-        for i,room in enumerate(
-            st.session_state.model["spaces"]
-        ):
+        for i,room in enumerate(p["spaces"]):
 
             fig.add_shape(
 
             type="rect",
 
             x0=i*5,
-
             y0=0,
-
             x1=i*5+4,
-
             y1=4
 
             )
@@ -533,16 +566,15 @@ with tab1:
             fig.add_annotation(
 
             x=i*5+2,
-
             y=2,
-
             text=room["name"]
 
             )
 
 
         fig.update_layout(
-            height=500
+            height=500,
+            showlegend=False
         )
 
         st.plotly_chart(
@@ -552,60 +584,102 @@ with tab1:
 
 
 
-with tab2:
+with tabs[1]:
+
+    st.subheader(
+        "Elevation Generator"
+    )
+
+    st.write(
+        "Front elevation data"
+    )
 
     st.json(
-        st.session_state.model["grid"]
+
+    {
+    "Floors":floors,
+    "Height":"3000mm/floor",
+    "Roof":"30 degree pitch"
+
+    }
+
     )
 
 
 
-with tab3:
+with tabs[2]:
 
-    st.write("Walls")
-
-    st.json(
-        st.session_state.model["walls"]
-    )
-
-    st.write("Doors")
-
-    st.json(
-        st.session_state.model["doors"]
-    )
-
-    st.write("Windows")
-
-    st.json(
-        st.session_state.model["windows"]
-    )
-
-
-
-with tab4:
-
-    st.json(
-        st.session_state.model["structure"]
+    st.subheader(
+        "Building Section"
     )
 
     st.json(
-        st.session_state.model["foundation"]
-    )
 
-    st.json(
-        st.session_state.model["roof"]
+    {
+
+    "Foundation depth":"1200mm",
+
+    "Floor slab":"150mm",
+
+    "Ceiling height":"3000mm"
+
+    }
+
     )
 
 
 
-with tab5:
+with tabs[3]:
+
+    st.subheader(
+        "BIM Objects"
+    )
+
+    st.json(p)
+
+
+
+with tabs[4]:
+
+    st.subheader(
+        "Schedules"
+    )
+
+
+    st.write("Room Schedule")
 
     st.json(
-        st.session_state.model["cost"]
+        p["spaces"]
+    )
+
+
+    st.write("Door Schedule")
+
+    st.json(
+        p["doors"]
+    )
+
+
+    st.write("Window Schedule")
+
+    st.json(
+        p["windows"]
+    )
+
+
+
+with tabs[5]:
+
+    st.subheader(
+        "Cost Intelligence"
+    )
+
+    st.json(
+        p["cost"]
     )
 
 
 
 st.caption(
-"RANDOM V53 AI BUILDER | Parametric Architecture Intelligence"
+"RANDOM V54 BIM VISUALIZATION STUDIO | AI Architecture Engine"
 )
