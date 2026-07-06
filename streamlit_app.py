@@ -480,3 +480,204 @@ else:
         "Generate a project to activate BIM Intelligence."
 
     )
+
+# ============================================================
+# EVOLUTION CONTROL
+# ============================================================
+
+if st.session_state.project:
+
+    st.divider()
+
+    st.subheader(
+        "🧬 Design Evolution Engine"
+    )
+
+
+    if st.button(
+        "🧬 Evolve Current Design"
+    ):
+
+        updated = evolve_design(
+            st.session_state.project
+        )
+
+        st.session_state.project = updated
+
+
+        st.success(
+
+            "Design evolved successfully"
+
+        )
+
+        save_memory()
+
+
+
+    if "evolution_result" in st.session_state.project:
+
+
+        result = st.session_state.project["evolution_result"]
+
+
+        st.markdown(
+
+        f"""
+
+        <div class="card">
+
+        <h3>New Design Mutation</h3>
+
+        <p>
+        🔄 {result['change']}
+        </p>
+
+        <p>
+        Evolution Score:
+        {result['score']}%
+        </p>
+
+        </div>
+
+        """,
+
+        unsafe_allow_html=True
+
+        )
+
+
+
+# ============================================================
+# SIDEBAR CONTROL CENTER
+# ============================================================
+
+
+with st.sidebar:
+
+
+    st.header(
+        "🧠 RANDOM V51 CORE"
+    )
+
+
+    st.caption(
+
+        "AI Architecture Intelligence Platform"
+
+    )
+
+
+    st.divider()
+
+
+    total_projects = len(
+
+        st.session_state.memory["projects"]
+
+    )
+
+
+    st.metric(
+
+        "Projects Created",
+
+        total_projects
+
+    )
+
+
+    st.metric(
+
+        "AI Status",
+
+        "ONLINE"
+
+    )
+
+
+    st.divider()
+
+
+    st.subheader(
+        "Recent Projects"
+    )
+
+
+    for p in reversed(
+
+        st.session_state.memory["projects"][-5:]
+
+    ):
+
+
+        st.write(
+
+            f"🏢 {p['architecture']['building']}"
+
+        )
+
+
+
+# ============================================================
+# MEMORY EXPORT
+# ============================================================
+
+
+if st.session_state.memory["projects"]:
+
+
+    export = json.dumps(
+
+        st.session_state.memory,
+
+        indent=2
+
+    )
+
+
+    st.download_button(
+
+        "💾 Export BIM Memory",
+
+        export,
+
+        file_name=
+        "random_v51_memory.json",
+
+        mime=
+        "application/json"
+
+    )
+
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+
+st.markdown(
+
+"""
+
+---
+
+<center>
+
+🏗️ RANDOM V51  
+<br>
+
+AI DESIGN STUDIO + BIM CORE
+
+<br>
+
+Imagine → Generate → Analyse → Evolve
+
+</center>
+
+""",
+
+unsafe_allow_html=True
+
+)
