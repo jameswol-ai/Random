@@ -1,7 +1,6 @@
 # =========================================================
-# RANDOM V24
-# NEURAL UNREAL ARCHITECTURE SIMULATOR (Streamlit Engine)
-# Procedural 3D Illusion + AI World Generation Layer
+# RANDOM V25
+# NEURAL CITY ENGINE (Walkable Architecture Civilization Simulator)
 # =========================================================
 
 import streamlit as st
@@ -17,67 +16,69 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Neural Unreal ArchSim V24",
-    page_icon="🧠",
+    page_title="Neural City Engine V25",
+    page_icon="🏙️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("city_memory.json")
 
 # =========================================================
-# NEURAL UI SKIN (UNREAL-LIKE GLOW LAYER)
+# UI: CITY GLOW ENGINE
 # =========================================================
 
 st.markdown("""
 <style>
-
 body {
-    background: radial-gradient(circle at top, #0b1020, #05070f);
+    background: radial-gradient(circle at top, #070a12, #02040a);
     color: white;
 }
 
-.neural-panel {
-    background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 0 40px rgba(0,255,255,0.08);
-}
-
-.neural-glow {
-    text-shadow: 0 0 12px rgba(0,255,255,0.5);
-}
-
-.world-grid {
+.city-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
 }
 
-.tile {
-    height: 120px;
-    border-radius: 10px;
-    background: linear-gradient(145deg, #111827, #0a0f1d);
+.cell {
+    height: 80px;
+    border-radius: 6px;
+    background: linear-gradient(145deg, #101828, #0a0f1d);
     border: 1px solid rgba(255,255,255,0.05);
     position: relative;
     overflow: hidden;
 }
 
-.light {
+.agent {
     position: absolute;
-    width: 80px;
-    height: 80px;
-    background: radial-gradient(circle, rgba(0,255,255,0.5), transparent);
-    filter: blur(10px);
-    animation: pulse 2s infinite;
+    width: 10px;
+    height: 10px;
+    background: cyan;
+    border-radius: 50%;
+    box-shadow: 0 0 12px cyan;
+    animation: pulse 1.5s infinite;
+}
+
+.building {
+    position: absolute;
+    inset: 10px;
+    border-radius: 6px;
+    background: linear-gradient(145deg, #1a2238, #0d1324);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
 @keyframes pulse {
-    0% { transform: scale(0.9); opacity: 0.5; }
+    0% { transform: scale(0.8); opacity: 0.6; }
     50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(0.9); opacity: 0.5; }
+    100% { transform: scale(0.8); opacity: 0.6; }
 }
 
+.walk-ui {
+    background: rgba(0,255,255,0.06);
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,255,255,0.2);
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -85,12 +86,10 @@ body {
 # MEMORY
 # =========================================================
 
-DEFAULT = {"worlds": [], "events": [], "designs": []}
-
 def load():
     if MEMORY_FILE.exists():
         return json.loads(MEMORY_FILE.read_text())
-    return DEFAULT.copy()
+    return {"cities": [], "agents": [], "logs": []}
 
 def save(mem):
     MEMORY_FILE.write_text(json.dumps(mem, indent=2))
@@ -101,161 +100,161 @@ if "mem" not in st.session_state:
 mem = st.session_state.mem
 
 # =========================================================
-# NEURAL WORLD ENGINE (CORE V24)
+# CITY GENERATION ENGINE
 # =========================================================
 
-def generate_world(seed="Neo-World"):
-    return {
-        "id": str(uuid.uuid4())[:8],
-        "seed": seed,
-        "time_of_day": random.choice(["Dawn", "Noon", "Dusk", "Night"]),
-        "lighting_bias": random.uniform(0.2, 1.0),
-        "material_density": random.uniform(0.4, 1.2),
-        "geometry_complexity": random.randint(20, 120),
-        "rooms": random.randint(4, 16)
-    }
+def generate_city(size=6):
+    city = []
+    for y in range(size):
+        for x in range(size):
+            cell_type = random.choice(["empty", "building", "park", "road"])
+            city.append({
+                "x": x,
+                "y": y,
+                "type": cell_type,
+                "height": random.randint(1, 5) if cell_type == "building" else 0,
+                "light": random.uniform(0.2, 1.0)
+            })
+    return city
 
-def neural_lighting(world):
-    intensity = world["lighting_bias"] * math.sin(world["geometry_complexity"] / 10)
-    return max(0.2, abs(intensity))
-
-def material_shader(world):
-    return {
-        "glass": world["material_density"] * 0.6,
-        "concrete": world["material_density"] * 1.2,
-        "metal": world["material_density"] * 0.9
-    }
-
-def raytrace_ui_glow(intensity):
-    return f"rgba(0,255,255,{min(0.8, intensity)})"
-
-# =========================================================
-# AI GENERATOR
-# =========================================================
-
-def ai_generate_design(world):
-    return {
+def spawn_agents(n=5):
+    return [{
         "id": str(uuid.uuid4())[:6],
-        "floors": random.randint(1, 5),
-        "area": random.randint(120, 900),
-        "complexity": world["geometry_complexity"],
-        "lighting": neural_lighting(world),
-        "materials": material_shader(world)
-    }
+        "x": random.randint(0, 5),
+        "y": random.randint(0, 5),
+        "mood": random.choice(["calm", "curious", "analytical", "restless"]),
+        "energy": random.randint(40, 100)
+    } for _ in range(n)]
+
+def move_agent(agent):
+    agent["x"] = max(0, min(5, agent["x"] + random.choice([-1, 0, 1])))
+    agent["y"] = max(0, min(5, agent["y"] + random.choice([-1, 0, 1])))
+    agent["energy"] -= random.uniform(0.1, 1.5)
+    return agent
 
 # =========================================================
-# 3D ILLUSION WORLD RENDERER
+# WALKABLE SIMULATION ENGINE
 # =========================================================
 
-def render_world(world):
-    glow = neural_lighting(world)
-    color = raytrace_ui_glow(glow)
+def simulate_step():
+    for a in mem["agents"]:
+        move_agent(a)
 
-    st.markdown(f"""
-    <div class="neural-panel">
-        <h2 class="neural-glow">🧠 Neural World: {world['id']}</h2>
-        <p>Time Phase: {world['time_of_day']}</p>
-        <p>Lighting Field: {glow:.2f}</p>
-    </div>
-    """, unsafe_allow_html=True)
+# =========================================================
+# LIGHTING ENGINE (NEURAL SUN MODEL)
+# =========================================================
 
-    st.markdown("### 🌍 Spatial Grid Simulation")
+def compute_light(cell):
+    base = cell["light"]
+    time_bias = math.sin(datetime.now().second / 60 * math.pi * 2)
+    return max(0.1, min(1.0, base + time_bias))
 
-    grid_html = '<div class="world-grid">'
-    for i in range(8):
-        grid_html += f"""
-        <div class="tile">
-            <div class="light" style="background:{color}"></div>
-        </div>
+# =========================================================
+# RENDER CITY
+# =========================================================
+
+def render_city(city, agents):
+    grid = '<div class="city-grid">'
+
+    for cell in city:
+        light = compute_light(cell)
+
+        glow = f"rgba(0,255,255,{light*0.5})"
+
+        grid += f"""
+        <div class="cell" style="box-shadow: 0 0 10px {glow}">
         """
-    grid_html += '</div>'
 
-    st.markdown(grid_html, unsafe_allow_html=True)
+        if cell["type"] == "building":
+            grid += '<div class="building"></div>'
+
+        for a in agents:
+            if a["x"] == cell["x"] and a["y"] == cell["y"]:
+                grid += '<div class="agent"></div>'
+
+        grid += "</div>"
+
+    grid += "</div>"
+    st.markdown(grid, unsafe_allow_html=True)
 
 # =========================================================
 # UI NAV
 # =========================================================
 
 page = st.sidebar.radio(
-    "Neural Engine",
+    "🏙️ Neural City",
     [
         "🏠 Project Overview",
         "📐 Floor Plan",
         "🏗 Structural Model",
-        "💰 Cost Estimate",
-        "🌍 Sustainability",
-        "📋 Code Compliance",
-        "📊 AI Evolution",
-        "🧠 Memory",
-        "⚙ Settings"
+        "🚶 Walk Mode",
+        "🌍 City Simulation",
+        "🧠 Memory"
     ]
 )
 
 # =========================================================
-# WORLD STATE
+# INIT WORLD
 # =========================================================
 
-if "world" not in st.session_state:
-    st.session_state.world = generate_world()
+if "city" not in st.session_state:
+    st.session_state.city = generate_city()
 
-world = st.session_state.world
+if "agents" not in st.session_state:
+    st.session_state.agents = spawn_agents()
 
 # =========================================================
 # PAGES
 # =========================================================
 
 if page == "🏠 Project Overview":
-    st.title("🧠 Neural Unreal Architecture Engine V24")
-    render_world(world)
+    st.title("🏙️ Neural City Engine V25")
+    st.write("A living architecture civilization simulator.")
 
-    if st.button("🌀 Evolve World"):
-        st.session_state.world = generate_world()
-        mem["worlds"].append(st.session_state.world)
-        save(mem)
-        st.rerun()
+    render_city(st.session_state.city, st.session_state.agents)
 
 elif page == "📐 Floor Plan":
-    st.title("📐 Procedural Floor Simulation")
-
-    design = ai_generate_design(world)
-
-    st.json(design)
+    st.title("📐 Procedural Building Layouts")
+    st.json(random.choice(st.session_state.city))
 
 elif page == "🏗 Structural Model":
-    st.title("🏗 Structural Field Simulation")
+    st.title("🏗 Load Simulation Field")
 
-    st.write("Beam density:", world["geometry_complexity"] * 0.8)
-    st.write("Stress map:", world["material_density"] * 100)
+    load_map = sum([c["height"] for c in st.session_state.city])
+    st.metric("Total Structural Load", load_map)
 
-elif page == "💰 Cost Estimate":
-    st.title("💰 Neural Cost Engine")
+elif page == "🚶 Walk Mode":
+    st.title("🚶 First-Person Navigation (Simulated)")
 
-    cost = world["geometry_complexity"] * world["material_density"] * 1200
-    st.metric("Estimated Build Cost", f"${int(cost):,}")
+    col1, col2, col3 = st.columns(3)
 
-elif page == "🌍 Sustainability":
-    st.title("🌍 Sustainability Index")
+    if col1.button("⬆ Move"):
+        for a in st.session_state.agents:
+            a["y"] = max(0, a["y"] - 1)
 
-    score = max(0, 100 - world["material_density"] * 40)
-    st.metric("Eco Score", f"{score:.2f}/100")
+    if col2.button("⬇ Move"):
+        for a in st.session_state.agents:
+            a["y"] = min(5, a["y"] + 1)
 
-elif page == "📋 Code Compliance":
-    st.title("📋 Compliance AI")
+    if col3.button("🔄 Step AI"):
+        simulate_step()
 
-    st.success("Zoning rules: PASSED (simulated)")
-    st.warning("Energy code: borderline efficiency detected")
+    render_city(st.session_state.city, st.session_state.agents)
 
-elif page == "📊 AI Evolution":
-    st.title("📊 Evolution Timeline")
+elif page == "🌍 City Simulation":
+    st.title("🌍 Autonomous City Evolution")
 
-    st.line_chart([random.randint(40, 100) for _ in range(12)])
+    if st.button("Evolve City"):
+        st.session_state.city = generate_city()
+        st.session_state.agents = spawn_agents()
+
+    render_city(st.session_state.city, st.session_state.agents)
 
 elif page == "🧠 Memory":
-    st.title("🧠 System Memory")
+    st.title("🧠 Neural Memory")
+
+    mem["cities"].append(st.session_state.city)
+    mem["agents"].append(st.session_state.agents)
+
+    save(mem)
     st.json(mem)
-
-elif page == "⚙ Settings":
-    st.title("⚙ Neural Settings")
-
-    st.write("World seed:", world["seed"])
-    st.write("Auto-generation: ACTIVE")
