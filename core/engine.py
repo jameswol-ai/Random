@@ -1,29 +1,34 @@
-from core.scheduler import tick_all
-from meta.observation import collect_stats
-from meta.rule_engine import evolve_rules
+from analytics.fitness import calculate_fitness, aggregate_score
+from core.genetics import generate_base_design, mutate_design
 
-class SimulationEngine:
-    def __init__(self, world, agents, architecture):
-        self.world = world
-        self.agents = agents
-        self.architecture = architecture
-        self.tick = 0
 
-    def step(self):
-        # 1. physics + world update
-        self.world.update()
+def run_evolutionary_loop(btype, bedrooms, generations, pop_size, new_id):
+    population = [
+        generate_base_design(btype, bedrooms, new_id)
+        for _ in range(pop_size)
+    ]
 
-        # 2. agent behavior
-        for agent in self.agents:
-            agent.update(self.world)
+    history = []
 
-        # 3. architecture evolution
-        self.architecture.evolve_cycle()
+    for _ in range(generations):
 
-        # 4. meta observation
-        stats = collect_stats(self.world, self.agents, self.architecture)
+        scored = []
+        for d in population:
+            fit = calculate_fitness(d)
+            d["fitness"] = fit
+            d["score"] = aggregate_score(fit)
+            scored.append(d)
 
-        # 5. self-modifying rules
-        evolve_rules(stats)
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored[0]["score"])
 
-        self.tick += 1
+        survivors = scored[:max(2, pop_size // 2)]
+
+        new_pop = []
+        for s in survivors:
+            new_pop.append(s)
+            new_pop.append(mutate_design(s))
+
+        population = new_pop[:pop_size]
+
+    return scored[0], history
