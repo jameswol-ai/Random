@@ -1,11 +1,13 @@
 # =========================================================
-# RANDOM V23
-# AI Council Architecture OS (Playable Debate Engine)
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE + V23 COUNCIL CORE
+# Evolutionary Spatial Layout + AI Debate System
 # =========================================================
 
 import streamlit as st
+import json
 import uuid
 import random
+from pathlib import Path
 from datetime import datetime
 
 # =========================================================
@@ -13,213 +15,230 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random V23 Council OS",
+    page_title="Random Studio Engine V23",
     page_icon="🏛️",
     layout="wide"
 )
 
+MEMORY_FILE = Path("arc_memory.json")
+
 # =========================================================
-# SESSION STATE
+# STYLE
 # =========================================================
 
-if "memory" not in st.session_state:
-    st.session_state.memory = {
-        "designs": [],
-        "logs": []
+st.markdown("""
+<style>
+    html, body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
-if "debate_log" not in st.session_state:
-    st.session_state.debate_log = []
+    .arc-room-module {
+        padding: 16px;
+        border-radius: 12px;
+        background: #111827;
+        color: white;
+        margin: 6px;
+    }
 
-if "final_design" not in st.session_state:
-    st.session_state.final_design = None
+    .arc-blueprint-canvas {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        background: #0b1220;
+        padding: 20px;
+        border-radius: 12px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# MEMORY SYSTEM
+# =========================================================
+
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "logs": [],
+    "evolution": [],
+    "debates": []
+}
+
+def load_memory():
+    if MEMORY_FILE.exists():
+        try:
+            return json.loads(MEMORY_FILE.read_text())
+        except:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
+
+def save_memory():
+    MEMORY_FILE.write_text(json.dumps(st.session_state.memory, indent=2))
+
+def log_event(msg):
+    st.session_state.memory["logs"].append({
+        "time": datetime.now().isoformat(),
+        "msg": msg
+    })
+    save_memory()
+
+# init
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
+
+if "active_design" not in st.session_state:
+    st.session_state.active_design = None
 
 mem = st.session_state.memory
 
 # =========================================================
-# 🎭 AI COUNCIL MEMBERS
+# ARCH ENGINE
 # =========================================================
 
-COUNCIL = [
-    "🏗 Chief Architect",
-    "🧠 Structural Analyst",
-    "💰 Cost Engineer",
-    "🌱 Sustainability Agent",
-    "📋 Compliance Officer",
-    "⚡ Chaos Agent"
-]
+ARCH_DOMAINS = {
+    "Residential": ["Villa", "Apartment", "Townhouse"],
+    "Commercial": ["Office", "Hotel", "Clinic"]
+}
 
-def agent_opinion(goal):
-    """Each agent produces a biased evaluation"""
-    return {
-        "🏗 Chief Architect": f"Design coherence score is strong. Prioritize spatial harmony for '{goal}'.",
-        "🧠 Structural Analyst": "Beam-column ratios must remain stable under load simulations.",
-        "💰 Cost Engineer": "Budget risk detected. Material optimization required.",
-        "🌱 Sustainability Agent": "Recommend low-carbon materials and passive cooling systems.",
-        "📋 Compliance Officer": "Ensure adherence to zoning + structural code constraints.",
-        "⚡ Chaos Agent": "Break symmetry. Add unconventional spatial distortion for innovation."
-    }
-
-def vote_score():
-    return random.randint(60, 98)
-
-# =========================================================
-# 🧪 DESIGN GENERATOR (CORE ENGINE)
-# =========================================================
-
-def generate_design(goal):
+def generate_base_design(goal):
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "goal": goal,
         "area": random.randint(120, 600),
         "cost": random.randint(100000, 900000),
-        "score": random.randint(65, 95),
-        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6),
+        "rooms": ["Living", "Kitchen"] + ["Room"] * random.randint(2, 5),
         "structure": {
             "columns": random.randint(12, 40),
-            "beams": random.randint(25, 80)
+            "beams": random.randint(20, 80)
         }
     }
 
 # =========================================================
-# 🏛️ COUNCIL DEBATE ENGINE (V23 CORE FEATURE)
+# 🏛️ V23 COUNCIL SYSTEM (CORE ADDITION)
 # =========================================================
 
-def run_council_debate(goal):
+COUNCIL = [
+    "🏗 Architect",
+    "🧠 Structural",
+    "💰 Cost",
+    "🌱 Sustainability",
+    "📋 Compliance",
+    "⚡ Chaos"
+]
+
+def agent_opinion(goal):
+    return {
+        "🏗 Architect": f"Spatial coherence strong for '{goal}'.",
+        "🧠 Structural": "Check beam-column stability.",
+        "💰 Cost": "Budget optimization needed.",
+        "🌱 Sustainability": "Reduce carbon footprint materials.",
+        "📋 Compliance": "Ensure regulation alignment.",
+        "⚡ Chaos": "Introduce asymmetry for innovation."
+    }
+
+def vote():
+    return random.randint(55, 99)
+
+def run_council(goal):
+    opinions = agent_opinion(goal)
     debate = []
     votes = []
 
-    opinions = agent_opinion(goal)
-
     for agent in COUNCIL:
-        stance = opinions[agent]
-        score = vote_score()
-
-        votes.append(score)
+        v = vote()
+        votes.append(v)
 
         debate.append({
             "agent": agent,
-            "statement": stance,
-            "vote": score
+            "statement": opinions[agent],
+            "vote": v
         })
 
-    final_score = sum(votes) / len(votes)
-
-    return debate, final_score
+    return debate, sum(votes) / len(votes)
 
 # =========================================================
-# 🎮 UI NAVIGATION
+# DESIGN + EVOLUTION
 # =========================================================
 
-st.sidebar.title("🏛️ V23 Council OS")
+def evolve_design(goal):
+    return generate_base_design(goal)
+
+# =========================================================
+# UI
+# =========================================================
+
+st.sidebar.title("🏛️ V23 Engine")
 
 page = st.sidebar.radio(
-    "Control Panel",
-    [
-        "🏠 Dashboard",
-        "🧪 Playable Council",
-        "📊 Evolution History",
-        "🧠 Memory"
-    ]
+    "Navigation",
+    ["Dashboard", "Design Lab (Council)", "Memory"]
 )
 
 # =========================================================
-# 🏠 DASHBOARD
+# DASHBOARD
 # =========================================================
 
-if page == "🏠 Dashboard":
-    st.title("🏛️ Random V23 Architecture Council")
+if page == "Dashboard":
+    st.title("🏛️ Random Studio V23")
 
-    col1, col2 = st.columns(2)
+    c1, c2 = st.columns(2)
+    c1.metric("Designs", len(mem["designs"]))
+    c2.metric("Debates", len(mem["debates"]))
 
-    col1.metric("Stored Designs", len(mem["designs"]))
-    col2.metric("Debates Run", len(mem["logs"]))
-
-    st.markdown("### ⚡ Latest Activity")
-
-    for log in reversed(mem["logs"][-5:]):
-        st.write(f"🕒 {log['time'][11:19]} → {log['msg']}")
+    st.markdown("### Logs")
+    for l in mem["logs"][-5:]:
+        st.write(l["time"][11:19], "→", l["msg"])
 
 # =========================================================
-# 🧪 PLAYABLE COUNCIL MODE
+# 🧪 COUNCIL MODE
 # =========================================================
 
-elif page == "🧪 Playable Council":
-    st.title("🏛️ AI Council Debate System (Playable)")
+elif page == "Design Lab (Council)":
+    st.title("🏛️ AI Council Architecture Engine")
 
-    goal = st.text_input("Define your architectural mission:", "Futuristic eco villa on hillside")
+    goal = st.text_input("Architectural Goal", "Futuristic eco city tower")
 
-    if st.button("⚔️ Run Council Debate", use_container_width=True):
+    if st.button("Run Council Debate", use_container_width=True):
 
-        st.markdown("## 🧠 Council Debate Begins...\n")
+        debate, score = run_council(goal)
 
-        debate, score = run_council_debate(goal)
+        st.markdown("## 🧠 Debate Log")
 
-        st.session_state.debate_log = debate
-
-        # show debate
         for d in debate:
-            st.markdown(f"""
-### {d['agent']}
-- 💬 {d['statement']}
-- 🗳 Vote: **{d['vote']}**
-""")
+            st.write(f"**{d['agent']}** → {d['statement']} (Vote: {d['vote']})")
 
-        st.markdown("---")
-        st.success(f"🏛️ Council Consensus Score: {score:.2f}")
+        st.success(f"Council Score: {score:.2f}")
 
-        # final design generation
-        design = generate_design(goal)
+        design = evolve_design(goal)
         design["council_score"] = score
 
-        st.session_state.final_design = design
+        st.session_state.active_design = design
 
         mem["designs"].append(design)
-        mem["logs"].append({
-            "time": datetime.now().isoformat(),
-            "msg": f"Council generated design {design['id']} (score {score:.1f})"
-        })
+        mem["debates"].append(debate)
 
-    # FINAL OUTPUT PANEL
-    if st.session_state.final_design:
-        d = st.session_state.final_design
+        log_event(f"Council created design {design['id']}")
 
-        st.markdown("## 🏗 Final Council-Approved Design")
+    if st.session_state.active_design:
+        d = st.session_state.active_design
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Council Score", f"{d['council_score']:.2f}")
-        c2.metric("Area", f"{d['area']} m²")
-        c3.metric("Budget", f"${d['cost']:,}")
+        st.markdown("## 🏗 Final Design")
 
-        st.markdown("### 🧱 Structure")
+        st.metric("Score", d["council_score"])
+        st.metric("Area", f"{d['area']} m²")
+        st.metric("Cost", f"${d['cost']:,}")
+
         st.json(d["structure"])
-
-        st.markdown("### 🧩 Rooms")
         st.write(d["rooms"])
 
 # =========================================================
-# 📊 EVOLUTION HISTORY
+# MEMORY
 # =========================================================
 
-elif page == "📊 Evolution History":
-    st.title("📊 Design Evolution Timeline")
-
-    scores = [d.get("score", 0) for d in mem["designs"]]
-
-    if scores:
-        st.line_chart(scores)
-    else:
-        st.info("No evolution data yet.")
-
-# =========================================================
-# 🧠 MEMORY
-# =========================================================
-
-elif page == "🧠 Memory":
+elif page == "Memory":
     st.title("🧠 System Memory")
 
     st.json(mem)
 
-    if st.button("🧹 Reset Memory"):
-        st.session_state.memory = {"designs": [], "logs": []}
+    if st.button("Reset Memory"):
+        st.session_state.memory = DEFAULT_STATE.copy()
         st.rerun()
