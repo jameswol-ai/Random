@@ -1,9 +1,7 @@
-from pathlib import Path
+WORLD_SIZE = (24, 12, 24)
 
-MEMORY_FILE = Path("arc_memory.json")
-
-ARCH_DOMAINS = {
-    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
-    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
-    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
+ARCH = {
+    "Residential": ["Villa", "Apartment", "Townhouse"],
+    "Commercial": ["Office", "Hotel", "Clinic"],
+    "Industrial": ["Warehouse", "Factory"]
 }
