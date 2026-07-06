@@ -25,22 +25,16 @@ def run_evolution(btype, bedrooms, generations, pop_size):
     for _ in range(generations):
         scored = []
 
-        for d in pop:
-            f = calculate_fitness(d)
-            d["fitness"] = f
-            d["score"] = score(f)
-            scored.append(d)
+        critic = StructuralCritic()
 
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
+for d in pop:
+    f = calculate_fitness(d)
+    d["fitness"] = f
+    d["score"] = score(f)
 
-        survivors = scored[:max(2, pop_size // 2)]
+    # 🧠 NEW: AI critique layer
+    critique = critic.analyze(d)
+    d["critique"] = critique
 
-        new_pop = []
-        for s in survivors:
-            new_pop.append(s)
-            new_pop.append(mutate(s))
-
-        pop = new_pop[:pop_size]
-
-    return scored[0], history
+    # blend AI judgment into evolution score
+    d["score"] = int((d["score"] + critique["scores"]["overall"]) / 2)
