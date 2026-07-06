@@ -1,7 +1,7 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V27 — Neural Architecture Simulation Layer
-# Evolutionary + Council + Neural Spatial Intelligence OS
+# V27 — Neural Architecture Simulation OS
+# Evolutionary + Council + Neural Spatial Intelligence Layer
 # =========================================================
 
 import streamlit as st
@@ -17,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Neural Architecture OS",
+    page_title="Neural Architecture OS V27",
     page_icon="🧠",
     layout="wide"
 )
@@ -25,12 +25,12 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# UI STYLE
+# STYLE LAYER
 # =========================================================
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;700&display=swap');
 
 html, body {
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -41,18 +41,18 @@ h1, h2, h3 {
     letter-spacing: -0.03em;
 }
 
-.arc-card {
-    padding: 16px;
-    border-radius: 12px;
+.card {
     background: #0b1220;
     border: 1px solid rgba(255,255,255,0.08);
+    padding: 14px;
+    border-radius: 12px;
     margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# MEMORY
+# MEMORY ENGINE
 # =========================================================
 
 DEFAULT_STATE = {
@@ -80,24 +80,24 @@ if "memory" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# CORE GENERATION ENGINE
+# CORE DESIGN ENGINE
 # =========================================================
 
 def generate_design(goal):
     return {
         "id": str(uuid.uuid4())[:8],
         "goal": goal,
-        "area": random.randint(120, 800),
-        "cost": random.randint(80_000, 900_000),
+        "area": random.randint(120, 900),
+        "cost": random.randint(80_000, 1_000_000),
         "structure": {
-            "columns": random.randint(12, 50),
-            "beams": random.randint(20, 90)
+            "columns": random.randint(12, 55),
+            "beams": random.randint(20, 100)
         },
         "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
     }
 
 # =========================================================
-# COUNCIL ENGINE (V23)
+# COUNCIL ENGINE
 # =========================================================
 
 COUNCIL = [
@@ -110,75 +110,74 @@ COUNCIL = [
 ]
 
 def council_debate(goal):
-    debate = []
     votes = []
+    log = []
 
     for agent in COUNCIL:
-        score = random.randint(60, 98)
+        score = random.randint(60, 99)
         votes.append(score)
 
-        debate.append({
+        log.append({
             "agent": agent,
-            "statement": f"{agent} evaluates '{goal}' with systemic bias.",
-            "vote": score
+            "vote": score,
+            "statement": f"{agent} evaluates architectural feasibility of '{goal}'"
         })
 
-    return debate, sum(votes)/len(votes)
+    return log, sum(votes) / len(votes)
 
 # =========================================================
-# NEURAL ARCHITECTURE MODEL (V27)
+# NEURAL ENGINE
 # =========================================================
 
 def encode(d):
     return [
-        d["area"]/1000,
-        d["structure"]["columns"]/50,
-        d["structure"]["beams"]/100,
-        len(d["rooms"])/10,
-        d["cost"]/1_000_000
+        d["area"] / 1000,
+        d["structure"]["columns"] / 50,
+        d["structure"]["beams"] / 100,
+        len(d["rooms"]) / 10,
+        d["cost"] / 1_000_000
     ]
-
-def mood(d):
-    density = d["structure"]["columns"] / max(1, d["area"]/50)
-    flow = len(d["rooms"]) / max(1, d["structure"]["columns"])
-
-    return {
-        "comfort": round(100 - abs(density-0.8)*60, 2),
-        "flow": round(100 - abs(flow-0.6)*70, 2)
-    }
 
 def neural_score(d):
     v = encode(d)
-    raw = v[0]*0.25 + v[1]*0.2 + v[2]*0.15 + v[3]*0.2 + (1-min(v[4],1))*0.2
-    return 100/(1+math.exp(-5*(raw-0.5)))
+    raw = v[0]*0.25 + v[1]*0.2 + v[2]*0.2 + v[3]*0.2 + (1 - min(v[4], 1)) * 0.15
+    return round(100 / (1 + math.exp(-5 * (raw - 0.5))), 2)
 
-def neural_simulation(d, ticks=5):
+def mood(d):
+    density = d["structure"]["columns"] / max(1, d["area"] / 60)
+    flow = len(d["rooms"]) / max(1, d["structure"]["columns"])
+
+    return {
+        "comfort": round(100 - abs(density - 0.8) * 60, 2),
+        "flow": round(100 - abs(flow - 0.6) * 70, 2)
+    }
+
+def neural_simulation(d, ticks=8):
     history = []
-    current = json.loads(json.dumps(d))
+    sim = json.loads(json.dumps(d))
 
     for t in range(ticks):
-        if random.random() > 0.6:
-            current["structure"]["columns"] += random.randint(-1, 2)
-            current["structure"]["beams"] += random.randint(-2, 3)
+        if random.random() > 0.5:
+            sim["structure"]["columns"] += random.randint(-1, 2)
+            sim["structure"]["beams"] += random.randint(-2, 3)
 
-        score = neural_score(current)
         history.append({
             "tick": t,
-            "score": score,
-            "mood": mood(current)
+            "score": neural_score(sim),
+            "mood": mood(sim)
         })
 
     return history
 
 # =========================================================
-# FLOOR PLAN VIEW (SIMPLIFIED)
+# FLOOR PLAN ENGINE
 # =========================================================
 
 def floor_plan(d):
-    return [{"room": r, "size": random.randint(20, 60)} for r in d["rooms"]]
+    return [{"room": r, "size": random.randint(20, 70)} for r in d["rooms"]]
 
 # =========================================================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # =========================================================
 
 st.sidebar.title("🧠 Neural Architecture OS")
@@ -198,12 +197,12 @@ page = st.sidebar.radio(
     ]
 )
 
-goal = st.sidebar.text_input("Design Goal", "Futuristic eco villa")
+goal = st.sidebar.text_input("Design Goal", "Eco smart vertical villa")
 
 run = st.sidebar.button("Generate Architecture")
 
 # =========================================================
-# GENERATE DESIGN
+# GENERATE
 # =========================================================
 
 if run:
@@ -215,7 +214,7 @@ if run:
     mem["designs"].append(design)
     mem["logs"].append({
         "time": datetime.now().isoformat(),
-        "msg": f"Generated {design['id']} with council score {score:.1f}"
+        "msg": f"Generated {design['id']} | Council Score {score:.1f}"
     })
 
     st.session_state.active = design
@@ -223,26 +222,26 @@ if run:
 
     save_memory()
 
-# =========================================================
-# ACTIVE DESIGN
-# =========================================================
-
 design = st.session_state.get("active", None)
 
 # =========================================================
-# PAGES
+# PAGE: PROJECT OVERVIEW
 # =========================================================
 
 if page == "🏠 Project Overview":
     st.title("🏠 Project Overview")
 
     if design:
-        st.markdown(f"### ID: {design['id']}")
+        st.markdown(f"### Design ID: {design['id']}")
         st.write(design)
+        st.metric("Council Score", f"{design['council_score']:.1f}")
+        st.metric("Neural Score", neural_score(design))
     else:
-        st.info("Generate a design to begin.")
+        st.info("Generate a design to begin simulation.")
 
-# ----------------------------
+# =========================================================
+# PAGE: FLOOR PLAN
+# =========================================================
 
 elif page == "📐 Floor Plan":
     st.title("📐 Floor Plan")
@@ -250,7 +249,9 @@ elif page == "📐 Floor Plan":
     if design:
         st.json(floor_plan(design))
 
-# ----------------------------
+# =========================================================
+# STRUCTURAL MODEL
+# =========================================================
 
 elif page == "🏗 Structural Model":
     st.title("🏗 Structural Model")
@@ -258,58 +259,74 @@ elif page == "🏗 Structural Model":
     if design:
         st.json(design["structure"])
 
-# ----------------------------
+# =========================================================
+# COST
+# =========================================================
 
 elif page == "💰 Cost Estimate":
     st.title("💰 Cost Estimate")
 
     if design:
         st.metric("Total Cost", f"${design['cost']:,}")
+        st.metric("Cost per m²", f"${design['cost']/design['area']:.2f}")
 
-# ----------------------------
+# =========================================================
+# SUSTAINABILITY
+# =========================================================
 
 elif page == "🌍 Sustainability":
-    st.title("🌍 Sustainability")
+    st.title("🌍 Sustainability Layer")
 
     if design:
-        score = max(0, 100 - design["structure"]["columns"]*1.2)
+        score = max(0, 100 - design["structure"]["columns"] * 1.1)
         st.metric("Sustainability Score", f"{score:.1f}/100")
 
-# ----------------------------
+# =========================================================
+# COMPLIANCE
+# =========================================================
 
 elif page == "📋 Code Compliance":
-    st.title("📋 Code Compliance")
+    st.title("📋 Code Compliance Engine")
 
     if design:
-        st.success("Structural and zoning constraints passed (simulated)")
+        ok = design["structure"]["columns"] > 15 and design["structure"]["beams"] > 25
+        if ok:
+            st.success("Design passes structural compliance thresholds")
+        else:
+            st.warning("Design requires structural optimization review")
 
-# ----------------------------
+# =========================================================
+# AI EVOLUTION
+# =========================================================
 
 elif page == "📊 AI Evolution":
-    st.title("📊 AI Evolution")
+    st.title("📊 Neural Evolution Simulation")
 
     if design:
-        history = neural_simulation(design, 8)
+        history = neural_simulation(design)
 
         st.line_chart([h["score"] for h in history])
-
-        st.markdown("### Mood Field")
         st.json(history[-1]["mood"])
 
-# ----------------------------
+# =========================================================
+# MEMORY
+# =========================================================
 
 elif page == "🧠 Memory":
-    st.title("🧠 Memory")
+    st.title("🧠 System Memory")
 
     st.json(mem)
 
-# ----------------------------
+# =========================================================
+# SETTINGS
+# =========================================================
 
 elif page == "⚙ Settings":
-    st.title("⚙ Settings")
+    st.title("⚙ System Settings")
 
     if st.button("Reset Memory"):
         st.session_state.memory = DEFAULT_STATE.copy()
         st.session_state.active = None
         save_memory()
-        st.success("Reset complete")
+        st.success("Memory reset complete")
+        st.rerun()
