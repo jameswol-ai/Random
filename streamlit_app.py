@@ -161,3 +161,198 @@ def build_full_bim(design):
     bim = create_bim_model(design)
     bim = calculate_costs(bim)
     return bim
+
+import plotly.graph_objects as go
+
+# =========================================================
+# 2D FLOOR PLAN ENGINE (SIMPLIFIED BIM DRAWING LAYER)
+# =========================================================
+
+def generate_2d_plan(design):
+    rooms = design.get("rooms", ["Living", "Kitchen", "Bath", "Bedroom"])
+
+    layout = []
+    x, y = 0, 0
+
+    for i, room in enumerate(rooms):
+        w = random.randint(3, 6)
+        h = random.randint(3, 6)
+
+        layout.append({
+            "name": room,
+            "x": x,
+            "y": y,
+            "w": w,
+            "h": h
+        })
+
+        x += w + 1
+        if x > 10:
+            x = 0
+            y += h + 1
+
+    return layout
+
+
+def draw_2d_plan(layout):
+    fig = go.Figure()
+
+    for r in layout:
+        fig.add_shape(
+            type="rect",
+            x0=r["x"],
+            y0=r["y"],
+            x1=r["x"] + r["w"],
+            y1=r["y"] + r["h"],
+            line=dict(color="white"),
+            fillcolor="rgba(0,150,255,0.3)"
+        )
+
+        fig.add_annotation(
+            x=r["x"] + r["w"]/2,
+            y=r["y"] + r["h"]/2,
+            text=r["name"],
+            showarrow=False,
+            font=dict(color="white", size=10)
+        )
+
+    fig.update_layout(
+        title="2D BIM Floor Plan",
+        paper_bgcolor="black",
+        plot_bgcolor="black",
+        height=600
+    )
+
+    return fig
+
+
+# =========================================================
+# 3D BUILDING ENGINE (BIM MASSING MODEL)
+# =========================================================
+
+def generate_3d_model(design):
+    floors = design.get("floors", 1)
+
+    x, y, z = [], [], []
+
+    for f in range(floors):
+        x.extend([0, 10, 10, 0, 0])
+        y.extend([0, 0, 10, 10, 0])
+        z.extend([f, f, f, f, f])
+
+    return x, y, z
+
+
+def draw_3d_model(design):
+    x, y, z = generate_3d_model(design)
+
+    fig = go.Figure(
+        data=[
+            go.Scatter3d(
+                x=x,
+                y=y,
+                z=z,
+                mode="lines",
+                line=dict(color="cyan", width=5)
+            )
+        ]
+    )
+
+    fig.update_layout(
+        title="3D BIM Building Massing",
+        scene=dict(
+            xaxis=dict(title="X"),
+            yaxis=dict(title="Y"),
+            zaxis=dict(title="Floors")
+        ),
+        paper_bgcolor="black",
+        height=600
+    )
+
+    return fig
+
+
+# =========================================================
+# AI COPILOT (RULE-BASED ENGINE V1)
+# =========================================================
+
+def ai_copilot(command, design, bim):
+    cmd = command.lower()
+
+    if "cost" in cmd:
+        return f"💰 Total cost is {bim['cost_model']['total']:,}. Reduce floors or MEP systems to optimize."
+
+    if "reduce cost" in cmd:
+        return "⚡ Suggestion: reduce HVAC load and structural columns by 10–15%."
+
+    if "increase floors" in cmd:
+        return "🏗️ Structural check: safe to increase up to +3 floors with current system."
+
+    if "hvac" in cmd:
+        return f"🌬 HVAC system uses {bim['hvac']['system']} with {bim['hvac']['cooling_load_kw']} kW load."
+
+    if "optimize" in cmd:
+        return "🧠 Optimization: balance structural density and HVAC zoning for efficiency gain."
+
+    return "🤖 Command not recognized. Try: cost, hvac, optimize, reduce cost, increase floors"
+
+
+# =========================================================
+# STREAMLIT UI EXTENSION
+# =========================================================
+
+st.sidebar.markdown("## 🧠 AI Copilot")
+user_prompt = st.sidebar.text_input("Ask Arc AI (cost, hvac, optimize...)")
+
+# =========================================================
+# MAIN UI TABS EXTENSION
+# =========================================================
+
+if "active_design" not in st.session_state:
+    st.session_state.active_design = None
+
+if st.session_state.active_design:
+
+    design = st.session_state.active_design
+    bim = build_full_bim(design)
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🏗 BIM Dashboard",
+        "📐 2D Floor Plan",
+        "🏙 3D Model",
+        "🤖 AI Copilot"
+    ])
+
+    # -------------------------
+    # BIM DASHBOARD
+    # -------------------------
+    with tab1:
+        st.subheader("BIM Model Overview")
+        st.json(bim)
+
+    # -------------------------
+    # 2D FLOOR PLAN
+    # -------------------------
+    with tab2:
+        layout = generate_2d_plan(design)
+        fig = draw_2d_plan(layout)
+        st.plotly_chart(fig, use_container_width=True)
+
+    # -------------------------
+    # 3D MODEL
+    # -------------------------
+    with tab3:
+        fig3d = draw_3d_model(design)
+        st.plotly_chart(fig3d, use_container_width=True)
+
+    # -------------------------
+    # AI COPILOT
+    # -------------------------
+    with tab4:
+        st.subheader("Arc AI Copilot Response")
+
+        if user_prompt:
+            response = ai_copilot(user_prompt, design, bim)
+            st.success(response)
+        else:
+            st.info("Ask something like: 'reduce cost' or 'optimize hvac'")
