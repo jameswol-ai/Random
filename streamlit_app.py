@@ -1,7 +1,7 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V30 — FINAL NEURAL ARCHITECTURE OS
-# Evolutionary + BIM + AI Studio Simulation Layer
+# V30 — FINAL NEURAL ARCHITECTURE OS (MERGED BUILD)
+# Evolutionary + BIM + AI Studio + Blueprint Visualization
 # =========================================================
 
 import streamlit as st
@@ -25,7 +25,7 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STYLE LAYER
+# STYLE LAYER (Merged Arc Studio + V30)
 # =========================================================
 
 st.markdown("""
@@ -47,6 +47,39 @@ h1, h2, h3 {
     padding: 16px;
     border-radius: 12px;
     margin: 10px 0;
+}
+
+/* Blueprint Canvas */
+.arc-blueprint-canvas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #090d16;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px dashed #334155;
+    margin-top: 15px;
+}
+
+.arc-room-module {
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 220px;
+    padding: 20px;
+    border-radius: 10px;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: 0.25s;
+}
+
+.arc-room-module:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.3);
+}
+
+.room-meta {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    margin-top: 8px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -82,7 +115,7 @@ def log(msg):
     })
     save_memory()
 
-# init
+# Init
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -129,7 +162,7 @@ def evolve(goal, generations=6):
 
         for s in survivors:
             new_pop.append(s)
-            mutated = dict(s)
+            mutated = json.loads(json.dumps(s))
             mutated["structure"]["columns"] += random.randint(-2, 3)
             mutated["structure"]["beams"] += random.randint(-3, 4)
             mutated["cost"] += random.randint(-5000, 5000)
@@ -139,11 +172,51 @@ def evolve(goal, generations=6):
 
     return pop[0], history
 
+# =========================================================
+# FLOOR + BLUEPRINT VISUAL ENGINE
+# =========================================================
+
 def floor_plan(d):
-    return [{"room": r, "size": random.randint(20, 70)} for r in d["rooms"]]
+    rooms = [
+        {"name": "Living Lounge", "w": 6, "h": 5, "color": "#1e3a8a"},
+        {"name": "Kitchen Core", "w": 4, "h": 4, "color": "#065f46"},
+        {"name": "Bath Node", "w": 3, "h": 2, "color": "#78350f"}
+    ]
+
+    for i in range(len(d["rooms"])):
+        rooms.append({
+            "name": f"Room {i+1}",
+            "w": 4,
+            "h": 4,
+            "color": "#4c1d95"
+        })
+
+    return rooms
+
+def render_blueprint(plan):
+    st.markdown("### 🗺️ Spatial Blueprint Simulation")
+
+    html = '<div class="arc-blueprint-canvas">'
+    for r in plan:
+        html += f"""
+        <div class="arc-room-module" style="background:{r['color']}">
+            <div style="font-weight:700">{r['name']}</div>
+            <div class="room-meta">{r['w']}m × {r['h']}m module</div>
+        </div>
+        """
+    html += "</div>"
+
+    st.markdown(html, unsafe_allow_html=True)
 
 # =========================================================
-# SIDEBAR NAVIGATION (FULL BIM OS)
+# EVOLUTION ENGINE
+# =========================================================
+
+def run(goal):
+    return evolve(goal)
+
+# =========================================================
+# SIDEBAR NAV
 # =========================================================
 
 st.sidebar.title("🏗 Neural Architecture OS V30")
@@ -167,15 +240,16 @@ page = st.sidebar.radio(
     ]
 )
 
-goal = st.sidebar.text_input("Design Goal", "Eco smart tower")
-run = st.sidebar.button("Generate")
+goal = st.sidebar.text_input("Design Goal", "Neo Eco Tower")
+run_btn = st.sidebar.button("Generate Architecture")
 
 # =========================================================
-# GENERATION TRIGGER
+# GENERATION
 # =========================================================
 
-if run:
-    design, hist = evolve(goal)
+if run_btn:
+    design, history = run(goal)
+    design["plan"] = floor_plan(design)
 
     mem["designs"].append(design)
     st.session_state.active = design
@@ -193,49 +267,37 @@ d = st.session_state.get("active", None)
 # =========================================================
 
 if page == "🏠 Dashboard":
-    st.title("🏠 Dashboard")
-
-    st.markdown("### System Overview")
+    st.title("🏠 System Dashboard")
 
     st.metric("Designs", len(mem["designs"]))
     st.metric("Logs", len(mem["logs"]))
-    st.metric("Evolution Runs", len(mem["evolution"]))
+    st.metric("Plugins Loaded", len(mem["plugins"]))
 
     st.markdown("---")
-    for l in mem["logs"][-5:]:
+    for l in mem["logs"][-6:]:
         st.write(l)
-
-# ---------------------------------------------------------
 
 elif page == "📂 Projects":
     st.title("📂 Projects")
-
     st.json(mem["projects"])
-
-# ---------------------------------------------------------
 
 elif page == "📐 Design Studio":
     st.title("📐 Design Studio")
 
     if d:
         st.json(d)
-        st.json(floor_plan(d))
+        render_blueprint(d["plan"])
     else:
         st.info("Generate a design first.")
-
-# ---------------------------------------------------------
 
 elif page == "🧠 AI Architect":
     st.title("🧠 AI Architect")
 
     if d:
-        st.write("Neural interpretation layer active")
         st.json({
             "complexity": len(d["rooms"]) * 10,
             "efficiency": 100 - (d["cost"] / 10000)
         })
-
-# ---------------------------------------------------------
 
 elif page == "🏗 Structural Analysis":
     st.title("🏗 Structural Analysis")
@@ -243,44 +305,27 @@ elif page == "🏗 Structural Analysis":
     if d:
         st.json(d["structure"])
 
-# ---------------------------------------------------------
-
 elif page == "💰 Cost Estimation":
     st.title("💰 Cost Estimation")
 
     if d:
-        st.metric("Total Cost", f"${d['cost']:,}")
-
-# ---------------------------------------------------------
+        st.metric("Cost", f"${d['cost']:,}")
 
 elif page == "🌱 Sustainability":
     st.title("🌱 Sustainability")
 
     if d:
         score = max(0, 100 - d["structure"]["columns"])
-        st.metric("Sustainability Score", f"{score:.1f}/100")
-
-# ---------------------------------------------------------
+        st.metric("Score", f"{score}/100")
 
 elif page == "📋 Code Compliance":
-    st.title("📋 Code Compliance")
-
-    st.success("Simulated compliance: PASSED (V30 BIM ruleset)")
-
-# ---------------------------------------------------------
+    st.success("Simulated BIM compliance PASSED")
 
 elif page == "🏢 BIM Manager":
     st.title("🏢 BIM Manager")
 
-    st.info("Building Information Model layer active (simulated)")
-
     if d:
-        st.json({
-            "materials": ["Concrete", "Steel", "Glass"],
-            "elements": d["structure"]
-        })
-
-# ---------------------------------------------------------
+        st.json({"materials": ["Concrete", "Steel", "Glass"], "structure": d["structure"]})
 
 elif page == "📊 Analytics":
     st.title("📊 Analytics")
@@ -288,24 +333,17 @@ elif page == "📊 Analytics":
     if d:
         st.line_chart([random.randint(60, 100) for _ in range(10)])
 
-# ---------------------------------------------------------
-
 elif page == "🧠 Memory":
     st.title("🧠 Memory")
-
     st.json(mem)
-
-# ---------------------------------------------------------
 
 elif page == "🔌 Plugins":
     st.title("🔌 Plugins")
 
-    mem["plugins"].append("BIM_CORE_V30")
+    if "BIM_CORE_V30" not in mem["plugins"]:
+        mem["plugins"].append("BIM_CORE_V30")
 
-    st.write("Loaded plugins:")
     st.json(mem["plugins"])
-
-# ---------------------------------------------------------
 
 elif page == "⚙ Settings":
     st.title("⚙ Settings")
