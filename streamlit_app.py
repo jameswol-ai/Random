@@ -1,6 +1,6 @@
 # =============================
-# ARC STUDIO ENGINE v12
-# Unified AI + AEC + BIM-like System
+# ARC STUDIO ENGINE v13
+# BIM CORE + AI MULTI-AGENT SYSTEM
 # =============================
 
 import streamlit as st
@@ -16,18 +16,23 @@ import plotly.graph_objects as go
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio Engine v12",
-    page_icon="📐",
+    page_title="Arc Studio BIM v13",
+    page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("arc_bim_memory.json")
 
 # =========================================================
-# MEMORY
+# MEMORY LAYER
 # =========================================================
 
-DEFAULT = {"projects": [], "designs": [], "logs": [], "evolution": []}
+DEFAULT = {
+    "projects": [],
+    "bim_models": [],
+    "logs": [],
+    "runs": []
+}
 
 def load():
     if MEMORY_FILE.exists():
@@ -47,8 +52,8 @@ def log(msg):
 if "mem" not in st.session_state:
     st.session_state.mem = load()
 
-if "active" not in st.session_state:
-    st.session_state.active = None
+if "active_model" not in st.session_state:
+    st.session_state.active_model = None
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -56,161 +61,197 @@ if "history" not in st.session_state:
 mem = st.session_state.mem
 
 # =========================================================
-# SIDEBAR CONFIG
+# SIDEBAR BIM CONFIG
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio")
+st.sidebar.title("🏗️ Arc BIM Engine v13")
 
-page = st.sidebar.radio("Navigation", ["Dashboard", "Design", "Memory"])
+page = st.sidebar.radio("Navigation", ["Dashboard", "BIM Model", "Memory"])
 
-typology = st.sidebar.selectbox("Building Type", ["Residential", "Commercial", "Industrial"])
-floors = st.sidebar.slider("Floors", 1, 60, 8)
-rooms_pf = st.sidebar.slider("Rooms / Floor", 1, 15, 5)
-population = st.sidebar.slider("Occupancy", 0, 5000, 300)
+project_name = st.sidebar.text_input("Project Name", "Arc Tower")
 
-pop_size = st.sidebar.slider("Population Size", 10, 120, 30)
-gens = st.sidebar.slider("Epochs", 2, 25, 8)
+building_type = st.sidebar.selectbox(
+    "Building Type",
+    ["Residential", "Commercial", "Industrial"]
+)
+
+floors = st.sidebar.slider("Floors", 1, 100, 12)
+rooms_pf = st.sidebar.slider("Rooms per Floor", 1, 20, 6)
+population = st.sidebar.slider("Occupancy Load", 0, 8000, 400)
 
 # =========================================================
-# AEC ENGINE
+# BIM DATA STRUCTURE (CORE)
 # =========================================================
 
-def generate():
-    total_rooms = floors * rooms_pf
+def generate_bim():
+    building_id = str(uuid.uuid4())[:8]
+
+    floors_data = []
+
+    for f in range(floors):
+        floor = {
+            "level": f,
+            "spaces": []
+        }
+
+        for r in range(rooms_pf):
+            space = {
+                "id": str(uuid.uuid4())[:6],
+                "name": f"Room_{f}_{r}",
+                "area": random.randint(20, 80),
+                "type": random.choice(["Room", "Core", "Service"]),
+                "elements": {
+                    "walls": random.randint(4, 12),
+                    "doors": random.randint(1, 4),
+                    "windows": random.randint(1, 6)
+                }
+            }
+            floor["spaces"].append(space)
+
+        floors_data.append(floor)
 
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": typology,
-        "floors": floors,
-        "rooms_pf": rooms_pf,
-        "rooms": [f"Room {i+1}" for i in range(total_rooms)],
-        "area": 80 + total_rooms * 14,
-        "structure": {
-            "columns": random.randint(12, 40),
-            "beams": random.randint(24, 80)
+        "id": building_id,
+        "name": project_name,
+        "type": building_type,
+        "floors": floors_data,
+        "meta": {
+            "total_floors": floors,
+            "total_spaces": floors * rooms_pf,
+            "population": population
         }
     }
 
-def mutate(d):
-    d = json.loads(json.dumps(d))
-    d["structure"]["columns"] += random.randint(-2, 3)
-    d["structure"]["beams"] += random.randint(-3, 5)
-    if random.random() > 0.6:
-        d["rooms"].append("Expansion Node")
-        d["area"] += 15
-    return d
+# =========================================================
+# AI AGENT COUNCIL
+# =========================================================
 
-def fitness(d):
-    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    structural = max(0, 100 - abs(ratio - 2.0) * 20)
+def ai_council(bim):
+    issues = []
+    suggestions = []
 
-    cost = d["area"] * 1600
-    cost_score = max(0, 100 - cost / 100000)
+    total_area = sum(
+        s["area"]
+        for f in bim["floors"]
+        for s in f["spaces"]
+    )
 
-    complexity = min(100, len(d["rooms"]) * 2)
+    # Architect AI
+    if total_area / len(bim["floors"]) < 300:
+        issues.append("Low spatial efficiency per floor.")
+        suggestions.append("Increase floor plate utilization.")
+
+    # Structural AI
+    avg_walls = sum(
+        s["elements"]["walls"]
+        for f in bim["floors"]
+        for s in f["spaces"]
+    ) / bim["meta"]["total_spaces"]
+
+    if avg_walls < 6:
+        issues.append("Low structural enclosure density.")
+        suggestions.append("Increase structural partitions.")
+
+    # Cost AI (simplified)
+    cost = total_area * 1500
+    if cost > 500000:
+        issues.append("High projected construction cost.")
+        suggestions.append("Optimize material usage and finishes.")
+
+    # Sustainability AI
+    if population > 3000:
+        issues.append("High occupancy load stress.")
+        suggestions.append("Improve ventilation and zoning strategy.")
 
     return {
-        "structural": structural,
-        "cost": cost_score,
-        "complexity": complexity
+        "issues": issues if issues else ["BIM model is stable."],
+        "suggestions": suggestions if suggestions else ["Design is optimized."]
     }
 
-def score(f):
-    return sum(f.values()) / 3
-
-def evolve():
-    pop = [generate() for _ in range(pop_size)]
-    hist = []
-
-    for _ in range(gens):
-        scored = []
-        for d in pop:
-            f = fitness(d)
-            d["score"] = score(f)
-            scored.append(d)
-
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        hist.append(scored[0]["score"])
-
-        survivors = scored[:max(2, len(scored)//2)]
-        new = []
-
-        for s in survivors:
-            new.append(s)
-            new.append(mutate(s))
-
-        pop = new[:pop_size]
-
-    return scored[0], hist
-
 # =========================================================
-# 2D FLOOR PLAN
+# BOQ ENGINE
 # =========================================================
 
-def plan2d(d):
-    rooms = []
-    x = y = 0
+def boq(bim):
+    area = sum(s["area"] for f in bim["floors"] for s in f["spaces"])
 
-    for i, r in enumerate(d["rooms"][:d["rooms_pf"] * 2]):
-        w = 4 + (i % 3)
-        h = 4
+    return {
+        "Concrete": area * 0.4 * 130,
+        "Steel": area * 0.09 * 950,
+        "Finishes": area * 120,
+        "Doors": area * 0.8 * 120,
+        "Windows": area * 0.6 * 200
+    }
 
-        rooms.append({"name": r, "x": x, "y": y, "w": w, "h": h})
+# =========================================================
+# MEP SYSTEM (BIM LAYER)
+# =========================================================
 
-        x += w + 1
-        if x > 18:
-            x = 0
-            y += 5
+def mep(bim):
+    area = sum(s["area"] for f in bim["floors"] for s in f["spaces"])
 
-    return rooms
+    return {
+        "Electrical Load kW": area * 0.11,
+        "Water Demand L/day": area * 20,
+        "Cooling Load kW": area * 0.085,
+        "Ventilation m3/hr": area * 5.5
+    }
 
-def render2d(plan):
+# =========================================================
+# 2D BIM VIEW
+# =========================================================
+
+def render_2d(bim):
     fig = go.Figure()
 
-    for r in plan:
-        fig.add_shape(
-            type="rect",
-            x0=r["x"], y0=r["y"],
-            x1=r["x"] + r["w"],
-            y1=r["y"] + r["h"],
-            line=dict(color="white"),
-            fillcolor="rgba(80,120,255,0.4)"
-        )
+    y_offset = 0
 
-        fig.add_annotation(
-            x=r["x"] + r["w"]/2,
-            y=r["y"] + r["h"]/2,
-            text=r["name"],
-            showarrow=False,
-            font=dict(size=10)
-        )
+    for f in bim["floors"]:
+        x = 0
 
-    fig.update_layout(height=500, paper_bgcolor="#0b1220")
+        for s in f["spaces"]:
+            w = s["area"] ** 0.5
+            h = w
+
+            fig.add_shape(
+                type="rect",
+                x0=x,
+                y0=y_offset,
+                x1=x + w,
+                y1=y_offset + h,
+                line=dict(color="white"),
+                fillcolor="rgba(100,150,255,0.4)"
+            )
+
+            x += w + 1
+
+        y_offset += 10
+
+    fig.update_layout(
+        height=500,
+        paper_bgcolor="#0b1220"
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# 3D MODEL
+# 3D BIM VIEW
 # =========================================================
 
-def render3d(d):
+def render_3d(bim):
     fig = go.Figure()
 
-    for f in range(d["floors"]):
-        z = f * 3
+    for f in bim["floors"]:
+        z = f["level"] * 3
 
-        fig.add_trace(go.Mesh3d(
-            x=[0,10,10,0],
-            y=[0,0,10,10],
-            z=[z,z,z,z],
-            opacity=0.5
-        ))
+        for s in f["spaces"]:
+            size = s["area"] ** 0.5
 
-        for i in range(4):
-            fig.add_trace(go.Scatter3d(
-                x=[(i%2)*10, (i%2)*10],
-                y=[(i//2)*10, (i//2)*10],
-                z=[z, z+3],
-                mode="lines"
+            fig.add_trace(go.Mesh3d(
+                x=[0, size, size, 0],
+                y=[0, 0, size, size],
+                z=[z, z, z, z],
+                opacity=0.4
             ))
 
     fig.update_layout(scene=dict(
@@ -222,79 +263,62 @@ def render3d(d):
     st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# MEP + COST + AI
+# DASHBOARD UI
 # =========================================================
 
-def boq(d):
-    area = d["area"]
-    return {
-        "Concrete": area * 0.35 * 130,
-        "Steel": area * 0.08 * 950,
-        "Finishes": area * 120
-    }
-
-def mep(d):
-    return {
-        "Power": d["area"] * 0.12,
-        "Water": d["area"] * 18,
-        "Cooling": d["area"] * 0.09
-    }
-
-def ai_review(d):
-    issues = []
-    if d["structure"]["beams"] < d["structure"]["columns"] * 1.5:
-        issues.append("Weak structural ratio")
-
-    return {
-        "issues": issues if issues else ["OK"],
-        "suggestion": "Optimize beam-column ratio"
-    }
-
-# =========================================================
-# UI
-# =========================================================
-
-st.title("📐 Arc Studio Engine v12")
+st.title("🏗️ Arc Studio BIM Engine v13")
 
 if page == "Dashboard":
-    st.metric("Projects", len(mem["projects"]))
-    st.metric("Designs", len(mem["designs"]))
 
-    if st.button("Run Evolution"):
-        best, hist = evolve()
-        st.session_state.active = best
-        st.session_state.history = hist
-        mem["designs"].append(best)
-        save()
-        log("Evolution run complete")
+    if st.button("🧠 Generate BIM Model"):
+        bim = generate_bim()
 
-    if st.session_state.active:
-        d = st.session_state.active
+        review = ai_council(bim)
+        boq_data = boq(bim)
+        mep_data = mep(bim)
 
-        st.subheader(f"Design {d['id']}")
-        st.metric("Score", d["score"])
+        st.session_state.active_model = {
+            "bim": bim,
+            "review": review,
+            "boq": boq_data,
+            "mep": mep_data
+        }
 
-        tab1, tab2, tab3 = st.tabs(["2D", "3D", "Analytics"])
+        mem["bim_models"].append(bim)
+        log("Generated BIM model")
+
+    if st.session_state.active_model:
+
+        model = st.session_state.active_model
+
+        st.subheader("📊 AI BIM Analysis")
+
+        st.json(model["review"])
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader("💰 BoQ")
+            st.json(model["boq"])
+
+        with col2:
+            st.subheader("🌬 MEP")
+            st.json(model["mep"])
+
+        tab1, tab2 = st.tabs(["🗺 2D BIM", "🏢 3D BIM"])
 
         with tab1:
-            render2d(plan2d(d))
+            render_2d(model["bim"])
 
         with tab2:
-            render3d(d)
+            render_3d(model["bim"])
 
-        with tab3:
-            st.line_chart(st.session_state.history)
-            st.json(boq(d))
-            st.json(mep(d))
-            st.json(ai_review(d))
-
-elif page == "Design":
-    st.json(st.session_state.active)
+elif page == "BIM Model":
+    st.json(st.session_state.active_model)
 
 elif page == "Memory":
     st.json(mem)
 
-    if st.button("Reset"):
+    if st.button("Reset Memory"):
         st.session_state.mem = DEFAULT.copy()
-        save()
         st.rerun()
