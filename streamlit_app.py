@@ -1,392 +1,31 @@
 # ============================================================
-# RANDOM V51 AI DESIGN STUDIO + BIM CORE
-# Single File Streamlit Edition
-#
-# AI Architecture Intelligence Engine
-# ============================================================
-
-import streamlit as st
-import json
-import uuid
-import random
-from pathlib import Path
-from datetime import datetime
-
-
-# ============================================================
-# OPTIONAL PLOTLY
-# ============================================================
-
-try:
-    import plotly.graph_objects as go
-except Exception:
-    go = None
-
-
-# ============================================================
-# CONFIG
-# ============================================================
-
-st.set_page_config(
-    page_title="RANDOM V51 AI Design Studio",
-    page_icon="🏗️",
-    layout="wide"
-)
-
-
-MEMORY_FILE = Path(
-    "random_v51_memory.json"
-)
-
-
-# ============================================================
-# STYLE
-# ============================================================
-
-st.markdown(
-"""
-<style>
-
-.stApp{
-background:
-linear-gradient(
-135deg,
-#020617,
-#111827,
-#1e293b
-);
-color:white;
-}
-
-
-.hero{
-
-padding:40px;
-border-radius:30px;
-background:
-linear-gradient(
-135deg,
-rgba(37,99,235,.5),
-rgba(124,58,237,.5)
-);
-text-align:center;
-
-}
-
-
-.card{
-
-background:
-rgba(255,255,255,.08);
-
-padding:20px;
-
-border-radius:20px;
-
-border:
-1px solid rgba(255,255,255,.15);
-
-}
-
-
-.agent{
-
-background:
-rgba(16,185,129,.2);
-
-padding:15px;
-
-border-radius:15px;
-
-margin:8px;
-
-}
-
-
-</style>
-""",
-unsafe_allow_html=True
-)
-
-
-# ============================================================
-# MEMORY
+# DESIGN EVOLUTION ENGINE
 # ============================================================
 
 
-def load_memory():
+def evolve_design(project):
 
-    if MEMORY_FILE.exists():
-
-        try:
-
-            return json.loads(
-                MEMORY_FILE.read_text()
-            )
-
-        except Exception:
-            pass
-
-
-    return {
-
-        "projects":[],
-        "history":[]
-
-    }
-
-
-
-def save_memory():
-
-    MEMORY_FILE.write_text(
-        json.dumps(
-            st.session_state.memory,
-            indent=2
-        )
-    )
-
-
-
-if "memory" not in st.session_state:
-
-    st.session_state.memory = load_memory()
-
-
-
-if "project" not in st.session_state:
-
-    st.session_state.project = None
-
-
-
-# ============================================================
-# BIM OBJECT ENGINE
-# ============================================================
-
-
-def create_bim_object(
-        object_type,
-        name
-):
-
-    return {
-
-        "id":
-        str(uuid.uuid4())[:8],
-
-        "type":
-        object_type,
-
-        "name":
-        name,
-
-        "material":
-        random.choice(
-            [
-                "Concrete",
-                "Steel",
-                "Timber",
-                "Glass"
-            ]
-        ),
-
-        "created":
-        datetime.now().isoformat()
-
-    }
-
-
-
-def create_space(
-        name,
-        floor
-):
-
-    return {
+    mutation = {
 
         "id":
         str(uuid.uuid4())[:6],
 
-        "name":
-        name,
-
-        "floor":
-        floor,
-
-        "area":
-        random.randint(
-            15,
-            100
-        ),
-
-        "objects":[
-
-            create_bim_object(
-                "Wall",
-                "Boundary Wall"
-            ),
-
-            create_bim_object(
-                "Door",
-                "Entrance Door"
-            )
-
-        ]
-
-    }
-
-
-
-def create_floor(level):
-
-    rooms=[
-
-        "Lobby",
-        "Office",
-        "Meeting Room",
-        "Core",
-        "Services"
-
-    ]
-
-
-    return {
-
-        "level":
-        level,
-
-        "height":
-        3.5,
-
-        "spaces":[
-
-            create_space(
-                r,
-                level
-            )
-
-            for r in rooms
-
-        ]
-
-    }
-
-
-# ============================================================
-# AI AGENTS
-# ============================================================
-
-
-def architect_agent(prompt):
-
-    return {
-
-        "agent":
-        "Architect AI",
-
-        "building":
+        "change":
 
         random.choice(
 
             [
-            "Smart Office Tower",
-            "Eco Residential Complex",
-            "Research Campus",
-            "Mixed Use Development"
+            "Improved spatial circulation",
+            "Optimised structural grid",
+            "Added sustainability features",
+            "Improved daylight strategy",
+            "Enhanced public spaces"
             ]
 
         ),
-
-        "concept":
-
-        "Adaptive human-centred architecture",
-
-        "confidence":
-
-        random.randint(
-            85,
-            99
-        )
-
-    }
-
-
-
-def structural_agent():
-
-    return {
-
-        "agent":
-        "Structural AI",
-
-        "system":
-
-        random.choice(
-
-            [
-            "Reinforced Concrete Frame",
-            "Steel Frame",
-            "Composite System"
-
-            ]
-
-        ),
-
-        "grid":
-
-        random.choice(
-            [
-                5,
-                6,
-                7.5
-            ]
-        )
-
-    }
-
-
-
-def sustainability_agent():
-
-    return {
-
-        "energy":
-
-        random.randint(
-            80,
-            98
-        ),
-
-        "strategy":
-
-        random.choice(
-
-            [
-            "Solar optimisation",
-            "Passive ventilation",
-            "Green roof",
-            "Water recycling"
-
-            ]
-
-        )
-
-    }
-
-
-
-def compliance_agent():
-
-    return {
-
-        "fire":
-        "PASS",
-
-        "accessibility":
-        "PASS",
 
         "score":
+
         random.randint(
             85,
             99
@@ -395,135 +34,449 @@ def compliance_agent():
     }
 
 
-# ============================================================
-# BIM GENERATOR
-# ============================================================
+    project["evolution_result"] = mutation
 
-
-def generate_project(prompt):
-
-
-    floors=random.randint(
-        3,
-        15
-    )
-
-
-    project={
-
-        "id":
-        str(uuid.uuid4())[:8],
-
-        "prompt":
-        prompt,
-
-        "date":
-        datetime.now().isoformat(),
-
-
-        "architecture":
-        architect_agent(prompt),
-
-
-        "floors":[
-
-            create_floor(i)
-
-            for i in range(floors)
-
-        ],
-
-
-        "structure":
-        structural_agent(),
-
-
-        "sustainability":
-        sustainability_agent(),
-
-
-        "compliance":
-        compliance_agent(),
-
-
-        "evolution":
-
-        random.randint(
-            70,
-            95
-        )
-
-    }
-
+    project["evolution"] = mutation["score"]
 
     return project
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
-
-st.markdown(
-
-"""
-<div class="hero">
-
-<h1>🏗️ RANDOM V51</h1>
-
-<h2>AI DESIGN STUDIO + BIM CORE</h2>
-
-<p>
-Imagine → Generate → Analyse → Evolve
-</p>
-
-</div>
-""",
-
-unsafe_allow_html=True
-
-)
-
 
 # ============================================================
-# COPILOT
+# BIM ANALYSIS ENGINE
 # ============================================================
 
 
-st.subheader(
-"🤖 BIM Copilot"
-)
+def analyse_project(project):
 
 
-prompt=st.text_area(
-"Describe your building",
-placeholder=
-"Example: Sustainable 20 floor innovation tower"
-)
+    return {
+
+        "Spatial Quality":
+
+        random.randint(
+            80,
+            96
+        ),
 
 
-if st.button(
-"🚀 Generate AI Building"
-):
+        "Structural Logic":
 
-    if prompt:
+        random.randint(
+            85,
+            98
+        ),
 
-        project=generate_project(
-            prompt
+
+        "Sustainability":
+
+        project["sustainability"]["energy"],
+
+
+        "Compliance":
+
+        project["compliance"]["score"],
+
+
+        "Evolution":
+
+        project["evolution"]
+
+    }
+
+
+
+# ============================================================
+# FLOOR PLAN VISUALIZER
+# ============================================================
+
+
+def show_floor_plan(project):
+
+
+    if go is None:
+
+        st.warning(
+            "Plotly unavailable"
         )
 
-        st.session_state.project=project
+        return
 
-        st.session_state.memory["projects"].append(
+
+    fig = go.Figure()
+
+
+    x = 0
+
+
+    for space in project["floors"][0]["spaces"]:
+
+
+        fig.add_shape(
+
+            type="rect",
+
+            x0=x,
+
+            y0=0,
+
+            x1=x+8,
+
+            y1=6
+
+        )
+
+
+        fig.add_annotation(
+
+            x=x+4,
+
+            y=3,
+
+            text=space["name"],
+
+            showarrow=False
+
+        )
+
+
+        x += 10
+
+
+
+    fig.update_layout(
+
+        title="AI Generated Ground Floor",
+
+        template="plotly_dark",
+
+        height=450,
+
+        xaxis=dict(
+            visible=False
+        ),
+
+        yaxis=dict(
+            visible=False
+        )
+
+    )
+
+
+    st.plotly_chart(
+
+        fig,
+
+        use_container_width=True
+
+    )
+
+
+
+# ============================================================
+# 3D BIM VIEWER
+# ============================================================
+
+
+def show_3d_model(project):
+
+
+    if go is None:
+
+        st.warning(
+            "Plotly unavailable"
+        )
+
+        return
+
+
+    floors=len(
+        project["floors"]
+    )
+
+
+    height=floors*3.5
+
+
+    fig=go.Figure()
+
+
+
+    fig.add_trace(
+
+        go.Mesh3d(
+
+            x=[
+                0,40,40,0
+            ],
+
+            y=[
+                0,0,40,40
+            ],
+
+            z=[
+                0,
+                0,
+                height,
+                height
+            ],
+
+            opacity=.45,
+
+            name="Building Mass"
+
+        )
+
+    )
+
+
+    grid=project["structure"]["grid"]
+
+
+    for x in range(5):
+
+        for y in range(5):
+
+            fig.add_trace(
+
+                go.Scatter3d(
+
+                    x=[
+                        x*grid,
+                        x*grid
+                    ],
+
+                    y=[
+                        y*grid,
+                        y*grid
+                    ],
+
+                    z=[
+                        0,
+                        height
+                    ],
+
+                    mode="lines",
+
+                    name="Column"
+
+                )
+
+            )
+
+
+    fig.update_layout(
+
+        title="BIM Structural Visualization",
+
+        height=650,
+
+        template="plotly_dark"
+
+    )
+
+
+    st.plotly_chart(
+
+        fig,
+
+        use_container_width=True
+
+    )
+
+
+
+# ============================================================
+# PROJECT DISPLAY
+# ============================================================
+
+
+project=st.session_state.project
+
+
+if project:
+
+
+    st.divider()
+
+
+    c1,c2,c3,c4=st.columns(4)
+
+
+    c1.metric(
+
+        "Floors",
+
+        len(project["floors"])
+
+    )
+
+
+    c2.metric(
+
+        "Structure",
+
+        project["structure"]["system"]
+
+    )
+
+
+    c3.metric(
+
+        "Energy",
+
+        f"{project['sustainability']['energy']}%"
+
+    )
+
+
+    c4.metric(
+
+        "Evolution",
+
+        f"{project['evolution']}%"
+
+    )
+
+
+
+    tabs=st.tabs(
+
+        [
+
+        "🏢 BIM Explorer",
+
+        "📐 Floor Plan",
+
+        "🌆 3D Model",
+
+        "🧠 AI Brain"
+
+        ]
+
+    )
+
+
+
+    with tabs[0]:
+
+
+        st.subheader(
+            "BIM Object Tree"
+        )
+
+
+        for floor in project["floors"]:
+
+
+            with st.expander(
+
+                f"Floor {floor['level']}"
+
+            ):
+
+
+                for room in floor["spaces"]:
+
+
+                    st.write(
+
+                        f"📦 {room['name']} | {room['area']} m²"
+
+                    )
+
+
+                    for obj in room["objects"]:
+
+                        st.caption(
+
+                            f"{obj['type']} : {obj['material']}"
+
+                        )
+
+
+
+    with tabs[1]:
+
+        show_floor_plan(project)
+
+
+
+    with tabs[2]:
+
+        show_3d_model(project)
+
+
+
+    with tabs[3]:
+
+
+        report=analyse_project(
             project
         )
 
-        st.session_state.memory["history"].append(
-            datetime.now().isoformat()
+
+        for k,v in report.items():
+
+
+            st.progress(
+
+                v/100,
+
+                text=f"{k}: {v}%"
+
+            )
+
+
+
+        st.subheader(
+            "AI Agents"
         )
 
-        save_memory()
 
-        st.success(
-            "AI BIM model created"
-        )
+        agents=[
+
+            "🏛 Architect AI",
+
+            "📐 Structural AI",
+
+            "🌱 Sustainability AI",
+
+            "⚖ Compliance AI",
+
+            "🧬 Evolution AI"
+
+        ]
+
+
+        for agent in agents:
+
+            st.markdown(
+
+            f"""
+
+            <div class="agent">
+
+            {agent}
+
+            <br>
+
+            Status: ACTIVE
+
+            </div>
+
+            """,
+
+            unsafe_allow_html=True
+
+            )
+
+
+else:
+
+
+    st.info(
+
+        "Generate a project to activate BIM Intelligence."
+
+    )
