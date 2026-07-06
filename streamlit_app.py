@@ -105,7 +105,7 @@ if "history" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURE ENGINE (2D)
+# ARCHITECTURE ENGINE (2D EVOLUTION)
 # =========================================================
 
 ARCH = {
@@ -196,7 +196,8 @@ def voxelize(d):
         for i in range(3):
             world[min(19, x+i), y, z] = 2
 
-    for _ in range(len(d["structure"])):
+    # foundation anchors
+    for _ in range(10):
         x = random.randint(2, 17)
         z = random.randint(2, 17)
         world[x, 0, z] = 3
