@@ -1,6 +1,6 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V28 — Neural World Engine (Streamlit Control Core)
+# V29 — Neural Unreal Engine (Python Spatial Universe Core)
 # =========================================================
 
 import streamlit as st
@@ -11,61 +11,29 @@ import math
 from pathlib import Path
 from datetime import datetime
 
-# =========================================================
-# CONFIG
-# =========================================================
-
 st.set_page_config(
-    page_title="Random Neural World Engine V28",
-    page_icon="🌍",
+    page_title="Neural Unreal Architecture Engine V29",
+    page_icon="🌌",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# UI STYLE
-# =========================================================
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-
-html, body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-h1, h2, h3 {
-    font-family: 'Space Grotesk', sans-serif;
-}
-
-.world-card {
-    background: #0b1220;
-    padding: 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.08);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# MEMORY SYSTEM
+# MEMORY CORE
 # =========================================================
 
 DEFAULT_STATE = {
-    "projects": [],
     "worlds": [],
-    "designs": [],
-    "simulation": [],
-    "plugins": []
+    "buildings": [],
+    "simulations": [],
+    "lightmaps": [],
+    "agents": []
 }
 
 def load_memory():
     if MEMORY_FILE.exists():
-        try:
-            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
+        return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
     return DEFAULT_STATE.copy()
 
 def save_memory():
@@ -78,234 +46,220 @@ if "memory" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# NEURAL WORLD CORE
+# NEURAL WORLD GENERATOR
 # =========================================================
 
-def generate_world(name):
+def generate_world(seed):
     return {
         "id": str(uuid.uuid4())[:8],
-        "name": name,
-        "terrain": {
-            "type": random.choice(["flat", "hilly", "coastal", "urban"]),
-            "roughness": random.uniform(0.1, 1.0)
-        },
-        "lighting": {
-            "sun_angle": random.randint(0, 360),
-            "intensity": random.uniform(0.5, 1.2)
-        },
-        "weather": random.choice(["clear", "rain", "wind", "storm"]),
-        "time": random.randint(0, 24)
+        "seed": seed,
+        "size": random.randint(80, 300),
+        "terrain": random.choice(["flat", "valley", "coastal", "urban grid"]),
+        "sky_intensity": random.uniform(0.4, 1.2),
+        "time_of_day": random.randint(0, 24),
+        "weather": random.choice(["clear", "fog", "rain", "storm"])
     }
 
 # =========================================================
-# AI COUNCIL
+# 3D BUILDING GENERATION (MESH LOGIC)
 # =========================================================
 
-COUNCIL = [
-    "Architect AI",
-    "Structural AI",
-    "Cost AI",
-    "Sustainability AI",
-    "Simulation AI",
-    "Chaos AI"
+def generate_building(world):
+    floors = random.randint(1, 6)
+
+    building = {
+        "id": str(uuid.uuid4())[:8],
+        "floors": floors,
+        "footprint": random.randint(20, 120),
+        "materials": {
+            "concrete": random.uniform(0.4, 1.0),
+            "glass": random.uniform(0.2, 0.8),
+            "steel": random.uniform(0.3, 0.9)
+        },
+        "mesh": []
+    }
+
+    for f in range(floors):
+        building["mesh"].append({
+            "floor": f,
+            "height": 3 + random.random() * 2,
+            "rotation": random.choice([0, 90, 180, 270]),
+            "offset": random.uniform(-1, 1)
+        })
+
+    return building
+
+# =========================================================
+# LIGHTING ENGINE (UNREAL STYLE APPROXIMATION)
+# =========================================================
+
+def compute_light(world):
+    sun_angle = (world["time_of_day"] / 24) * 360
+    intensity = max(0.2, math.cos(math.radians(sun_angle - 180)))
+
+    return {
+        "sun_angle": sun_angle,
+        "light_intensity": round(intensity * world["sky_intensity"], 3),
+        "shadow_sharpness": round(1 - intensity, 3),
+        "global_illumination": round(intensity * 0.8, 3)
+    }
+
+# =========================================================
+# CAMERA SYSTEM (SIMULATED)
+# =========================================================
+
+def camera_simulation(building):
+    return {
+        "mode": random.choice(["orbit", "first_person", "fly"]),
+        "position": [random.uniform(-10, 10), random.uniform(1, 10), random.uniform(-10, 10)],
+        "look_at_floor": random.randint(0, building["floors"] - 1)
+    }
+
+# =========================================================
+# AI AGENTS (NEURAL CONSTRUCTION BEINGS)
+# =========================================================
+
+AGENTS = [
+    "Architect Agent",
+    "Structural Agent",
+    "Lighting Agent",
+    "Material Agent",
+    "Chaos Agent"
 ]
 
-def council_vote(world):
-    votes = []
-    report = []
+def run_agents(world, building):
+    results = []
 
-    for agent in COUNCIL:
+    for a in AGENTS:
         score = random.randint(60, 99)
-        votes.append(score)
-        report.append({
-            "agent": agent,
-            "score": score,
-            "comment": f"{agent} evaluates world stability."
+
+        results.append({
+            "agent": a,
+            "evaluation": score,
+            "decision": f"{a} modifies geometry stability"
         })
 
-    return report, sum(votes) / len(votes)
+    return results
 
 # =========================================================
-# OCCUPANCY SIMULATION
+# PHYSICS SIMULATION (ABSTRACT LOAD SYSTEM)
 # =========================================================
 
-def simulate_people(world, steps=10):
-    people = [{"id": i, "x": random.random(), "y": random.random()} for i in range(5)]
-    history = []
+def physics_sim(building):
+    load = building["footprint"] * building["floors"]
 
-    for t in range(steps):
-        for p in people:
-            p["x"] += random.uniform(-0.05, 0.05)
-            p["y"] += random.uniform(-0.05, 0.05)
+    stress = load / max(1, len(building["mesh"]))
 
-        congestion = sum(abs(p["x"]) + abs(p["y"]) for p in people)
-
-        history.append({
-            "tick": t,
-            "congestion": congestion,
-            "comfort": max(0, 100 - congestion * 10)
-        })
-
-    return history
+    return {
+        "structural_load": load,
+        "stress_index": round(stress, 2),
+        "stability": max(0, 100 - stress * 0.5)
+    }
 
 # =========================================================
-# STRUCTURAL ENGINE (ABSTRACT)
+# UI
 # =========================================================
 
-def structural_health(world):
-    base = 100
-    penalty = world["terrain"]["roughness"] * 20
-    return max(0, base - penalty)
+st.sidebar.title("🌌 Neural Unreal Engine V29")
 
-# =========================================================
-# SUSTAINABILITY ENGINE
-# =========================================================
+seed = st.sidebar.text_input("World Seed", "neo-city-alpha")
 
-def sustainability_score(world):
-    weather_factor = {"clear": 1, "rain": 0.9, "wind": 0.85, "storm": 0.7}
-    return round(
-        100 * weather_factor[world["weather"]] * (1 - world["terrain"]["roughness"] * 0.3),
-        2
-    )
-
-# =========================================================
-# SIDEBAR NAVIGATION
-# =========================================================
-
-st.sidebar.title("🌍 Neural World Engine V28")
-
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "🏠 Dashboard",
-        "🌍 World Generator",
-        "🏗 Structural Physics",
-        "🌱 Sustainability",
-        "🚶 Occupancy Simulation",
-        "🏢 BIM Manager",
-        "📊 Digital Twin",
-        "🔌 Plugins",
-        "🧠 Memory",
-        "⚙ Settings"
-    ]
-)
-
-world_name = st.sidebar.text_input("World Name", "Neo Architecture Zone")
-
-if st.sidebar.button("Generate World"):
-    world = generate_world(world_name)
-
-    report, score = council_vote(world)
-    world["council_score"] = score
+if st.sidebar.button("Generate Neural World"):
+    world = generate_world(seed)
+    building = generate_building(world)
 
     mem["worlds"].append(world)
-    st.session_state.active_world = world
-    st.session_state.council = report
+    mem["buildings"].append(building)
+
+    st.session_state.world = world
+    st.session_state.building = building
 
     save_memory()
 
-world = st.session_state.get("active_world", None)
+world = st.session_state.get("world", None)
+building = st.session_state.get("building", None)
+
+page = st.sidebar.radio(
+    "Simulation Layers",
+    [
+        "🌍 World View",
+        "🏗 Building Mesh",
+        "💡 Lighting Engine",
+        "📷 Camera System",
+        "🤖 AI Agents",
+        "⚙ Physics Simulation",
+        "🧠 Memory Core"
+    ]
+)
 
 # =========================================================
-# PAGES
+# WORLD VIEW
 # =========================================================
 
-if page == "🏠 Dashboard":
-    st.title("🏠 Neural World Dashboard")
-
-    st.metric("Worlds Created", len(mem["worlds"]))
-    st.metric("Simulation Runs", len(mem["simulation"]))
-
-    if world:
-        st.markdown("### Active World")
-        st.json(world)
-
-# ---------------------------------------------------------
-
-elif page == "🌍 World Generator":
-    st.title("🌍 World Generator")
+if page == "🌍 World View":
+    st.title("🌍 Neural World Layer")
 
     if world:
         st.json(world)
     else:
         st.info("Generate a world first.")
 
-# ---------------------------------------------------------
+# =========================================================
+# BUILDING MESH
+# =========================================================
 
-elif page == "🏗 Structural Physics":
-    st.title("🏗 Structural Physics")
+elif page == "🏗 Building Mesh":
+    st.title("🏗 Procedural Building Mesh")
 
-    if world:
-        st.metric("Structural Health", f"{structural_health(world):.1f}/100")
+    if building:
+        st.json(building)
 
-# ---------------------------------------------------------
+# =========================================================
+# LIGHTING
+# =========================================================
 
-elif page == "🌱 Sustainability":
-    st.title("🌱 Sustainability Engine")
-
-    if world:
-        st.metric("Sustainability Score", f"{sustainability_score(world):.1f}/100")
-
-# ---------------------------------------------------------
-
-elif page == "🚶 Occupancy Simulation":
-    st.title("🚶 Occupancy Simulation")
+elif page == "💡 Lighting Engine":
+    st.title("💡 Global Illumination System")
 
     if world:
-        sim = simulate_people(world)
-        st.line_chart([s["comfort"] for s in sim])
-        st.json(sim[-1])
+        st.json(compute_light(world))
 
-# ---------------------------------------------------------
+# =========================================================
+# CAMERA
+# =========================================================
 
-elif page == "🏢 BIM Manager":
-    st.title("🏢 BIM Manager")
+elif page == "📷 Camera System":
+    st.title("📷 Virtual Camera Simulation")
 
-    if world:
-        bim = {
-            "project": world["name"],
-            "site": world["terrain"],
-            "lighting": world["lighting"]
-        }
-        st.json(bim)
+    if building:
+        st.json(camera_simulation(building))
 
-# ---------------------------------------------------------
+# =========================================================
+# AI AGENTS
+# =========================================================
 
-elif page == "📊 Digital Twin":
-    st.title("📊 Digital Twin")
+elif page == "🤖 AI Agents":
+    st.title("🤖 Construction Intelligence Council")
 
-    if world:
-        twin = {
-            "structural_health": structural_health(world),
-            "sustainability": sustainability_score(world),
-            "time": world["time"],
-            "weather": world["weather"]
-        }
-        st.json(twin)
+    if world and building:
+        st.json(run_agents(world, building))
 
-# ---------------------------------------------------------
+# =========================================================
+# PHYSICS
+# =========================================================
 
-elif page == "🔌 Plugins":
-    st.title("🔌 Plugin System")
+elif page == "⚙ Physics Simulation":
+    st.title("⚙ Structural Physics Engine")
 
-    st.info("Future module registry for CFD, GIS, VR, IFC, robotics.")
-    st.json(mem.get("plugins", []))
+    if building:
+        st.metric("Stability", f"{physics_sim(building)['stability']:.1f}/100")
+        st.json(physics_sim(building))
 
-# ---------------------------------------------------------
+# =========================================================
+# MEMORY
+# =========================================================
 
-elif page == "🧠 Memory":
-    st.title("🧠 Memory Core")
+elif page == "🧠 Memory Core":
+    st.title("🧠 Neural Memory Archive")
 
     st.json(mem)
-
-# ---------------------------------------------------------
-
-elif page == "⚙ Settings":
-    st.title("⚙ Settings")
-
-    if st.button("Reset Engine"):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        st.session_state.active_world = None
-        save_memory()
-        st.success("System reset complete")
-        st.rerun()
