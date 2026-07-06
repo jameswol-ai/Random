@@ -1580,9 +1580,80 @@ elif page == "🧠 Memory Core":
 # ============================================================
 
 
+# ============================================================
+# EXPORT
+# ============================================================
+
+
 elif page == "📦 Export":
 
 
     st.title(
 
-        "📦 Project
+        "📦 Project Export Hub"
+
+    )
+
+
+    if st.session_state.active_design:
+
+
+        export_data = json.dumps(
+
+            st.session_state.active_design,
+
+            indent=4
+
+        )
+
+
+        st.download_button(
+
+            label="⬇️ Download Design JSON",
+
+            data=export_data,
+
+            file_name="random_design.json",
+
+            mime="application/json"
+
+        )
+
+
+        st.subheader(
+
+            "Preview"
+
+        )
+
+
+        st.json(
+
+            st.session_state.active_design
+
+        )
+
+
+    else:
+
+
+        st.info(
+
+            "Generate a design before exporting."
+
+        )
+
+
+
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+
+st.caption(
+
+    "RANDOM AI Architecture Intelligence Engine | Evolutionary Spatial Synthesis"
+
+)
