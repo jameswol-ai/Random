@@ -1,6 +1,6 @@
 # =============================
-# ARC STUDIO ENGINE v14
-# AI ARCHITECT COPILOT EDITION
+# ARC STUDIO V15
+# AEC + BIM + EVOLUTION ENGINE CORE
 # =============================
 
 import streamlit as st
@@ -9,339 +9,155 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
-import plotly.graph_objects as go
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio AI Copilot v14",
-    page_icon="🧠🏗️",
+    page_title="Arc Studio V15 - AEC Engine",
+    page_icon="🏗️",
     layout="wide"
 )
 
-# =========================================================
-# MEMORY
-# =========================================================
-
-MEM_FILE = Path("arc_copilot_memory.json")
-
-DEFAULT = {"models": [], "chat": []}
-
-def load():
-    if MEM_FILE.exists():
-        return json.load(open(MEM_FILE))
-    return DEFAULT.copy()
-
-def save(mem):
-    json.dump(mem, open(MEM_FILE, "w"), indent=2)
-
-if "mem" not in st.session_state:
-    st.session_state.mem = load()
-
-if "active" not in st.session_state:
-    st.session_state.active = None
-
-if "chat" not in st.session_state:
-    st.session_state.chat = []
-
-mem = st.session_state.mem
+MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# COPILOT UI
+# MEMORY SYSTEM
 # =========================================================
 
-st.title("🧠 Arc Studio AI Copilot v14")
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "bim_models": [],
+    "logs": [],
+    "evolution": []
+}
 
-st.markdown("### Speak your building into existence")
+def load_memory():
+    if MEMORY_FILE.exists():
+        try:
+            return json.load(open(MEMORY_FILE, "r"))
+        except:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
 
-user_prompt = st.text_area(
-    "Describe your building",
-    placeholder="e.g. Design a 10-floor commercial tower with 2000 people capacity and low cost HVAC"
-)
+def save_memory():
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(st.session_state.memory, f, indent=2)
 
-# =========================================================
-# SIMPLE NLP → STRUCTURE PARSER (COPILOT BRAIN)
-# =========================================================
+def log(msg):
+    st.session_state.memory["logs"].append({
+        "time": datetime.now().isoformat(),
+        "msg": msg
+    })
+    save_memory()
 
-def interpret(text):
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
 
-    text = text.lower()
-
-    floors = 10
-    rooms = 5
-    btype = "Commercial"
-    intent = []
-
-    if "hospital" in text:
-        btype = "Residential"
-        rooms = 8
-
-    if "industrial" in text:
-        btype = "Industrial"
-
-    if "small" in text:
-        floors = 3
-
-    if "tall" in text or "tower" in text:
-        floors = 20
-
-    if "cheap" in text or "low cost" in text:
-        intent.append("cost_optimize")
-
-    if "green" in text or "sustainable" in text:
-        intent.append("sustainability")
-
-    if "large" in text or "capacity" in text:
-        rooms = 10
-
-    return btype, floors, rooms, intent
+mem = st.session_state.memory
 
 # =========================================================
-# BIM GENERATION
+# AEC BIM DATA MODEL (NEW CORE ADDITION)
 # =========================================================
 
-def generate(btype, floors, rooms):
+def create_bim_model(design):
+    """Turns raw design into BIM-like structured object"""
+
+    floors = design.get("floors", 1)
+    bedrooms = design.get("bedrooms", 1)
+
+    bim = {
+        "project_id": design["id"],
+        "architecture": {
+            "floors": floors,
+            "rooms": design.get("rooms", []),
+            "typology": design.get("type", "Unknown")
+        },
+        "structure": {
+            "columns": random.randint(20, 80),
+            "beams": random.randint(40, 160),
+            "slabs": floors,
+            "foundation": "Raft Foundation"
+        },
+        "mep": {
+            "water_system": "Pressurized Network",
+            "electrical": "3-phase distribution",
+            "fire_system": "Sprinkler + Hydrant",
+            "drainage": "Gravity + Pump Assist"
+        },
+        "hvac": {
+            "system": "VRF / Central Chiller Hybrid",
+            "air_handling_units": random.randint(1, floors),
+            "cooling_load_kw": random.randint(50, 500),
+            "zones": floors * 2
+        },
+        "cost_model": {
+            "structure_cost": 0,
+            "mep_cost": 0,
+            "hvac_cost": 0,
+            "total": 0
+        }
+    }
+
+    return bim
+
+# =========================================================
+# AEC COST ENGINE (NEW)
+# =========================================================
+
+def calculate_costs(bim):
+    base_structure = bim["structure"]["columns"] * 1200
+    base_mep = bim["architecture"]["floors"] * 15000
+    base_hvac = bim["hvac"]["cooling_load_kw"] * 300
+
+    total = base_structure + base_mep + base_hvac
+
+    bim["cost_model"] = {
+        "structure_cost": base_structure,
+        "mep_cost": base_mep,
+        "hvac_cost": base_hvac,
+        "total": total
+    }
+
+    return bim
+
+# =========================================================
+# GENETIC ENGINE (SIMPLIFIED V15 CORE)
+# =========================================================
+
+def generate_design():
     return {
         "id": str(uuid.uuid4())[:8],
-        "type": btype,
-        "floors": [
-            {
-                "level": f,
-                "spaces": [
-                    {
-                        "name": f"Room_{f}_{r}",
-                        "area": random.randint(25, 80)
-                    }
-                    for r in range(rooms)
-                ]
-            }
-            for f in range(floors)
-        ]
+        "type": random.choice(["Residential", "Commercial", "Industrial"]),
+        "floors": random.randint(1, 20),
+        "bedrooms": random.randint(1, 6),
+        "rooms": ["Living", "Kitchen", "Bath", "Flex"],
+        "area": random.randint(80, 2000)
     }
 
-# =========================================================
-# AI ANALYSIS ENGINE
-# =========================================================
+def evolve_design(d):
+    d = json.loads(json.dumps(d))
+    d["floors"] = max(1, d["floors"] + random.randint(-1, 3))
+    d["area"] += random.randint(-50, 120)
+    return d
 
-def analyze(model, intent):
+def run_evolution(n=10):
+    population = [generate_design() for _ in range(n)]
+    best = population[0]
 
-    area = sum(s["area"] for f in model["floors"] for s in f["spaces"])
+    for p in population:
+        if p["area"] > best["area"]:
+            best = p
 
-    issues = []
-    suggestions = []
-
-    if "cost_optimize" in intent and area > 3000:
-        issues.append("High cost risk detected")
-        suggestions.append("Reduce floor count or optimize materials")
-
-    if "sustainability" in intent:
-        suggestions.append("Introduce passive cooling + natural ventilation zones")
-
-    if area < 1500:
-        issues.append("Low capacity design")
-
-    return issues, suggestions
+    return best
 
 # =========================================================
-# BOQ + MEP
+# BIM PIPELINE (NEW CORE FEATURE)
 # =========================================================
 
-def boq(model):
-    area = sum(s["area"] for f in model["floors"] for s in f["spaces"])
-    return {
-        "Concrete": area * 0.35 * 130,
-        "Steel": area * 0.08 * 950,
-        "Finishes": area * 120
-    }
-
-def mep(model):
-    area = sum(s["area"] for f in model["floors"] for s in f["spaces"])
-    return {
-        "Power (kW)": area * 0.1,
-        "Water (L/day)": area * 18,
-        "Cooling (kW)": area * 0.08
-    }
-
-# =========================================================
-# VISUALIZATION
-# =========================================================
-
-def render_2d(model):
-    fig = go.Figure()
-    y = 0
-
-    for f in model["floors"]:
-        x = 0
-        for s in f["spaces"]:
-            size = s["area"] ** 0.5
-
-            fig.add_shape(
-                type="rect",
-                x0=x, y0=y,
-                x1=x+size, y1=y+size,
-                fillcolor="rgba(99,102,241,0.4)",
-                line=dict(color="white")
-            )
-
-            x += size + 1
-        y += 8
-
-    fig.update_layout(height=450, paper_bgcolor="#0b1220")
-    st.plotly_chart(fig, use_container_width=True)
-
-def render_3d(model):
-    fig = go.Figure()
-
-    for f in model["floors"]:
-        z = f["level"] * 3
-        fig.add_trace(go.Mesh3d(
-            x=[0,10,10,0],
-            y=[0,0,10,10],
-            z=[z,z,z,z],
-            opacity=0.4
-        ))
-
-    fig.update_layout(scene=dict(
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False),
-        zaxis=dict(visible=False)
-    ))
-
-    st.plotly_chart(fig, use_container_width=True)
-
-# =========================================================
-# CHAT MEMORY
-# =========================================================
-
-def add_chat(role, msg):
-    st.session_state.chat.append({"role": role, "msg": msg})
-
-# =========================================================
-# UI LAYOUT
-# =========================================================
-
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.markdown("## 💬 Copilot Input")
-
-    if st.button("🧠 Generate from Prompt"):
-
-        btype, floors, rooms, intent = interpret(user_prompt)
-
-        model = generate(btype, floors, rooms)
-
-        issues, suggestions = analyze(model, intent)
-
-        st.session_state.active = {
-            "model": model,
-            "intent": intent,
-            "issues": issues,
-            "suggestions": suggestions
-        }
-
-        mem["models"].append(model)
-        save(mem)
-
-        add_chat("user", user_prompt)
-        add_chat("ai", f"Generated {btype} building with {floors} floors")
-
-with col2:
-    st.markdown("## 🧠 AI Response")
-
-    if st.session_state.active:
-        active = st.session_state.active
-
-        st.markdown("### ⚠ Issues")
-        for i in active["issues"]:
-            st.error(i)
-
-        st.markdown("### 💡 Suggestions")
-        for s in active["suggestions"]:
-            st.info(s)
-
-# =========================================================
-# VISUALS
-# =========================================================
-
-if st.session_state.active:
-
-    model = st.session_state.active["model"]
-
-    st.markdown("---")
-
-    tab1, tab2, tab3 = st.tabs(["🗺 2D Plan", "🏢 3D Model", "📊 Analytics"])
-
-    with tab1:
-        render_2d(model)
-
-    with tab2:
-        render_3d(model)
-
-    with tab3:
-        st.json(boq(model))
-        st.json(mep(model))
-
-# =========================================================
-# CHAT HISTORY
-# =========================================================
-
-st.markdown("---")
-st.markdown("## 💬 Copilot Memory")
-
-for c in st.session_state.chat[-6:]:
-    if c["role"] == "user":
-        st.markdown(f"🧑‍💻 **You:** {c['msg']}")
-    else:
-        st.markdown(f"🧠 **Copilot:** {c['msg']}")
-st.sidebar.markdown("## 🛠 Configure Arc Engine")
-
-building_category = st.selectbox(
-    "Building Category",
-    ["Residential", "Commercial", "Industrial", "Mixed Use"]
-)
-
-building_type = st.selectbox(
-    "Building Type",
-    ARCH_DOMAINS.get(building_category, [])
-)
-
-floors = st.slider("Number of Floors", 1, 60, 2)
-
-population = st.slider("Expected Occupancy", 1, 5000, 20)
-
-bedrooms = st.slider("Bedrooms", 0, 20, 3)
-
-bathrooms = st.slider("Bathrooms", 1, 20, 3)
-
-parking = st.slider("Parking Spaces", 0, 500, 2)
-
-generations = st.slider("Genetic Epoch Cycles", 2, 100, 25)
-
-population_size = st.slider("Evolution Population", 10, 500, 100)
-
-design["bim"] = {
-
-    "Site": {},
-
-    "Architecture": {},
-
-    "Structure": {},
-
-    "MEP": {},
-
-    "HVAC": {},
-
-    "Electrical": {},
-
-    "Fire Protection": {},
-
-    "Plumbing": {},
-
-    "Schedules": {},
-
-    "Cost Model": {}
-
-}
+def build_full_bim(design):
+    bim = create_bim_model(design)
+    bim = calculate_costs(bim)
+    return bim
