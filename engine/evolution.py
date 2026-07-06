@@ -1,56 +1,31 @@
-import json
 import random
-from engine.fitness import calculate_fitness, score
-from engine.generator import generate_base_design
 
-from plugins.structural_critic import StructuralCritic
+def fitness(d):
+    r = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+    stability = max(0, 100 - abs(r - 2.2) * 25)
+    density = min(100, (d["structure"]["columns"] + d["structure"]["beams"]) / 1.2)
+    efficiency = max(0, 100 - abs(d["area"] / 150 - 1) * 30)
 
-from plugins.council.council_orchestrator import ArchitectureCouncil
-council = ArchitectureCouncil()
+    return (stability + density + efficiency) / 3
 
-for d in pop:
-    f = calculate_fitness(d)
-    d["fitness"] = f
 
-    base_score = score(f)
-
-    # 🧠 COUNCIL EVALUATION
-    review = council.evaluate(d)
-    d["council"] = review
-
-    # blended intelligence
-    d["score"] = int((base_score + review["final_score"]) / 2)
-
-def mutate(d):
-    d = json.loads(json.dumps(d))
-
-    d["structure"]["columns"] = max(10, d["structure"]["columns"] + random.randint(-2, 4))
-    d["structure"]["beams"] = max(16, d["structure"]["beams"] + random.randint(-4, 6))
-
-    if random.random() > 0.5:
-        d["rooms"].append("Adaptive Module")
-        d["area_sqm"] += 20
-
-    d["cost"] = int(d["area_sqm"] * random.randint(1300, 2500))
-    return d
-
-def run_evolution(btype, bedrooms, generations, pop_size):
-    pop = [generate_base_design(btype, bedrooms) for _ in range(pop_size)]
+def evolve(population, gens, pop_size, generator, mutate_fn):
     history = []
 
-    for _ in range(generations):
-        scored = []
+    for _ in range(gens):
+        for d in population:
+            d["score"] = fitness(d)
 
-        critic = StructuralCritic()
+        population.sort(key=lambda x: x["score"], reverse=True)
+        history.append(population[0]["score"])
 
-for d in pop:
-    f = calculate_fitness(d)
-    d["fitness"] = f
-    d["score"] = score(f)
+        survivors = population[:max(2, pop_size // 2)]
 
-    # 🧠 NEW: AI critique layer
-    critique = critic.analyze(d)
-    d["critique"] = critique
+        population = survivors + [
+            mutate_fn(random.choice(survivors))
+            for _ in survivors
+        ]
 
-    # blend AI judgment into evolution score
-    d["score"] = int((d["score"] + critique["scores"]["overall"]) / 2)
+        population = population[:pop_size]
+
+    return population[0], history
