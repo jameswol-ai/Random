@@ -477,8 +477,6 @@ units = st.radio(
     horizontal=True
 
 )
-    )
-
 
     grid_spacing = st.selectbox(
         "Structural Grid Spacing",
