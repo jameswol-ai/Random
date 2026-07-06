@@ -1,8 +1,9 @@
 # ============================================================
-# RANDOM V2
-# AI DESIGN STUDIO
-# Copilot Driven Architecture Intelligence Engine
+# RANDOM V50 BIM CORE
+# AI ARCHITECTURE + BIM INTELLIGENCE ENGINE
 # Single File Streamlit Edition
+#
+# V2 AI Design Studio upgraded into BIM Core
 # ============================================================
 
 import streamlit as st
@@ -14,7 +15,7 @@ from datetime import datetime
 
 
 # ============================================================
-# OPTIONAL IMPORTS
+# OPTIONAL VISUALIZATION
 # ============================================================
 
 try:
@@ -24,23 +25,23 @@ except Exception:
 
 
 # ============================================================
-# CONFIG
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="Random V2 AI Design Studio",
+    page_title="Random V50 BIM Core",
     page_icon="🏗️",
     layout="wide"
 )
 
 
 MEMORY_FILE = Path(
-    "random_v2_memory.json"
+    "random_v50_memory.json"
 )
 
 
 # ============================================================
-# VISUAL DESIGN
+# GLOBAL STYLE
 # ============================================================
 
 st.markdown(
@@ -48,27 +49,31 @@ st.markdown(
 <style>
 
 .stApp {
+
 background:
 linear-gradient(
 120deg,
-#050816,
+#030712,
 #111827,
 #1e293b
 );
+
 color:white;
+
 }
 
 
 .hero {
 
-padding:40px;
+padding:45px;
+
 border-radius:30px;
 
 background:
 linear-gradient(
 135deg,
-rgba(37,99,235,.4),
-rgba(124,58,237,.4)
+rgba(37,99,235,.45),
+rgba(124,58,237,.45)
 );
 
 text-align:center;
@@ -81,14 +86,12 @@ text-align:center;
 background:
 rgba(255,255,255,.08);
 
-border-radius:20px;
-
 padding:20px;
+
+border-radius:20px;
 
 border:
 1px solid rgba(255,255,255,.15);
-
-margin:10px;
 
 }
 
@@ -96,26 +99,18 @@ margin:10px;
 .agent {
 
 background:
-rgba(16,185,129,.15);
-
-border-radius:15px;
+rgba(16,185,129,.18);
 
 padding:15px;
 
-}
+border-radius:15px;
 
-
-.metric {
-
-font-size:35px;
-
-font-weight:bold;
+margin:10px 0;
 
 }
 
 
 </style>
-
 """,
 unsafe_allow_html=True
 )
@@ -123,7 +118,7 @@ unsafe_allow_html=True
 
 
 # ============================================================
-# MEMORY
+# MEMORY SYSTEM
 # ============================================================
 
 
@@ -136,13 +131,16 @@ def load_memory():
                 MEMORY_FILE.read_text()
             )
 
-        except:
+        except Exception:
             pass
 
 
     return {
-        "projects":[],
-        "history":[]
+
+        "projects": [],
+
+        "history": []
+
     }
 
 
@@ -150,10 +148,15 @@ def load_memory():
 def save_memory():
 
     MEMORY_FILE.write_text(
+
         json.dumps(
+
             st.session_state.memory,
+
             indent=2
+
         )
+
     )
 
 
@@ -171,6 +174,148 @@ if "project" not in st.session_state:
 
 
 # ============================================================
+# BIM OBJECT GENERATORS
+# ============================================================
+
+
+def create_space(name, floor):
+
+    return {
+
+        "id":
+        str(uuid.uuid4())[:6],
+
+        "name":
+        name,
+
+        "floor":
+        floor,
+
+        "type":
+        "space",
+
+        "area":
+        random.randint(12,80)
+
+    }
+
+
+
+def create_floor(number):
+
+    rooms = [
+
+        "Lobby",
+
+        "Office",
+
+        "Meeting Room",
+
+        "Core",
+
+        "Services"
+
+    ]
+
+
+    return {
+
+        "level":
+        number,
+
+        "height":
+        3.5,
+
+
+        "spaces":
+
+        [
+
+            create_space(
+                r,
+                number
+            )
+
+            for r in rooms
+
+        ]
+
+    }
+
+
+
+def create_structure():
+
+    grid = random.choice(
+
+        [
+
+            5,
+
+            6,
+
+            7.5
+
+        ]
+
+    )
+
+
+    columns = []
+
+
+    for x in range(4):
+
+        for y in range(4):
+
+            columns.append(
+
+                {
+
+                "id":
+                f"C{x}{y}",
+
+                "x":
+                x*grid,
+
+                "y":
+                y*grid
+
+                }
+
+            )
+
+
+    return {
+
+        "system":
+        random.choice(
+
+            [
+
+            "Reinforced Concrete Frame",
+
+            "Steel Frame",
+
+            "Composite Structure"
+
+            ]
+
+        ),
+
+
+        "grid_spacing":
+        grid,
+
+
+        "columns":
+        columns
+
+    }
+
+
+
+# ============================================================
 # AI AGENTS
 # ============================================================
 
@@ -179,48 +324,51 @@ def architect_ai(prompt):
 
     return {
 
-        "building":
+        "building_type":
+
         random.choice(
+
             [
-                "Modern Residence",
-                "Smart Office",
-                "Eco Campus",
-                "Innovation Hub"
+
+            "Smart Office Tower",
+
+            "Eco Residential Complex",
+
+            "Innovation Campus",
+
+            "Mixed Use Building"
+
             ]
+
         ),
 
-        "spaces":
-        [
-            "Entrance",
-            "Living Area",
-            "Work Area",
-            "Kitchen",
-            "Services"
-        ],
 
         "concept":
-        "Human-centered spatial design"
+
+        "Human-centred adaptive architecture",
+
+
+        "spaces":
+
+        [
+
+        "Entrance",
+
+        "Public Zone",
+
+        "Work Zone",
+
+        "Service Zone"
+
+        ]
+
     }
 
 
 
 def structural_ai():
 
-    return {
-
-        "system":
-        random.choice(
-            [
-                "Concrete Frame",
-                "Steel Frame",
-                "Hybrid Structure"
-            ]
-        ),
-
-        "columns":
-        random.randint(20,80)
-
-    }
+    return create_structure()
 
 
 
@@ -229,47 +377,74 @@ def sustainability_ai():
     return {
 
         "energy_score":
-        random.randint(70,98),
+
+        random.randint(
+            75,
+            98
+        ),
+
 
         "strategy":
+
         random.choice(
+
             [
-                "Passive ventilation",
-                "Solar optimization",
-                "Green roof strategy"
+
+            "Passive ventilation",
+
+            "Solar optimisation",
+
+            "Green roof",
+
+            "Water reuse"
+
             ]
+
         )
 
     }
 
 
 
-def cost_ai(area):
+def compliance_ai():
 
     return {
 
-        "estimate":
-        area * random.randint(
-            900,
-            1600
+        "fire":
+
+        "Checked",
+
+
+        "accessibility":
+
+        "Checked",
+
+
+        "safety_score":
+
+        random.randint(
+            80,
+            99
         )
 
     }
 
 
+# ============================================================
+# BIM PROJECT GENERATOR
+# ============================================================
 
-def generate_project(prompt):
+
+def generate_bim_project(prompt):
 
 
-    architecture = architect_ai(prompt)
-
-    area = random.randint(
-        250,
-        5000
+    floors = random.randint(
+        3,
+        15
     )
 
 
-    return {
+    building = {
 
         "id":
         str(uuid.uuid4())[:8],
@@ -279,8 +454,25 @@ def generate_project(prompt):
         prompt,
 
 
+        "created":
+        datetime.now().isoformat(),
+
+
         "architecture":
-        architecture,
+        architect_ai(prompt),
+
+
+        "floors":
+
+        [
+
+            create_floor(i)
+
+            for i in range(
+                floors
+            )
+
+        ],
 
 
         "structure":
@@ -291,333 +483,18 @@ def generate_project(prompt):
         sustainability_ai(),
 
 
-        "cost":
-        cost_ai(area),
+        "compliance":
+        compliance_ai(),
 
 
         "area":
-        area,
-
-
-        "floors":
+        floors *
         random.randint(
-            1,
-            15
-        ),
-
-
-        "created":
-        datetime.now().isoformat()
+            300,
+            900
+        )
 
     }
 
 
-
-# ============================================================
-# VISUALIZATION
-# ============================================================
-
-
-def floor_plan(project):
-
-    if go is None:
-
-        st.warning(
-            "Plotly unavailable"
-        )
-
-        return
-
-
-    fig = go.Figure()
-
-
-    x=0
-
-
-    for room in project["architecture"]["spaces"]:
-
-        fig.add_shape(
-
-            type="rect",
-
-            x0=x,
-
-            y0=0,
-
-            x1=x+5,
-
-            y1=5
-
-        )
-
-
-        fig.add_annotation(
-
-            x=x+2.5,
-
-            y=2.5,
-
-            text=room,
-
-            showarrow=False
-
-        )
-
-
-        x +=6
-
-
-
-    fig.update_layout(
-        height=400,
-        template="plotly_dark"
-    )
-
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-
-
-def building_3d(project):
-
-
-    if go is None:
-
-        return
-
-
-    fig=go.Figure()
-
-
-    height = project["floors"]
-
-
-    fig.add_trace(
-
-        go.Mesh3d(
-
-            x=[
-                0,10,10,0
-            ],
-
-            y=[
-                0,0,10,10
-            ],
-
-            z=[
-                0,0,height,height
-            ],
-
-            opacity=.5
-
-        )
-
-    )
-
-
-    fig.update_layout(
-        height=500,
-        template="plotly_dark"
-    )
-
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-
-
-# ============================================================
-# HEADER
-# ============================================================
-
-
-st.markdown(
-"""
-<div class="hero">
-
-<h1>🏗️ RANDOM V2</h1>
-
-<h2>AI Architecture Design Studio</h2>
-
-<p>
-Imagine → Generate → Analyze → Evolve
-</p>
-
-</div>
-""",
-unsafe_allow_html=True
-)
-
-
-
-# ============================================================
-# COPILOT
-# ============================================================
-
-
-st.subheader(
-"🤖 Random Copilot"
-)
-
-
-prompt = st.text_area(
-
-"Describe your building idea",
-
-placeholder=
-"Example: Design a sustainable family house with a courtyard"
-
-)
-
-
-
-if st.button(
-"✨ Generate AI Concept"
-):
-
-    if prompt:
-
-        st.session_state.project = generate_project(
-            prompt
-        )
-
-
-        st.session_state.memory["history"].append(
-            st.session_state.project
-        )
-
-
-        save_memory()
-
-
-        st.success(
-            "AI Design Concept Generated"
-        )
-
-
-
-# ============================================================
-# PROJECT OUTPUT
-# ============================================================
-
-
-project = st.session_state.project
-
-
-
-if project:
-
-
-    st.divider()
-
-
-    c1,c2,c3,c4 = st.columns(4)
-
-
-    c1.metric(
-        "Area",
-        f"{project['area']} m²"
-    )
-
-
-    c2.metric(
-        "Floors",
-        project["floors"]
-    )
-
-
-    c3.metric(
-        "Energy Score",
-        project["sustainability"]["energy_score"]
-    )
-
-
-    c4.metric(
-        "AI Status",
-        "ACTIVE"
-    )
-
-
-    tabs = st.tabs(
-        [
-            "🏢 Concept",
-            "📐 Plan",
-            "🌆 3D",
-            "🧠 Agents"
-        ]
-    )
-
-
-    with tabs[0]:
-
-        st.json(project)
-
-
-
-    with tabs[1]:
-
-        floor_plan(project)
-
-
-
-    with tabs[2]:
-
-        building_3d(project)
-
-
-
-    with tabs[3]:
-
-
-        agents=[
-
-            "🏛 Architect AI",
-
-            "📐 Structural AI",
-
-            "🌱 Sustainability AI",
-
-            "💰 Cost AI"
-
-        ]
-
-
-        for a in agents:
-
-            st.markdown(
-            f"""
-            <div class="agent">
-
-            {a}
-
-            <br>
-
-            Analysis Complete
-
-            </div>
-            """,
-            unsafe_allow_html=True
-            )
-
-
-else:
-
-    st.info(
-        "Describe your project idea above to start Random Copilot."
-    )
-
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.caption(
-"Random V2 | AI Design Studio | Architecture Intelligence Engine"
-        )
+    return building
