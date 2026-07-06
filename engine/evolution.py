@@ -5,6 +5,8 @@ from engine.generator import generate_base_design
 
 from plugins.structural_critic import StructuralCritic
 
+from plugins.council.council_orchestrator import ArchitectureCouncil
+
 def mutate(d):
     d = json.loads(json.dumps(d))
 
