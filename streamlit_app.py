@@ -1,27 +1,50 @@
 # =============================
-# ARC STUDIO V15 (FIXED BUILD)
-# AEC + BIM + EVOLUTION ENGINE CORE
+# ARC STUDIO V16 (ROBUST BUILD)
+# BIM + AI + EVOLUTION ENGINE
+# Dependency-safe Streamlit Architecture
 # =============================
 
 import streamlit as st
 import json
 import uuid
 import random
-import re
 from pathlib import Path
-from datetime import datetime, timedelta
-
-import plotly.graph_objects as go
-import pandas as pd
-import networkx as nx
-import matplotlib.pyplot as plt
+from datetime import datetime
 
 # =========================================================
-# CONFIG
+# SAFE IMPORT LAYER (CRITICAL FIX)
+# =========================================================
+
+# Plotly (required for 2D/3D)
+try:
+    import plotly.graph_objects as go
+except:
+    go = None
+
+# Pandas (optional fallback-safe)
+try:
+    import pandas as pd
+except:
+    pd = None
+
+# NetworkX (optional MEP graph)
+try:
+    import networkx as nx
+except:
+    nx = None
+
+# Matplotlib (optional)
+try:
+    import matplotlib.pyplot as plt
+except:
+    plt = None
+
+# =========================================================
+# STREAMLIT CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio V15 - AEC Engine",
+    page_title="Arc Studio V16 - Stable BIM Engine",
     page_icon="🏗️",
     layout="wide"
 )
@@ -29,15 +52,13 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# MEMORY SYSTEM
+# MEMORY SYSTEM (SAFE)
 # =========================================================
 
 DEFAULT_STATE = {
     "projects": [],
     "designs": [],
-    "bim_models": [],
-    "logs": [],
-    "evolution": []
+    "logs": []
 }
 
 def load_memory():
@@ -62,7 +83,6 @@ def log(msg):
     })
     save_memory()
 
-# Initialize session
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -72,161 +92,119 @@ if "active_design" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# BIM CORE
-# =========================================================
-
-def create_bim_model(design):
-    floors = design.get("floors", 1)
-
-    return {
-        "id": design["id"],
-        "architecture": {
-            "floors": floors,
-            "rooms": design.get("rooms", []),
-            "typology": design.get("type", "Unknown")
-        },
-        "structure": {
-            "columns": random.randint(20, 80),
-            "beams": random.randint(40, 160),
-            "slabs": floors
-        },
-        "hvac": {
-            "system": "VRF Hybrid",
-            "cooling_load_kw": random.randint(50, 400),
-            "zones": floors * 2
-        },
-        "cost_model": {}
-    }
-
-def calculate_costs(bim):
-    floors = bim["architecture"]["floors"]
-
-    structure = bim["structure"]["columns"] * 1200
-    mep = floors * 15000
-    hvac = bim["hvac"]["cooling_load_kw"] * 300
-
-    bim["cost_model"] = {
-        "structure_cost": structure,
-        "mep_cost": mep,
-        "hvac_cost": hvac,
-        "total": structure + mep + hvac
-    }
-
-    return bim
-
-def build_full_bim(design):
-    return calculate_costs(create_bim_model(design))
-
-# =========================================================
-# DESIGN GENERATION
+# CORE DESIGN ENGINE
 # =========================================================
 
 def generate_design():
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "type": random.choice(["Residential", "Commercial", "Industrial"]),
-        "floors": random.randint(1, 10),
-        "bedrooms": random.randint(1, 5),
+        "floors": random.randint(1, 8),
         "rooms": ["Living", "Kitchen", "Bath"],
         "area": random.randint(80, 1200)
     }
 
 # =========================================================
-# 2D + 3D ENGINE
+# BIM ENGINE
 # =========================================================
 
-def generate_2d_plan(design):
-    layout = []
+def build_bim(design):
+    floors = design["floors"]
+
+    bim = {
+        "id": design["id"],
+        "architecture": {"floors": floors},
+        "structure": {
+            "columns": random.randint(20, 70),
+            "beams": random.randint(40, 140)
+        },
+        "hvac": {
+            "cooling_load_kw": random.randint(60, 350)
+        },
+        "cost_model": {}
+    }
+
+    bim["cost_model"] = {
+        "structure_cost": bim["structure"]["columns"] * 1200,
+        "mep_cost": floors * 15000,
+        "hvac_cost": bim["hvac"]["cooling_load_kw"] * 300,
+    }
+
+    bim["cost_model"]["total"] = sum(bim["cost_model"].values())
+
+    return bim
+
+# =========================================================
+# 2D PLAN (SAFE PLOTLY CHECK)
+# =========================================================
+
+def draw_2d(design):
+    if go is None:
+        st.warning("Plotly not installed — 2D view disabled")
+        return
+
+    fig = go.Figure()
     x, y = 0, 0
 
-    for room in design.get("rooms", []):
-        w, h = random.randint(3, 6), random.randint(3, 6)
+    for room in design["rooms"]:
+        w, h = random.randint(2, 5), random.randint(2, 5)
 
-        layout.append({"name": room, "x": x, "y": y, "w": w, "h": h})
-
-        x += w + 1
-        if x > 10:
-            x = 0
-            y += h + 1
-
-    return layout
-
-def draw_2d_plan(layout):
-    fig = go.Figure()
-
-    for r in layout:
         fig.add_shape(
             type="rect",
-            x0=r["x"], y0=r["y"],
-            x1=r["x"] + r["w"],
-            y1=r["y"] + r["h"]
+            x0=x, y0=y,
+            x1=x + w, y1=y + h
         )
+
         fig.add_annotation(
-            x=r["x"] + r["w"]/2,
-            y=r["y"] + r["h"]/2,
-            text=r["name"],
+            x=x + w/2,
+            y=y + h/2,
+            text=room,
             showarrow=False
         )
 
-    fig.update_layout(height=500, title="2D Floor Plan")
-    return fig
+        x += w + 1
 
-def generate_3d_model(design):
-    floors = design.get("floors", 1)
+    st.plotly_chart(fig, use_container_width=True)
 
+# =========================================================
+# 3D MODEL (SAFE)
+# =========================================================
+
+def draw_3d(design):
+    if go is None:
+        st.warning("Plotly not installed — 3D view disabled")
+        return
+
+    floors = design["floors"]
     x, y, z = [], [], []
+
     for f in range(floors):
         x += [0, 10, 10, 0, 0]
         y += [0, 0, 10, 10, 0]
         z += [f]*5
 
-    return x, y, z
-
-def draw_3d_model(design):
-    x, y, z = generate_3d_model(design)
-
     fig = go.Figure(
         data=[go.Scatter3d(x=x, y=y, z=z, mode="lines")]
     )
 
-    fig.update_layout(height=500, title="3D Massing Model")
-    return fig
+    st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# ENGINEERING LAYERS
+# OPTIONAL MEP GRAPH
 # =========================================================
 
-def structural_engine(bim):
-    return {
-        "load_per_column": random.uniform(120, 450),
-        "efficiency": random.uniform(65, 95)
-    }
+def draw_mep():
+    if nx is None or plt is None:
+        st.warning("NetworkX not installed — MEP graph disabled")
+        return
 
-def hvac_zoning(bim):
-    return [
-        {
-            "floor": i + 1,
-            "zone": random.choice(["Cooling", "Heating", "Mixed"])
-        }
-        for i in range(bim["architecture"]["floors"])
-    ]
-
-def generate_mep_graph():
     G = nx.Graph()
-    nodes = ["Water", "Power", "HVAC", "Drainage", "Fire"]
-
-    for n in nodes:
-        G.add_node(n)
-
     G.add_edges_from([
         ("Water", "Drainage"),
         ("Power", "HVAC"),
         ("Fire", "Water")
     ])
 
-    return G
-
-def draw_mep_graph(G):
     plt.figure()
     nx.draw(G, with_labels=True)
     st.pyplot(plt)
@@ -235,45 +213,51 @@ def draw_mep_graph(G):
 # AI COPILOT
 # =========================================================
 
-def ai_copilot(cmd, bim):
+def ai(cmd, bim):
     cmd = cmd.lower()
 
     if "cost" in cmd:
         return f"Total cost: {bim['cost_model']['total']:,}"
     if "hvac" in cmd:
-        return f"HVAC load: {bim['hvac']['cooling_load_kw']} kW"
+        return f"Cooling load: {bim['hvac']['cooling_load_kw']} kW"
     if "optimize" in cmd:
-        return "Reduce floors or HVAC load for efficiency"
+        return "Reduce floors or HVAC load for efficiency gain"
     return "Try: cost, hvac, optimize"
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("Arc Studio V15")
+st.sidebar.title("🏗 Arc Studio V16")
+
 if st.sidebar.button("Generate Design"):
-    design = generate_design()
-    st.session_state.active_design = design
+    st.session_state.active_design = generate_design()
     log("Design generated")
 
-if st.session_state.active_design:
-    design = st.session_state.active_design
-    bim = build_full_bim(design)
+design = st.session_state.active_design
+
+if design:
+    bim = build_bim(design)
 
     tab1, tab2, tab3, tab4 = st.tabs([
-        "BIM", "2D", "3D", "Copilot"
+        "BIM", "2D", "3D", "MEP"
     ])
 
     with tab1:
         st.json(bim)
 
     with tab2:
-        st.plotly_chart(draw_2d_plan(generate_2d_plan(design)))
+        draw_2d(design)
 
     with tab3:
-        st.plotly_chart(draw_3d_model(design))
+        draw_3d(design)
 
     with tab4:
-        cmd = st.text_input("Ask Arc AI")
-        if cmd:
-            st.success(ai_copilot(cmd, bim))
+        draw_mep()
+
+    st.markdown("---")
+    st.subheader("🧠 Arc AI Copilot")
+
+    cmd = st.text_input("Ask Arc")
+    if cmd:
+        st.success(ai(cmd, bim))
