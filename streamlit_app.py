@@ -1,7 +1,7 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V15 — ARC STUDIO OPERATING SYSTEM
-# Multi-Agent Evolution + BIM-like Intelligence Layer
+# V14 — ARC STUDIO SIMULATION CORE
+# Multi-Agent Evolution + Structural Intelligence Layer
 # =========================================================
 
 import streamlit as st
@@ -17,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio OS V15",
+    page_title="Arc Studio V14",
     page_icon="🏗",
     layout="wide"
 )
@@ -25,7 +25,7 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STYLE
+# STYLE LAYER
 # =========================================================
 
 st.markdown("""
@@ -59,7 +59,7 @@ DEFAULT_STATE = {
     "designs": [],
     "logs": [],
     "sessions": [],
-    "analytics": []
+    "evolution": []
 }
 
 def load_memory():
@@ -84,7 +84,10 @@ def log(msg):
     })
     save_memory()
 
-# init
+# =========================================================
+# INIT
+# =========================================================
+
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -97,17 +100,17 @@ if "history" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# CORE ARCHITECTURE ENGINE
+# CORE ENGINE
 # =========================================================
 
-def base_design(goal):
-    area = random.randint(120, 1000)
+def planner(goal):
+    area = random.randint(150, 1000)
 
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "goal": goal,
         "area": area,
-        "cost": area * random.randint(900, 2400),
+        "cost": area * random.randint(900, 2500),
         "structure": {
             "columns": random.randint(10, 60),
             "beams": random.randint(20, 120)
@@ -115,21 +118,16 @@ def base_design(goal):
         "rooms": ["Living", "Kitchen", "Bath"] + ["Module"] * random.randint(2, 7)
     }
 
-# =========================================================
-# MULTI-AGENT SYSTEM
-# =========================================================
-
-def planner(goal):
-    return base_design(goal)
-
 def critic(d):
     issues = []
 
     ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    if ratio < 1.5:
-        issues.append("Weak beam-column ratio")
+    cost_per_m2 = d["cost"] / max(1, d["area"])
 
-    if d["cost"] / max(1, d["area"]) > 2000:
+    if ratio < 1.6:
+        issues.append("Weak structural beam-column ratio")
+
+    if cost_per_m2 > 2100:
         issues.append("High cost efficiency risk")
 
     if len(d["rooms"]) < 5:
@@ -145,22 +143,26 @@ def mutator(d):
 
     if random.random() > 0.6:
         d["rooms"].append("Adaptive Spatial Pod")
-        d["area"] += 15
+        d["area"] += 20
 
-    d["cost"] = int(d["area"] * random.randint(900, 2400))
+    d["cost"] = int(d["area"] * random.randint(900, 2500))
 
     return d
 
-def score(d):
+def scorer(d):
+    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+    cost_pressure = d["cost"] / max(1, d["area"])
+
     return (
         d["area"] * 0.15 +
-        d["structure"]["columns"] * 1.6 +
-        d["structure"]["beams"] * 1.2 -
-        d["cost"] * 0.00009
+        d["structure"]["columns"] * 1.5 +
+        d["structure"]["beams"] * 1.3 -
+        cost_pressure * 0.9 -
+        abs(ratio - 2.0) * 20
     )
 
 # =========================================================
-# EVOLUTION LOOP
+# MULTI-AGENT EVOLUTION LOOP
 # =========================================================
 
 def evolve(goal, generations=6, pop_size=8):
@@ -169,35 +171,36 @@ def evolve(goal, generations=6, pop_size=8):
 
     for _ in range(generations):
 
-        # critique phase
-        scored = []
+        evaluated = []
         for d in population:
+            d = mutator(d)
             d["issues"] = critic(d)
-            d["score"] = score(d)
-            scored.append(d)
+            d["score"] = scorer(d)
+            evaluated.append(d)
 
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
+        evaluated.sort(key=lambda x: x["score"], reverse=True)
 
-        survivors = scored[:max(2, pop_size // 2)]
+        best = evaluated[0]
+        history.append(best["score"])
 
-        new_pop = []
+        survivors = evaluated[:max(2, pop_size // 2)]
+
+        new_population = []
         for s in survivors:
-            new_pop.append(s)
-            new_pop.append(mutator(s))
+            new_population.append(s)
+            new_population.append(mutator(s))
 
-        population = new_pop[:pop_size]
+        population = new_population[:pop_size]
 
-    best = max(population, key=score)
     return best, history
 
 # =========================================================
-# FLOOR PLAN GENERATOR
+# FLOOR PLAN
 # =========================================================
 
 def floor_plan(d):
     return [
-        {"room": r, "area": random.randint(20, 90)}
+        {"room": r, "area": random.randint(25, 95)}
         for r in d["rooms"]
     ]
 
@@ -205,7 +208,7 @@ def floor_plan(d):
 # UI
 # =========================================================
 
-st.sidebar.title("🏗 Arc Studio OS V15")
+st.sidebar.title("🏗 Arc Studio V14")
 
 page = st.sidebar.radio(
     "Workspace",
@@ -234,7 +237,7 @@ if run:
         "time": datetime.now().isoformat()
     })
 
-    log(f"Evolved design {best['id']}")
+    log(f"Generated design {best['id']}")
 
 # =========================================================
 # ACTIVE DESIGN
@@ -247,15 +250,14 @@ d = st.session_state.active_design
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🏗 Arc Studio OS Dashboard")
+    st.title("🏗 Arc Studio V14 Dashboard")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Designs", len(mem["designs"]))
-    col2.metric("Sessions", len(mem["sessions"]))
-    col3.metric("Logs", len(mem["logs"]))
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Designs", len(mem["designs"]))
+    c2.metric("Sessions", len(mem["sessions"]))
+    c3.metric("Logs", len(mem["logs"]))
 
-    st.markdown("### Recent System Activity")
-
+    st.markdown("### System Activity Log")
     for l in mem["logs"][-6:]:
         st.write(l)
 
@@ -272,10 +274,10 @@ elif page == "Design Lab":
         c1, c2, c3 = st.columns(3)
         c1.metric("Area", f"{d['area']} m²")
         c2.metric("Cost", f"${d['cost']:,}")
-        c3.metric("Score", round(d.get("score", 0), 2))
+        c3.metric("Score", round(d["score"], 2))
 
-        st.markdown("### Issues Detected by AI Critic")
-        st.write(d.get("issues", []))
+        st.markdown("### AI Critic Findings")
+        st.write(d["issues"])
 
         st.markdown("### Structure")
         st.json(d["structure"])
@@ -298,9 +300,9 @@ elif page == "AI Architect":
 
     if d:
         st.json({
-            "structural_balance": d["structure"]["beams"] / max(1, d["structure"]["columns"]),
+            "structural_ratio": d["structure"]["beams"] / max(1, d["structure"]["columns"]),
             "complexity": len(d["rooms"]) * 10,
-            "cost_efficiency": d["cost"] / max(1, d["area"])
+            "cost_pressure": d["cost"] / max(1, d["area"])
         })
 
 # =========================================================
