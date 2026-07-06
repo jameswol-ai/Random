@@ -356,3 +356,189 @@ if st.session_state.active_design:
             st.success(response)
         else:
             st.info("Ask something like: 'reduce cost' or 'optimize hvac'")
+
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+
+# =========================================================
+# STRUCTURAL ENGINE (LOAD + ELEMENT SIMULATION)
+# =========================================================
+
+def structural_engine(bim):
+    floors = bim["architecture"]["floors"]
+
+    return {
+        "load_per_column": round(random.uniform(120, 450), 2),
+        "beam_stress_index": round(random.uniform(0.4, 0.9), 2),
+        "slab_thickness_mm": 150 + floors * 5,
+        "structural_efficiency": round(random.uniform(65, 95), 2)
+    }
+
+
+# =========================================================
+# MEP NETWORK ENGINE (GRAPH MODEL)
+# =========================================================
+
+def generate_mep_graph():
+    G = nx.Graph()
+
+    nodes = [
+        "Main Water Tank",
+        "Pump Room",
+        "Distribution Line",
+        "Bathrooms",
+        "Kitchens",
+        "Drainage System",
+        "Electrical Panel",
+        "Lighting Circuits",
+        "Fire System",
+        "Backup Generator"
+    ]
+
+    for n in nodes:
+        G.add_node(n)
+
+    edges = [
+        ("Main Water Tank", "Pump Room"),
+        ("Pump Room", "Distribution Line"),
+        ("Distribution Line", "Bathrooms"),
+        ("Distribution Line", "Kitchens"),
+        ("Drainage System", "Bathrooms"),
+        ("Electrical Panel", "Lighting Circuits"),
+        ("Electrical Panel", "Backup Generator"),
+        ("Fire System", "Pump Room"),
+        ("Fire System", "Distribution Line")
+    ]
+
+    G.add_edges_from(edges)
+
+    return G
+
+
+def draw_mep_graph(G):
+    plt.figure(figsize=(6, 4))
+    pos = nx.spring_layout(G)
+
+    nx.draw(G, pos,
+            with_labels=True,
+            node_color="skyblue",
+            node_size=1500,
+            font_size=8)
+
+    st.pyplot(plt)
+
+
+# =========================================================
+# HVAC ZONING ENGINE
+# =========================================================
+
+def hvac_zoning(bim):
+    floors = bim["architecture"]["floors"]
+
+    zones = []
+
+    for f in range(floors):
+        zones.append({
+            "floor": f + 1,
+            "zone_type": random.choice(["Cooling Zone", "Heating Zone", "Mixed Zone"]),
+            "airflow_cfm": random.randint(800, 5000),
+            "temperature_target": random.randint(18, 26)
+        })
+
+    return zones
+
+
+# =========================================================
+# BOQ (BILL OF QUANTITIES ENGINE)
+# =========================================================
+
+def generate_boq(bim):
+    area = bim["architecture"].get("floors", 1) * 120
+
+    boq = [
+        {"Item": "Concrete", "Qty": area * 0.8, "Unit": "m³"},
+        {"Item": "Steel Reinforcement", "Qty": area * 0.12, "Unit": "tons"},
+        {"Item": "Masonry Blocks", "Qty": area * 20, "Unit": "pcs"},
+        {"Item": "Plastering", "Qty": area * 2.5, "Unit": "m²"},
+        {"Item": "Paint", "Qty": area * 3.0, "Unit": "m²"},
+        {"Item": "Electrical Wiring", "Qty": area * 8, "Unit": "m"},
+        {"Item": "Plumbing Pipes", "Qty": area * 5, "Unit": "m"},
+        {"Item": "HVAC Ducting", "Qty": area * 4, "Unit": "m"}
+    ]
+
+    return pd.DataFrame(boq)
+
+
+# =========================================================
+# COST BREAKDOWN ANALYTICS
+# =========================================================
+
+def cost_breakdown(bim):
+    return pd.DataFrame([
+        ["Structure", bim["cost_model"]["structure_cost"]],
+        ["MEP", bim["cost_model"]["mep_cost"]],
+        ["HVAC", bim["cost_model"]["hvac_cost"]],
+        ["Contingency (10%)", bim["cost_model"]["total"] * 0.1],
+        ["TOTAL", bim["cost_model"]["total"] * 1.1]
+    ], columns=["Category", "Cost"])
+
+
+# =========================================================
+# ATTACH ENGINE TO ACTIVE BIM
+# =========================================================
+
+def enrich_bim(bim):
+    bim["structure_analysis"] = structural_engine(bim)
+    bim["hvac_zones"] = hvac_zoning(bim)
+    bim["mep_graph"] = generate_mep_graph()
+    return bim
+
+
+# =========================================================
+# UI EXTENSION (NEW TABS)
+# =========================================================
+
+if st.session_state.active_design:
+
+    design = st.session_state.active_design
+    bim = build_full_bim(design)
+    bim = enrich_bim(bim)
+
+    tabA, tabB, tabC, tabD = st.tabs([
+        "⚙️ Structural",
+        "🔌 MEP",
+        "🌬 HVAC",
+        "💰 Costing"
+    ])
+
+    # -------------------------
+    # STRUCTURAL
+    # -------------------------
+    with tabA:
+        st.subheader("Structural Analysis")
+        st.json(bim["structure_analysis"])
+
+    # -------------------------
+    # MEP
+    # -------------------------
+    with tabB:
+        st.subheader("MEP Network Diagram")
+        draw_mep_graph(bim["mep_graph"])
+
+    # -------------------------
+    # HVAC
+    # -------------------------
+    with tabC:
+        st.subheader("HVAC Zoning")
+        st.dataframe(pd.DataFrame(bim["hvac_zones"]))
+
+    # -------------------------
+    # COSTING
+    # -------------------------
+    with tabD:
+        st.subheader("Bill of Quantities (BOQ)")
+        st.dataframe(generate_boq(bim))
+
+        st.subheader("Cost Breakdown")
+        st.dataframe(cost_breakdown(bim))
