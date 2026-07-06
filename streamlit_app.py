@@ -1,7 +1,8 @@
 # ============================================================
-# RANDOM V1 REBORN
-# AI ARCHITECTURE INTELLIGENCE STUDIO
-# Single File Streamlit Foundation
+# RANDOM V2
+# AI DESIGN STUDIO
+# Copilot Driven Architecture Intelligence Engine
+# Single File Streamlit Edition
 # ============================================================
 
 import streamlit as st
@@ -11,8 +12,9 @@ import random
 from pathlib import Path
 from datetime import datetime
 
+
 # ============================================================
-# OPTIONAL DEPENDENCIES
+# OPTIONAL IMPORTS
 # ============================================================
 
 try:
@@ -20,91 +22,109 @@ try:
 except Exception:
     go = None
 
+
 # ============================================================
 # CONFIG
 # ============================================================
 
 st.set_page_config(
-    page_title="Random AI Architecture Studio",
+    page_title="Random V2 AI Design Studio",
     page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("random_memory.json")
 
-
-# ============================================================
-# BEAUTIFUL UI STYLE
-# ============================================================
-
-st.markdown(
-    """
-<style>
-
-.stApp {
-    background:
-    linear-gradient(
-        135deg,
-        #0b1020,
-        #111827,
-        #1f2937
-    );
-    color:white;
-}
-
-h1,h2,h3 {
-    color:#ffffff;
-}
-
-.hero {
-    padding:35px;
-    border-radius:25px;
-    background:
-    linear-gradient(
-        135deg,
-        rgba(59,130,246,0.35),
-        rgba(139,92,246,0.35)
-    );
-    text-align:center;
-    margin-bottom:25px;
-}
-
-.card {
-    background:
-    rgba(255,255,255,0.08);
-    padding:20px;
-    border-radius:20px;
-    border:1px solid rgba(255,255,255,0.15);
-    margin-bottom:15px;
-}
-
-.metric {
-    font-size:32px;
-    font-weight:bold;
-}
-
-.agent {
-    padding:15px;
-    border-radius:15px;
-    background:
-    rgba(16,185,129,0.15);
-}
-
-</style>
-""",
-    unsafe_allow_html=True
+MEMORY_FILE = Path(
+    "random_v2_memory.json"
 )
 
 
 # ============================================================
-# MEMORY ENGINE
+# VISUAL DESIGN
 # ============================================================
 
-DEFAULT_MEMORY = {
-    "projects": [],
-    "designs": [],
-    "logs": []
+st.markdown(
+"""
+<style>
+
+.stApp {
+background:
+linear-gradient(
+120deg,
+#050816,
+#111827,
+#1e293b
+);
+color:white;
 }
+
+
+.hero {
+
+padding:40px;
+border-radius:30px;
+
+background:
+linear-gradient(
+135deg,
+rgba(37,99,235,.4),
+rgba(124,58,237,.4)
+);
+
+text-align:center;
+
+}
+
+
+.card {
+
+background:
+rgba(255,255,255,.08);
+
+border-radius:20px;
+
+padding:20px;
+
+border:
+1px solid rgba(255,255,255,.15);
+
+margin:10px;
+
+}
+
+
+.agent {
+
+background:
+rgba(16,185,129,.15);
+
+border-radius:15px;
+
+padding:15px;
+
+}
+
+
+.metric {
+
+font-size:35px;
+
+font-weight:bold;
+
+}
+
+
+</style>
+
+""",
+unsafe_allow_html=True
+)
+
+
+
+# ============================================================
+# MEMORY
+# ============================================================
 
 
 def load_memory():
@@ -113,15 +133,17 @@ def load_memory():
 
         try:
             return json.loads(
-                MEMORY_FILE.read_text(
-                    encoding="utf-8"
-                )
+                MEMORY_FILE.read_text()
             )
 
-        except Exception:
+        except:
             pass
 
-    return DEFAULT_MEMORY.copy()
+
+    return {
+        "projects":[],
+        "history":[]
+    }
 
 
 
@@ -131,133 +153,172 @@ def save_memory():
         json.dumps(
             st.session_state.memory,
             indent=2
-        ),
-        encoding="utf-8"
+        )
     )
-
-
-
-def log_event(message):
-
-    st.session_state.memory["logs"].append(
-        {
-            "time":
-            datetime.now().isoformat(),
-
-            "message":
-            message
-        }
-    )
-
-    save_memory()
 
 
 
 if "memory" not in st.session_state:
+
     st.session_state.memory = load_memory()
 
 
-if "design" not in st.session_state:
-    st.session_state.design = None
+
+if "project" not in st.session_state:
+
+    st.session_state.project = None
+
 
 
 # ============================================================
-# AI DESIGN ENGINE
+# AI AGENTS
 # ============================================================
 
-def generate_design():
+
+def architect_ai(prompt):
 
     return {
 
-        "id":
-        str(uuid.uuid4())[:8].upper(),
-
-        "building_type":
+        "building":
         random.choice(
             [
-                "Smart Residence",
-                "Office Tower",
-                "Research Center",
-                "Eco Campus"
+                "Modern Residence",
+                "Smart Office",
+                "Eco Campus",
+                "Innovation Hub"
             ]
         ),
 
-        "floors":
-        random.randint(2,15),
-
-        "area":
-        random.randint(200,5000),
-
-        "rooms":
+        "spaces":
         [
-            "Lobby",
-            "Living Space",
-            "Workspace",
+            "Entrance",
+            "Living Area",
+            "Work Area",
             "Kitchen",
             "Services"
         ],
 
-        "created":
-        datetime.now().strftime(
-            "%Y-%m-%d %H:%M"
+        "concept":
+        "Human-centered spatial design"
+    }
+
+
+
+def structural_ai():
+
+    return {
+
+        "system":
+        random.choice(
+            [
+                "Concrete Frame",
+                "Steel Frame",
+                "Hybrid Structure"
+            ]
+        ),
+
+        "columns":
+        random.randint(20,80)
+
+    }
+
+
+
+def sustainability_ai():
+
+    return {
+
+        "energy_score":
+        random.randint(70,98),
+
+        "strategy":
+        random.choice(
+            [
+                "Passive ventilation",
+                "Solar optimization",
+                "Green roof strategy"
+            ]
         )
 
     }
 
 
-# ============================================================
-# BIM FOUNDATION
-# ============================================================
 
-def create_bim(design):
+def cost_ai(area):
 
     return {
 
-        "building":
-            design["building_type"],
-
-        "geometry":
-        {
-            "floors":
-            design["floors"],
-
-            "gross_area":
-            design["area"]
-        },
-
-        "structure":
-        {
-            "columns":
-            design["floors"] * 12,
-
-            "beams":
-            design["floors"] * 25
-        },
-
-        "mep":
-        {
-            "hvac_load":
-            design["area"] * 0.08,
-
-            "power_load":
-            design["area"] * 0.05
-        },
-
-        "materials":
-        [
-            "Concrete",
-            "Steel",
-            "Glass"
-        ]
+        "estimate":
+        area * random.randint(
+            900,
+            1600
+        )
 
     }
+
+
+
+def generate_project(prompt):
+
+
+    architecture = architect_ai(prompt)
+
+    area = random.randint(
+        250,
+        5000
+    )
+
+
+    return {
+
+        "id":
+        str(uuid.uuid4())[:8],
+
+
+        "prompt":
+        prompt,
+
+
+        "architecture":
+        architecture,
+
+
+        "structure":
+        structural_ai(),
+
+
+        "sustainability":
+        sustainability_ai(),
+
+
+        "cost":
+        cost_ai(area),
+
+
+        "area":
+        area,
+
+
+        "floors":
+        random.randint(
+            1,
+            15
+        ),
+
+
+        "created":
+        datetime.now().isoformat()
+
+    }
+
 
 
 # ============================================================
 # VISUALIZATION
 # ============================================================
 
-def draw_plan(design):
+
+def floor_plan(project):
 
     if go is None:
 
@@ -271,18 +332,21 @@ def draw_plan(design):
     fig = go.Figure()
 
 
-    x = 0
+    x=0
 
-    for room in design["rooms"]:
+
+    for room in project["architecture"]["spaces"]:
 
         fig.add_shape(
 
             type="rect",
 
             x0=x,
+
             y0=0,
 
             x1=x+5,
+
             y1=5
 
         )
@@ -300,7 +364,9 @@ def draw_plan(design):
 
         )
 
-        x += 6
+
+        x +=6
+
 
 
     fig.update_layout(
@@ -316,41 +382,41 @@ def draw_plan(design):
 
 
 
-def draw_3d(design):
+def building_3d(project):
+
 
     if go is None:
 
         return
 
 
-    floors = design["floors"]
+    fig=go.Figure()
 
 
-    fig = go.Figure()
+    height = project["floors"]
 
 
-    for floor in range(floors):
+    fig.add_trace(
 
-        fig.add_trace(
+        go.Mesh3d(
 
-            go.Mesh3d(
+            x=[
+                0,10,10,0
+            ],
 
-                x=[0,10,10,0],
+            y=[
+                0,0,10,10
+            ],
 
-                y=[0,0,10,10],
+            z=[
+                0,0,height,height
+            ],
 
-                z=[
-                    floor,
-                    floor,
-                    floor,
-                    floor
-                ],
-
-                opacity=0.25
-
-            )
+            opacity=.5
 
         )
+
+    )
 
 
     fig.update_layout(
@@ -365,60 +431,22 @@ def draw_3d(design):
     )
 
 
-# ============================================================
-# AI COPILOT
-# ============================================================
-
-def ai_assistant(question,bim):
-
-    q = question.lower()
-
-
-    if "cost" in q:
-
-        return (
-            "Preliminary cost analysis: "
-            "optimize structure and materials."
-        )
-
-
-    if "energy" in q:
-
-        return (
-            "Energy strategy: improve "
-            "orientation, glazing and insulation."
-        )
-
-
-    if "structure" in q:
-
-        return (
-            f"Structural system contains "
-            f"{bim['structure']['columns']} columns."
-        )
-
-
-    return (
-        "AI analysis complete. "
-        "Try asking about cost, energy, "
-        "or structure."
-    )
-
 
 # ============================================================
 # HEADER
 # ============================================================
 
+
 st.markdown(
 """
 <div class="hero">
 
-<h1>🏗️ RANDOM</h1>
+<h1>🏗️ RANDOM V2</h1>
 
-<h2>AI Architecture Intelligence Studio</h2>
+<h2>AI Architecture Design Studio</h2>
 
 <p>
-Generative Design • BIM • AI Agents • Future Digital Twin
+Imagine → Generate → Analyze → Evolve
 </p>
 
 </div>
@@ -427,153 +455,131 @@ unsafe_allow_html=True
 )
 
 
+
 # ============================================================
-# SIDEBAR
+# COPILOT
 # ============================================================
 
-st.sidebar.title(
-    "🧠 Random Control"
+
+st.subheader(
+"🤖 Random Copilot"
 )
 
 
-if st.sidebar.button(
-    "✨ Generate New Building"
+prompt = st.text_area(
+
+"Describe your building idea",
+
+placeholder=
+"Example: Design a sustainable family house with a courtyard"
+
+)
+
+
+
+if st.button(
+"✨ Generate AI Concept"
 ):
 
-    st.session_state.design = generate_design()
+    if prompt:
 
-    st.session_state.memory["designs"].append(
-        st.session_state.design
-    )
-
-    log_event(
-        "New AI design generated"
-    )
+        st.session_state.project = generate_project(
+            prompt
+        )
 
 
-# ============================================================
-# DASHBOARD
-# ============================================================
+        st.session_state.memory["history"].append(
+            st.session_state.project
+        )
 
 
-design = st.session_state.design
+        save_memory()
 
 
-c1,c2,c3 = st.columns(3)
-
-
-with c1:
-
-    st.markdown(
-    f"""
-    <div class="card">
-
-    <div class="metric">
-    {len(st.session_state.memory["designs"])}
-    </div>
-
-    AI Designs
-
-    </div>
-    """,
-    unsafe_allow_html=True
-    )
-
-
-with c2:
-
-    st.markdown(
-    """
-    <div class="card">
-
-    <div class="metric">
-    ONLINE
-    </div>
-
-    AI Core
-
-    </div>
-    """,
-    unsafe_allow_html=True
-    )
-
-
-with c3:
-
-    st.markdown(
-    """
-    <div class="card">
-
-    <div class="metric">
-    V1
-    </div>
-
-    Reborn Engine
-
-    </div>
-    """,
-    unsafe_allow_html=True
-    )
+        st.success(
+            "AI Design Concept Generated"
+        )
 
 
 
 # ============================================================
-# MAIN WORKSPACE
+# PROJECT OUTPUT
 # ============================================================
 
 
-if design:
+project = st.session_state.project
 
 
-    bim = create_bim(design)
+
+if project:
 
 
-    st.subheader(
-        "🏢 Active AI Generated Project"
+    st.divider()
+
+
+    c1,c2,c3,c4 = st.columns(4)
+
+
+    c1.metric(
+        "Area",
+        f"{project['area']} m²"
     )
 
 
-    st.json(design)
+    c2.metric(
+        "Floors",
+        project["floors"]
+    )
 
+
+    c3.metric(
+        "Energy Score",
+        project["sustainability"]["energy_score"]
+    )
+
+
+    c4.metric(
+        "AI Status",
+        "ACTIVE"
+    )
 
 
     tabs = st.tabs(
         [
-            "BIM",
-            "2D Plan",
-            "3D Model",
-            "AI Agents"
+            "🏢 Concept",
+            "📐 Plan",
+            "🌆 3D",
+            "🧠 Agents"
         ]
     )
 
 
     with tabs[0]:
 
-        st.json(bim)
+        st.json(project)
 
 
 
     with tabs[1]:
 
-        draw_plan(design)
+        floor_plan(project)
 
 
 
     with tabs[2]:
 
-        draw_3d(design)
+        building_3d(project)
 
 
 
     with tabs[3]:
 
-        agents = [
+
+        agents=[
 
             "🏛 Architect AI",
 
             "📐 Structural AI",
-
-            "🌬 MEP AI",
 
             "🌱 Sustainability AI",
 
@@ -582,16 +588,17 @@ if design:
         ]
 
 
-        for agent in agents:
+        for a in agents:
 
             st.markdown(
             f"""
             <div class="agent">
 
-            {agent}
+            {a}
 
             <br>
-            Status: Active
+
+            Analysis Complete
 
             </div>
             """,
@@ -599,35 +606,12 @@ if design:
             )
 
 
-
-    st.divider()
-
-
-    st.subheader(
-        "🤖 Random AI Copilot"
-    )
-
-
-    question = st.text_input(
-        "Ask Random"
-    )
-
-
-    if question:
-
-        st.success(
-            ai_assistant(
-                question,
-                bim
-            )
-        )
-
-
 else:
 
     st.info(
-        "Create your first AI building concept using the sidebar."
+        "Describe your project idea above to start Random Copilot."
     )
+
 
 
 # ============================================================
@@ -635,5 +619,5 @@ else:
 # ============================================================
 
 st.caption(
-    "Random V1 Reborn | AI Architecture Intelligence Foundation"
-)
+"Random V2 | AI Design Studio | Architecture Intelligence Engine"
+        )
