@@ -1,7 +1,10 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# Evolutionary Spatial Layout Synthesis & Diagnostics
-# Zero-Dependency Single-File Streamlit Implementation
+# RANDOM V9
+# Evolutionary Architecture Intelligence System
+# + Procedural 2D Floor Plans
+# + 3D Massing Model
+# + AI Design Review + Cost + Materials
+# Single-File Streamlit Edition
 # =========================================================
 
 import streamlit as st
@@ -10,70 +13,37 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine",
-    page_icon="📐",
+    page_title="RANDOM V9",
+    page_icon="🧬",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("random_memory.json")
 
 # =========================================================
-# STUDIO VISUAL SYSTEM
+# THEME
 # =========================================================
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-
-html, body, [data-testid="stSidebarNav"] {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+body {
+    background: radial-gradient(circle at top, #0b1220, #050814);
 }
+h1 { color: #38bdf8; }
+h2,h3 { color: #7dd3fc; }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-}
-
-.arc-blueprint-canvas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    background: #090d16;
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px dashed #334155;
-    margin: 15px 0;
-}
-
-.arc-room-module {
-    flex: 1 1 calc(33.333% - 16px);
-    min-width: 220px;
-    padding: 20px;
-    border-radius: 8px;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 10px 15px rgba(0,0,0,0.3);
-    transition: 0.25s ease;
-}
-
-.arc-room-module:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255,255,255,0.3);
-    box-shadow: 0 20px 25px rgba(0,0,0,0.5);
-}
-
-.room-meta {
-    font-family: 'Space Grotesk', monospace;
-    font-size: 0.85rem;
-    opacity: 0.8;
-    margin-top: 8px;
+.stButton>button {
+    background: linear-gradient(135deg,#2563eb,#38bdf8);
+    color: white;
+    border-radius: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -82,241 +52,328 @@ h1, h2, h3, h4, h5, h6 {
 # MEMORY SYSTEM
 # =========================================================
 
-DEFAULT_STATE = {
+DEFAULT = {
     "projects": [],
     "designs": [],
     "logs": [],
     "evolution": []
 }
 
-def load_memory():
+def load():
     if MEMORY_FILE.exists():
         try:
-            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
-        except Exception:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+            return json.load(open(MEMORY_FILE))
+        except:
+            return DEFAULT.copy()
+    return DEFAULT.copy()
 
-def save_memory():
+def save():
     try:
-        MEMORY_FILE.write_text(
-            json.dumps(st.session_state.memory, indent=2),
-            encoding="utf-8"
-        )
-    except Exception:
+        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
+    except:
         pass
 
-def log_event(msg: str):
+def log(msg):
     st.session_state.memory["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory()
+    save()
 
-# session init
 if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
-
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
-
-if "active_history" not in st.session_state:
-    st.session_state.active_history = []
+    st.session_state.memory = load()
 
 mem = st.session_state.memory
 
 # =========================================================
-# ENGINE CORE
+# ARCHITECTURE TYPES
 # =========================================================
 
-ARCH_DOMAINS = {
-    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
-    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
-    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
+ARCH = {
+    "Residential": ["House","Apartment","Villa"],
+    "Commercial": ["Office","School","Hospital","Hotel"],
+    "Industrial": ["Warehouse","Factory","Plant"]
 }
 
-def get_domain(btype):
-    for domain, items in ARCH_DOMAINS.items():
-        if btype in items:
-            return domain
+def domain_of(t):
+    for k,v in ARCH.items():
+        if t in v:
+            return k
     return "Unknown"
 
-def generate_base_design(btype, bedrooms):
+# =========================================================
+# BASE DESIGN
+# =========================================================
+
+def base_design(btype, bedrooms):
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
+        "id": str(uuid.uuid4())[:8],
         "type": btype,
-        "domain": get_domain(btype),
+        "domain": domain_of(btype),
         "bedrooms": bedrooms,
-        "rooms": ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3),
-        "area_sqm": 65 + 44 + bedrooms * 18,
+        "rooms": ["Core"] * random.randint(3, 7),
         "structure": {
-            "columns": random.randint(14, 36),
-            "beams": random.randint(28, 72)
+            "columns": random.randint(12, 30),
+            "beams": random.randint(20, 60)
         },
-        "cost": 0
+        "cost": random.randint(300000, 2500000)
     }
 
-def mutate_design(d):
+# =========================================================
+# MUTATION ENGINE 🧬
+# =========================================================
+
+def mutate(d):
     d = json.loads(json.dumps(d))
 
-    d["structure"]["columns"] = max(10, d["structure"]["columns"] + random.randint(-2, 4))
-    d["structure"]["beams"] = max(16, d["structure"]["beams"] + random.randint(-4, 6))
+    d["structure"]["columns"] += random.randint(-2, 3)
+    d["structure"]["beams"] += random.randint(-5, 5)
 
     if random.random() > 0.5:
-        d["rooms"].append("Adaptive Terrace")
-        d["area_sqm"] += 20
+        d["rooms"].append("Module")
 
-    d["cost"] = int(d["area_sqm"] * random.randint(1300, 2500))
+    d["cost"] += random.randint(-100000, 200000)
+
     return d
 
-def calculate_fitness(d):
-    ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+# =========================================================
+# FITNESS FUNCTION
+# =========================================================
 
+def fitness(d):
     return {
-        "structural": max(0, 100 - int(abs(ratio - 2.1) * 22)),
-        "cost": max(0, 100 - int(abs(d["cost"]/max(1,d["area_sqm"]) - 1650) * 0.04)),
-        "complexity": min(100, len(d["rooms"]) * 9)
+        "structure": max(0, 100 - abs(d["structure"]["columns"] - 20)),
+        "cost": max(0, 100 - d["cost"] // 50000),
+        "complexity": min(100, len(d["rooms"]) * 10)
     }
 
-def score(fit):
-    return int(sum(fit.values()) / len(fit))
+def score(f):
+    return int(sum(f.values()) / 3)
 
-def run_evolution(btype, bedrooms, gens, pop):
-    population = [generate_base_design(btype, bedrooms) for _ in range(pop)]
+# =========================================================
+# EVOLUTION ENGINE 🌍
+# =========================================================
+
+def evolve(btype, bedrooms, gens, pop):
+
+    population = [base_design(btype, bedrooms) for _ in range(pop)]
     history = []
 
-    for _ in range(gens):
-        scored = []
+    for g in range(gens):
 
+        scored = []
         for d in population:
-            d["fitness"] = calculate_fitness(d)
-            d["score"] = score(d["fitness"])
+            f = fitness(d)
+            d["fitness"] = f
+            d["score"] = score(f)
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
+
+        best = scored[0]
+        history.append(best["score"])
 
         survivors = scored[:max(2, pop // 2)]
 
-        population = []
+        new_pop = []
         for s in survivors:
-            population.append(s)
-            population.append(mutate_design(s))
+            new_pop.append(s)
+            new_pop.append(mutate(s))
 
-        population = population[:pop]
+        population = new_pop[:pop]
 
-    return scored[0], history
+    return scored[0], history, scored
 
-def generate_floor_plan(design):
+# =========================================================
+# 🏠 FLOOR PLAN ENGINE
+# =========================================================
+
+def floor_plan(design):
+    bedrooms = design["bedrooms"]
+
     rooms = [
-        {"name": "Living Lounge", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
-        {"name": "Kitchen", "w": 4.5, "h": 4.0, "color": "#064e3b"},
-        {"name": "Bathroom", "w": 3.0, "h": 2.5, "color": "#78350f"}
+        {"name":"Living", "x":0, "y":0, "w":6, "h":5},
+        {"name":"Kitchen", "x":6, "y":0, "w":4, "h":4},
+        {"name":"Bath", "x":6, "y":4, "w":2, "h":2}
     ]
 
-    for i in range(design["bedrooms"]):
+    x = 0
+    for i in range(bedrooms):
         rooms.append({
             "name": f"Bedroom {i+1}",
-            "w": 4.5 if i == 0 else 4.0,
-            "h": 4.0,
-            "color": "#4c1d95"
+            "x": x,
+            "y": 5,
+            "w": 4,
+            "h": 4
         })
+        x += 4
 
     return rooms
 
-def render_blueprint(plan):
-    html = '<div class="arc-blueprint-canvas">'
+# =========================================================
+# 🏠 2D DRAW
+# =========================================================
+
+def draw_2d(plan):
+
+    fig, ax = plt.subplots()
+
     for r in plan:
-        html += f"""
-        <div class="arc-room-module" style="background:{r['color']}">
-            <div style="font-weight:600">{r['name']}</div>
-            <div class="room-meta">{r['w']}m × {r['h']}m</div>
-        </div>
-        """
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+        rect = plt.Rectangle(
+            (r["x"], r["y"]),
+            r["w"], r["h"],
+            fill=False
+        )
+        ax.add_patch(rect)
+        ax.text(r["x"]+1, r["y"]+1, r["name"])
+
+    ax.set_xlim(0, 15)
+    ax.set_ylim(0, 15)
+    ax.set_title("2D Floor Plan")
+
+    st.pyplot(fig)
 
 # =========================================================
-# UI
+# 🏗️ 3D BUILDING MODEL
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio")
+def draw_3d(plan):
 
-page = st.sidebar.radio(
-    "Workspace",
-    ["Dashboard", "Design Lab", "Memory"]
-)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
 
-with st.sidebar.expander("Engine Config"):
-    typologies = sum(ARCH_DOMAINS.values(), [])
-    btype = st.selectbox("Type", typologies)
-    bedrooms = st.slider("Bedrooms", 1, 8, 3)
-    gens = st.slider("Generations", 2, 20, 6)
-    pop = st.slider("Population", 4, 30, 10)
+    for r in plan:
+        ax.bar3d(r["x"], r["y"], 0, r["w"], r["h"], 3)
+
+    ax.set_title("3D Building Massing")
+
+    st.pyplot(fig)
+
+# =========================================================
+# 🤖 AI REVIEW ENGINE
+# =========================================================
+
+def review(d):
+
+    r = []
+
+    if d["bedrooms"] >= 4:
+        r.append("Good for family housing")
+
+    if d["cost"] > 1500000:
+        r.append("High cost warning")
+
+    if d["structure"]["columns"] < 15:
+        r.append("Increase structural support")
+
+    if not r:
+        r.append("Balanced design")
+
+    return r
+
+# =========================================================
+# 📐 MATERIAL ESTIMATION
+# =========================================================
+
+def materials(d):
+
+    return {
+        "Concrete (m³)": d["structure"]["columns"] * 2,
+        "Steel (tons)": d["structure"]["beams"] * 0.5,
+        "Bricks": len(d["rooms"]) * 2000
+    }
+
+# =========================================================
+# 🌱 SUSTAINABILITY
+# =========================================================
+
+def sustainability(d):
+    return max(40, 100 - d["structure"]["columns"])
+
+# =========================================================
+# SIDEBAR
+# =========================================================
+
+st.sidebar.title("🧬 RANDOM V9")
+page = st.sidebar.radio("Navigation", ["Dashboard","Evolution","Memory"])
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-    st.title("📐 Studio Dashboard")
 
-    c1, c2, c3 = st.columns(3)
+    st.title("🧬 RANDOM V9 Core")
+
+    c1,c2,c3 = st.columns(3)
+
     c1.metric("Projects", len(mem["projects"]))
     c2.metric("Designs", len(mem["designs"]))
-    c3.metric("Evolution Runs", len(mem["evolution"]))
-
-    st.subheader("Logs")
-    for l in mem["logs"][-6:]:
-        st.caption(f"{l['time'][11:19]} — {l['msg']}")
+    c3.metric("Evolutions", len(mem["evolution"]))
 
 # =========================================================
-# DESIGN LAB
+# EVOLUTION LAB
 # =========================================================
 
-elif page == "Design Lab":
-    st.title("🌍 Generative Design Lab")
+elif page == "Evolution":
 
-    if st.button("Run Evolution", use_container_width=True):
-        best, hist = run_evolution(btype, bedrooms, gens, pop)
-        best["plan"] = generate_floor_plan(best)
+    st.title("🧬 Evolution Lab V9")
+
+    btype = st.selectbox("Type", sum(ARCH.values(), []))
+    bedrooms = st.slider("Bedrooms", 1, 10, 3)
+    gens = st.slider("Generations", 1, 6, 3)
+    pop = st.slider("Population", 3, 10, 5)
+
+    if st.button("Run Evolution"):
+
+        best, history, pop_final = evolve(btype, bedrooms, gens, pop)
+
+        plan = floor_plan(best)
+
+        best["plan"] = plan
 
         mem["designs"].append(best)
+
         mem["evolution"].append({
-            "id": str(uuid.uuid4())[:6].upper(),
-            "best": best["id"],
-            "score": best["score"],
+            "id": str(uuid.uuid4())[:8],
+            "best": best,
+            "history": history,
             "time": datetime.now().isoformat()
         })
 
-        st.session_state.active_design = best
-        st.session_state.active_history = hist
+        save()
+        log("Evolution completed")
 
-        log_event(f"Generated design {best['id']}")
+        st.success("Evolution Complete")
 
-    if st.session_state.active_design:
-        d = st.session_state.active_design
+        st.subheader("Best Design")
+        st.json(best)
 
-        st.subheader(f"Design {d['id']}")
+        st.subheader("Evolution Curve")
+        st.line_chart(history)
 
-        st.metric("Score", d["score"])
-        st.metric("Area", d["area_sqm"])
-        st.metric("Cost", d["cost"])
+        st.subheader("AI Review")
+        for r in review(best):
+            st.write("✔", r)
 
-        render_blueprint(d["plan"])
+        st.subheader("Sustainability")
+        st.metric("Score", sustainability(best))
+
+        st.subheader("Materials")
+        st.json(materials(best))
+
+        st.subheader("2D Floor Plan")
+        draw_2d(plan)
+
+        st.subheader("3D Model")
+        draw_3d(plan)
 
 # =========================================================
 # MEMORY
 # =========================================================
 
 elif page == "Memory":
+
     st.title("🧠 Memory")
 
     st.json(mem)
-
-    if st.button("Reset Memory"):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        st.session_state.active_design = None
-        st.session_state.active_history = []
-        save_memory()
-        st.rerun()
