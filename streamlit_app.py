@@ -1,241 +1,223 @@
 # =========================================================
-# RANDOM V15
-# Multi-Agent Architecture Civilization OS
-# Swarm Intelligence Design System
+# V20 PLAYABLE — ARCHITECTURE CIVILIZATION ENGINE
+# AI Faction Simulation Game (Streamlit)
 # =========================================================
 
 import streamlit as st
-import uuid
 import random
-import json
+import uuid
 from datetime import datetime
-from pathlib import Path
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Random AIOS V15",
-    page_icon="🏛️",
+    page_title="V20 Civilization Engine",
+    page_icon="🌍",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
-
 # =========================================================
-# MEMORY
+# WORLD SEED
 # =========================================================
 
-DEFAULT_STATE = {
-    "designs": [],
-    "logs": [],
-    "civilization_history": []
+DEFAULT_WORLD = {
+    "name": "Neo-Arcadia",
+    "climate": "tropical",
+    "material_cost_index": 1.2,
+    "innovation_pressure": 0.7,
+    "population_density": 0.6
 }
 
-def load_memory():
-    if MEMORY_FILE.exists():
-        try:
-            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
-
-def save_memory(mem):
-    MEMORY_FILE.write_text(json.dumps(mem, indent=2), encoding="utf-8")
-
-def log(mem, msg):
-    mem["logs"].append({
-        "time": datetime.now().isoformat(),
-        "msg": msg
-    })
-    save_memory(mem)
-
-mem = load_memory()
-
 # =========================================================
-# MULTI-AGENT SYSTEM (THE CIVILIZATION)
+# INIT STATE
 # =========================================================
 
-def structural_agent(design):
-    ratio = design["beams"] / max(1, design["columns"])
-    score = max(0, 100 - abs(2.0 - ratio) * 25)
-    return score
+if "world" not in st.session_state:
+    st.session_state.world = DEFAULT_WORLD.copy()
 
-def cost_agent(design):
-    cost_per_sqm = design["cost"] / max(1, design["area"])
-    score = max(0, 100 - abs(cost_per_sqm - 1600) * 0.03)
-    return score
-
-def sustainability_agent(design):
-    score = max(40, 100 - design["area"] * 0.05)
-    return score
-
-def compliance_agent(design):
-    violations = 0
-    if design["columns"] < 12:
-        violations += 1
-    if design["beams"] < 20:
-        violations += 1
-    return max(0, 100 - violations * 25)
-
-# =========================================================
-# AGGREGATOR (CIVILIZATION COUNCIL VOTE)
-# =========================================================
-
-def council_vote(design):
-    votes = {
-        "structural": structural_agent(design),
-        "cost": cost_agent(design),
-        "sustainability": sustainability_agent(design),
-        "compliance": compliance_agent(design)
+if "factions" not in st.session_state:
+    st.session_state.factions = {
+        "Structural": 1.0,
+        "Economy": 1.0,
+        "Innovation": 1.0,
+        "Sustainability": 1.0,
+        "Compliance": 1.0
     }
 
-    final_score = sum(votes.values()) / len(votes)
-
-    return final_score, votes
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 # =========================================================
-# GENERATION SYSTEM
+# FACTION EVOLUTION LOGIC
 # =========================================================
 
-def generate_design():
+def evolve_factions(world, factions):
+    new = {}
+
+    for name, power in factions.items():
+
+        drift = random.uniform(-0.15, 0.15)
+
+        # world forces bias evolution
+        if name == "Innovation":
+            drift += world["innovation_pressure"] * 0.1
+
+        if name == "Economy":
+            drift -= world["material_cost_index"] * 0.05
+
+        if name == "Sustainability":
+            drift += 0.03
+
+        new_power = max(0.1, min(3.0, power + drift))
+        new[name] = new_power
+
+    return new
+
+# =========================================================
+# CITY STATE GENERATION
+# =========================================================
+
+def generate_city_state(factions):
+    total = sum(factions.values())
+
     return {
-        "id": str(uuid.uuid4())[:8],
-        "area": random.randint(120, 800),
-        "cost": random.randint(100000, 900000),
-        "columns": random.randint(8, 40),
-        "beams": random.randint(15, 80),
+        "stability": round((factions["Structural"] + factions["Compliance"]) / total * 100, 2),
+        "innovation_index": round(factions["Innovation"] / total * 100, 2),
+        "economic_pressure": round(factions["Economy"] / total * 100, 2),
+        "sustainability": round(factions["Sustainability"] / total * 100, 2),
     }
 
-def run_civilization(pop_size=10):
-    population = [generate_design() for _ in range(pop_size)]
-
-    evaluated = []
-    for d in population:
-        score, votes = council_vote(d)
-        d["score"] = score
-        d["votes"] = votes
-        evaluated.append(d)
-
-    evaluated.sort(key=lambda x: x["score"], reverse=True)
-
-    return evaluated
-
 # =========================================================
-# EVOLUTION ENGINE (SELECTION OF BEST CIVILIZATION DESIGN)
+# SIMULATION TICK
 # =========================================================
 
-def evolve_civilization(pop_size):
-    population = run_civilization(pop_size)
+def run_tick():
+    world = st.session_state.world
+    factions = st.session_state.factions
 
-    best = population[0]
-    history = [p["score"] for p in population]
+    factions = evolve_factions(world, factions)
+    st.session_state.factions = factions
 
-    mem["designs"].append(best)
-    mem["civilization_history"].append({
-        "id": best["id"],
-        "score": best["score"],
-        "time": datetime.now().isoformat()
-    })
+    city = generate_city_state(factions)
 
-    log(mem, f"Civilization evolved design {best['id']} with score {best['score']:.2f}")
+    snapshot = {
+        "id": str(uuid.uuid4())[:6],
+        "time": datetime.now().isoformat(),
+        "factions": factions.copy(),
+        "city": city
+    }
 
-    return best, history
+    st.session_state.history.append(snapshot)
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🏛️ AIOS Civilization V15")
+st.title("🌍 V20 Civilization Engine — Playable Prototype")
+st.caption("AI factions evolve, compete, and shape an architectural world")
 
-page = st.sidebar.radio(
-    "Civilization Layer",
-    [
-        "🏠 Dashboard",
-        "🏗 Simulation",
-        "🧠 Council View",
-        "📊 Evolution History",
-        "📜 Memory"
-    ]
+# =========================================================
+# SIDEBAR WORLD CONTROL
+# =========================================================
+
+st.sidebar.header("🌐 World Controls")
+
+st.session_state.world["innovation_pressure"] = st.sidebar.slider(
+    "Innovation Pressure",
+    0.0, 2.0,
+    st.session_state.world["innovation_pressure"]
+)
+
+st.session_state.world["material_cost_index"] = st.sidebar.slider(
+    "Material Cost Index",
+    0.5, 3.0,
+    st.session_state.world["material_cost_index"]
+)
+
+st.session_state.world["population_density"] = st.sidebar.slider(
+    "Population Density",
+    0.1, 2.0,
+    st.session_state.world["population_density"]
 )
 
 # =========================================================
-# DASHBOARD
+# CONTROL BUTTONS
 # =========================================================
 
-if page == "🏠 Dashboard":
-    st.title("🏛 Architecture Civilization OS")
+col1, col2, col3 = st.columns(3)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Civilization Events", len(mem["civilization_history"]))
-    c3.metric("Logs", len(mem["logs"]))
+with col1:
+    if st.button("▶ Run Simulation Tick", use_container_width=True):
+        run_tick()
 
-    st.subheader("Recent Activity")
-    for l in mem["logs"][-6:][::-1]:
-        st.write(f"⏱ {l['time'][11:19]} → {l['msg']}")
+with col2:
+    if st.button("⚡ Run 5 Ticks"):
+        for _ in range(5):
+            run_tick()
 
-# =========================================================
-# SIMULATION
-# =========================================================
-
-elif page == "🏗 Simulation":
-    st.title("🏗 Civilization Simulation Engine")
-
-    pop = st.slider("Population Size", 4, 30, 10)
-
-    if st.button("Run Civilization Evolution"):
-        best, history = evolve_civilization(pop)
-
-        st.success("Civilization step completed")
-
-        st.metric("Best Design Score", round(best["score"], 2))
-        st.json(best)
-
-        st.line_chart(history)
+with col3:
+    if st.button("🧨 Reset Civilization"):
+        st.session_state.factions = {
+            "Structural": 1.0,
+            "Economy": 1.0,
+            "Innovation": 1.0,
+            "Sustainability": 1.0,
+            "Compliance": 1.0
+        }
+        st.session_state.history = []
 
 # =========================================================
-# COUNCIL VIEW
+# FACTION STATUS
 # =========================================================
 
-elif page == "🧠 Council View":
-    st.title("🧠 Architecture Council")
+st.subheader("🏛 Faction Power Dynamics")
 
-    sample = generate_design()
-    score, votes = council_vote(sample)
-
-    st.write("Sample Design")
-    st.json(sample)
-
-    st.write("Council Votes")
-    st.json(votes)
-
-    st.metric("Final Consensus Score", round(score, 2))
+st.json(st.session_state.factions)
 
 # =========================================================
-# HISTORY
+# CITY OUTPUT
 # =========================================================
 
-elif page == "📊 Evolution History":
-    st.title("📊 Civilization Evolution History")
+if st.session_state.factions:
+    city = generate_city_state(st.session_state.factions)
 
-    if mem["civilization_history"]:
-        scores = [x["score"] for x in mem["civilization_history"]]
-        st.line_chart(scores)
-    else:
-        st.info("No evolution history yet.")
+    st.subheader("🏙 City State Snapshot")
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    c1.metric("Stability", f"{city['stability']}%")
+    c2.metric("Innovation", f"{city['innovation_index']}%")
+    c3.metric("Economy Pressure", f"{city['economic_pressure']}%")
+    c4.metric("Sustainability", f"{city['sustainability']}%")
 
 # =========================================================
-# MEMORY
+# EVOLUTION HISTORY
 # =========================================================
 
-elif page == "📜 Memory":
-    st.title("📜 Civilization Memory")
+st.subheader("📈 Civilization Timeline")
 
-    st.json(mem)
+if st.session_state.history:
+    stability_series = [h["city"]["stability"] for h in st.session_state.history]
+    innovation_series = [h["city"]["innovation_index"] for h in st.session_state.history]
 
-    if st.button("Reset Civilization"):
-        mem = DEFAULT_STATE.copy()
-        save_memory(mem)
-        st.rerun()
+    st.line_chart({
+        "Stability": stability_series,
+        "Innovation": innovation_series
+    })
+else:
+    st.info("Run simulation ticks to evolve the civilization.")
+
+# =========================================================
+# LIVE SNAPSHOTS
+# =========================================================
+
+st.subheader("🧬 Recent Civilization Events")
+
+for h in reversed(st.session_state.history[-5:]):
+    st.write(
+        f"🧠 Tick {h['id']} → "
+        f"Stability {h['city']['stability']}% | "
+        f"Innovation {h['city']['innovation_index']}%"
+    )
