@@ -1,6 +1,7 @@
 # =========================================================
-# RANDOM V25
-# NEURAL CITY ENGINE (Walkable Architecture Civilization Simulator)
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
+# V27 — Neural Architecture Simulation Layer
+# Evolutionary + Council + Neural Spatial Intelligence OS
 # =========================================================
 
 import streamlit as st
@@ -16,68 +17,36 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Neural City Engine V25",
-    page_icon="🏙️",
+    page_title="Random Neural Architecture OS",
+    page_icon="🧠",
     layout="wide"
 )
 
-MEMORY_FILE = Path("city_memory.json")
+MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# UI: CITY GLOW ENGINE
+# UI STYLE
 # =========================================================
 
 st.markdown("""
 <style>
-body {
-    background: radial-gradient(circle at top, #070a12, #02040a);
-    color: white;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
+
+html, body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-.city-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
+h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.03em;
 }
 
-.cell {
-    height: 80px;
-    border-radius: 6px;
-    background: linear-gradient(145deg, #101828, #0a0f1d);
-    border: 1px solid rgba(255,255,255,0.05);
-    position: relative;
-    overflow: hidden;
-}
-
-.agent {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: cyan;
-    border-radius: 50%;
-    box-shadow: 0 0 12px cyan;
-    animation: pulse 1.5s infinite;
-}
-
-.building {
-    position: absolute;
-    inset: 10px;
-    border-radius: 6px;
-    background: linear-gradient(145deg, #1a2238, #0d1324);
+.arc-card {
+    padding: 16px;
+    border-radius: 12px;
+    background: #0b1220;
     border: 1px solid rgba(255,255,255,0.08);
-}
-
-@keyframes pulse {
-    0% { transform: scale(0.8); opacity: 0.6; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(0.8); opacity: 0.6; }
-}
-
-.walk-ui {
-    background: rgba(0,255,255,0.06);
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(0,255,255,0.2);
+    margin-bottom: 10px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -86,175 +55,261 @@ body {
 # MEMORY
 # =========================================================
 
-def load():
+DEFAULT_STATE = {
+    "designs": [],
+    "logs": [],
+    "evolution": [],
+    "debates": []
+}
+
+def load_memory():
     if MEMORY_FILE.exists():
-        return json.loads(MEMORY_FILE.read_text())
-    return {"cities": [], "agents": [], "logs": []}
+        try:
+            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
+        except:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
 
-def save(mem):
-    MEMORY_FILE.write_text(json.dumps(mem, indent=2))
+def save_memory():
+    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.memory, f, indent=2)
 
-if "mem" not in st.session_state:
-    st.session_state.mem = load()
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
 
-mem = st.session_state.mem
-
-# =========================================================
-# CITY GENERATION ENGINE
-# =========================================================
-
-def generate_city(size=6):
-    city = []
-    for y in range(size):
-        for x in range(size):
-            cell_type = random.choice(["empty", "building", "park", "road"])
-            city.append({
-                "x": x,
-                "y": y,
-                "type": cell_type,
-                "height": random.randint(1, 5) if cell_type == "building" else 0,
-                "light": random.uniform(0.2, 1.0)
-            })
-    return city
-
-def spawn_agents(n=5):
-    return [{
-        "id": str(uuid.uuid4())[:6],
-        "x": random.randint(0, 5),
-        "y": random.randint(0, 5),
-        "mood": random.choice(["calm", "curious", "analytical", "restless"]),
-        "energy": random.randint(40, 100)
-    } for _ in range(n)]
-
-def move_agent(agent):
-    agent["x"] = max(0, min(5, agent["x"] + random.choice([-1, 0, 1])))
-    agent["y"] = max(0, min(5, agent["y"] + random.choice([-1, 0, 1])))
-    agent["energy"] -= random.uniform(0.1, 1.5)
-    return agent
+mem = st.session_state.memory
 
 # =========================================================
-# WALKABLE SIMULATION ENGINE
+# CORE GENERATION ENGINE
 # =========================================================
 
-def simulate_step():
-    for a in mem["agents"]:
-        move_agent(a)
+def generate_design(goal):
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "goal": goal,
+        "area": random.randint(120, 800),
+        "cost": random.randint(80_000, 900_000),
+        "structure": {
+            "columns": random.randint(12, 50),
+            "beams": random.randint(20, 90)
+        },
+        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
+    }
 
 # =========================================================
-# LIGHTING ENGINE (NEURAL SUN MODEL)
+# COUNCIL ENGINE (V23)
 # =========================================================
 
-def compute_light(cell):
-    base = cell["light"]
-    time_bias = math.sin(datetime.now().second / 60 * math.pi * 2)
-    return max(0.1, min(1.0, base + time_bias))
+COUNCIL = [
+    "Chief Architect",
+    "Structural Analyst",
+    "Cost Engineer",
+    "Sustainability Agent",
+    "Compliance Officer",
+    "Chaos Agent"
+]
+
+def council_debate(goal):
+    debate = []
+    votes = []
+
+    for agent in COUNCIL:
+        score = random.randint(60, 98)
+        votes.append(score)
+
+        debate.append({
+            "agent": agent,
+            "statement": f"{agent} evaluates '{goal}' with systemic bias.",
+            "vote": score
+        })
+
+    return debate, sum(votes)/len(votes)
 
 # =========================================================
-# RENDER CITY
+# NEURAL ARCHITECTURE MODEL (V27)
 # =========================================================
 
-def render_city(city, agents):
-    grid = '<div class="city-grid">'
+def encode(d):
+    return [
+        d["area"]/1000,
+        d["structure"]["columns"]/50,
+        d["structure"]["beams"]/100,
+        len(d["rooms"])/10,
+        d["cost"]/1_000_000
+    ]
 
-    for cell in city:
-        light = compute_light(cell)
+def mood(d):
+    density = d["structure"]["columns"] / max(1, d["area"]/50)
+    flow = len(d["rooms"]) / max(1, d["structure"]["columns"])
 
-        glow = f"rgba(0,255,255,{light*0.5})"
+    return {
+        "comfort": round(100 - abs(density-0.8)*60, 2),
+        "flow": round(100 - abs(flow-0.6)*70, 2)
+    }
 
-        grid += f"""
-        <div class="cell" style="box-shadow: 0 0 10px {glow}">
-        """
+def neural_score(d):
+    v = encode(d)
+    raw = v[0]*0.25 + v[1]*0.2 + v[2]*0.15 + v[3]*0.2 + (1-min(v[4],1))*0.2
+    return 100/(1+math.exp(-5*(raw-0.5)))
 
-        if cell["type"] == "building":
-            grid += '<div class="building"></div>'
+def neural_simulation(d, ticks=5):
+    history = []
+    current = json.loads(json.dumps(d))
 
-        for a in agents:
-            if a["x"] == cell["x"] and a["y"] == cell["y"]:
-                grid += '<div class="agent"></div>'
+    for t in range(ticks):
+        if random.random() > 0.6:
+            current["structure"]["columns"] += random.randint(-1, 2)
+            current["structure"]["beams"] += random.randint(-2, 3)
 
-        grid += "</div>"
+        score = neural_score(current)
+        history.append({
+            "tick": t,
+            "score": score,
+            "mood": mood(current)
+        })
 
-    grid += "</div>"
-    st.markdown(grid, unsafe_allow_html=True)
+    return history
 
 # =========================================================
-# UI NAV
+# FLOOR PLAN VIEW (SIMPLIFIED)
 # =========================================================
+
+def floor_plan(d):
+    return [{"room": r, "size": random.randint(20, 60)} for r in d["rooms"]]
+
+# =========================================================
+# SIDEBAR NAVIGATION
+# =========================================================
+
+st.sidebar.title("🧠 Neural Architecture OS")
 
 page = st.sidebar.radio(
-    "🏙️ Neural City",
+    "Navigation",
     [
         "🏠 Project Overview",
         "📐 Floor Plan",
         "🏗 Structural Model",
-        "🚶 Walk Mode",
-        "🌍 City Simulation",
-        "🧠 Memory"
+        "💰 Cost Estimate",
+        "🌍 Sustainability",
+        "📋 Code Compliance",
+        "📊 AI Evolution",
+        "🧠 Memory",
+        "⚙ Settings"
     ]
 )
 
+goal = st.sidebar.text_input("Design Goal", "Futuristic eco villa")
+
+run = st.sidebar.button("Generate Architecture")
+
 # =========================================================
-# INIT WORLD
+# GENERATE DESIGN
 # =========================================================
 
-if "city" not in st.session_state:
-    st.session_state.city = generate_city()
+if run:
+    design = generate_design(goal)
 
-if "agents" not in st.session_state:
-    st.session_state.agents = spawn_agents()
+    debate, score = council_debate(goal)
+    design["council_score"] = score
+
+    mem["designs"].append(design)
+    mem["logs"].append({
+        "time": datetime.now().isoformat(),
+        "msg": f"Generated {design['id']} with council score {score:.1f}"
+    })
+
+    st.session_state.active = design
+    st.session_state.debate = debate
+
+    save_memory()
+
+# =========================================================
+# ACTIVE DESIGN
+# =========================================================
+
+design = st.session_state.get("active", None)
 
 # =========================================================
 # PAGES
 # =========================================================
 
 if page == "🏠 Project Overview":
-    st.title("🏙️ Neural City Engine V25")
-    st.write("A living architecture civilization simulator.")
+    st.title("🏠 Project Overview")
 
-    render_city(st.session_state.city, st.session_state.agents)
+    if design:
+        st.markdown(f"### ID: {design['id']}")
+        st.write(design)
+    else:
+        st.info("Generate a design to begin.")
+
+# ----------------------------
 
 elif page == "📐 Floor Plan":
-    st.title("📐 Procedural Building Layouts")
-    st.json(random.choice(st.session_state.city))
+    st.title("📐 Floor Plan")
+
+    if design:
+        st.json(floor_plan(design))
+
+# ----------------------------
 
 elif page == "🏗 Structural Model":
-    st.title("🏗 Load Simulation Field")
+    st.title("🏗 Structural Model")
 
-    load_map = sum([c["height"] for c in st.session_state.city])
-    st.metric("Total Structural Load", load_map)
+    if design:
+        st.json(design["structure"])
 
-elif page == "🚶 Walk Mode":
-    st.title("🚶 First-Person Navigation (Simulated)")
+# ----------------------------
 
-    col1, col2, col3 = st.columns(3)
+elif page == "💰 Cost Estimate":
+    st.title("💰 Cost Estimate")
 
-    if col1.button("⬆ Move"):
-        for a in st.session_state.agents:
-            a["y"] = max(0, a["y"] - 1)
+    if design:
+        st.metric("Total Cost", f"${design['cost']:,}")
 
-    if col2.button("⬇ Move"):
-        for a in st.session_state.agents:
-            a["y"] = min(5, a["y"] + 1)
+# ----------------------------
 
-    if col3.button("🔄 Step AI"):
-        simulate_step()
+elif page == "🌍 Sustainability":
+    st.title("🌍 Sustainability")
 
-    render_city(st.session_state.city, st.session_state.agents)
+    if design:
+        score = max(0, 100 - design["structure"]["columns"]*1.2)
+        st.metric("Sustainability Score", f"{score:.1f}/100")
 
-elif page == "🌍 City Simulation":
-    st.title("🌍 Autonomous City Evolution")
+# ----------------------------
 
-    if st.button("Evolve City"):
-        st.session_state.city = generate_city()
-        st.session_state.agents = spawn_agents()
+elif page == "📋 Code Compliance":
+    st.title("📋 Code Compliance")
 
-    render_city(st.session_state.city, st.session_state.agents)
+    if design:
+        st.success("Structural and zoning constraints passed (simulated)")
+
+# ----------------------------
+
+elif page == "📊 AI Evolution":
+    st.title("📊 AI Evolution")
+
+    if design:
+        history = neural_simulation(design, 8)
+
+        st.line_chart([h["score"] for h in history])
+
+        st.markdown("### Mood Field")
+        st.json(history[-1]["mood"])
+
+# ----------------------------
 
 elif page == "🧠 Memory":
-    st.title("🧠 Neural Memory")
+    st.title("🧠 Memory")
 
-    mem["cities"].append(st.session_state.city)
-    mem["agents"].append(st.session_state.agents)
-
-    save(mem)
     st.json(mem)
+
+# ----------------------------
+
+elif page == "⚙ Settings":
+    st.title("⚙ Settings")
+
+    if st.button("Reset Memory"):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        st.session_state.active = None
+        save_memory()
+        st.success("Reset complete")
