@@ -1,6 +1,6 @@
 # =============================
-# ARC STUDIO ENGINE v11
-# Evolutionary AEC + MEP + HVAC Generative Architecture System
+# ARC STUDIO ENGINE v12
+# Unified AI + AEC + BIM-like System
 # =============================
 
 import streamlit as st
@@ -9,13 +9,14 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
+import plotly.graph_objects as go
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Arc Studio Engine v11",
+    page_title="Arc Studio Engine v12",
     page_icon="📐",
     layout="wide"
 )
@@ -23,341 +24,277 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# STUDIO UI SKIN
-# =========================================================
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-
-html, body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-h1, h2, h3 {
-    font-family: 'Space Grotesk', sans-serif;
-    letter-spacing: -0.03em;
-}
-
-.arc-blueprint {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    background: #0b1220;
-    padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #334155;
-}
-
-.arc-room {
-    flex: 1 1 220px;
-    padding: 16px;
-    border-radius: 10px;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.12);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =========================================================
 # MEMORY
 # =========================================================
 
-DEFAULT_STATE = {
-    "projects": [],
-    "designs": [],
-    "logs": [],
-    "evolution": []
-}
+DEFAULT = {"projects": [], "designs": [], "logs": [], "evolution": []}
 
-def load_memory():
+def load():
     if MEMORY_FILE.exists():
-        try:
-            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+        return json.load(open(MEMORY_FILE, "r"))
+    return DEFAULT.copy()
 
-def save_memory():
-    try:
-        json.dump(st.session_state.memory, open(MEMORY_FILE, "w"), indent=2)
-    except:
-        pass
+def save():
+    json.dump(st.session_state.mem, open(MEMORY_FILE, "w"), indent=2)
 
-def log_event(msg):
-    st.session_state.memory["logs"].append({
+def log(msg):
+    st.session_state.mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory()
+    save()
+
+if "mem" not in st.session_state:
+    st.session_state.mem = load()
+
+if "active" not in st.session_state:
+    st.session_state.active = None
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+mem = st.session_state.mem
 
 # =========================================================
-# INIT STATE
+# SIDEBAR CONFIG
 # =========================================================
 
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
+st.sidebar.title("📐 Arc Studio")
 
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
+page = st.sidebar.radio("Navigation", ["Dashboard", "Design", "Memory"])
 
-if "active_history" not in st.session_state:
-    st.session_state.active_history = []
+typology = st.sidebar.selectbox("Building Type", ["Residential", "Commercial", "Industrial"])
+floors = st.sidebar.slider("Floors", 1, 60, 8)
+rooms_pf = st.sidebar.slider("Rooms / Floor", 1, 15, 5)
+population = st.sidebar.slider("Occupancy", 0, 5000, 300)
 
-mem = st.session_state.memory
+pop_size = st.sidebar.slider("Population Size", 10, 120, 30)
+gens = st.sidebar.slider("Epochs", 2, 25, 8)
 
 # =========================================================
-# ARCHITECTURE CORE (AEC + GENETICS)
+# AEC ENGINE
 # =========================================================
 
-def generate_base_design(typology, floors, rooms_per_floor):
-    total_rooms = floors * rooms_per_floor
-
-    base_rooms = [
-        "Core Living Zone",
-        "Service Core",
-        "Circulation Spine"
-    ]
-
-    room_list = base_rooms + [f"Module Space {i+1}" for i in range(total_rooms)]
-
-    area = 80 + total_rooms * 14
+def generate():
+    total_rooms = floors * rooms_pf
 
     return {
         "id": str(uuid.uuid4())[:8].upper(),
-        "typology": typology,
+        "type": typology,
         "floors": floors,
-        "rooms_per_floor": rooms_per_floor,
-        "rooms": room_list,
-        "area_sqm": area,
+        "rooms_pf": rooms_pf,
+        "rooms": [f"Room {i+1}" for i in range(total_rooms)],
+        "area": 80 + total_rooms * 14,
         "structure": {
             "columns": random.randint(12, 40),
             "beams": random.randint(24, 80)
-        },
-        "cost": int(area * random.randint(1200, 2400))
+        }
     }
 
-def mutate_design(d):
+def mutate(d):
     d = json.loads(json.dumps(d))
     d["structure"]["columns"] += random.randint(-2, 3)
     d["structure"]["beams"] += random.randint(-3, 5)
-
     if random.random() > 0.6:
-        d["rooms"].append("Adaptive Expansion Module")
-        d["area_sqm"] += 18
-
-    d["cost"] = int(d["area_sqm"] * random.randint(1200, 2500))
+        d["rooms"].append("Expansion Node")
+        d["area"] += 15
     return d
 
 def fitness(d):
     ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    structural = max(0, 100 - abs(ratio - 2.0) * 25)
+    structural = max(0, 100 - abs(ratio - 2.0) * 20)
 
-    cost_eff = max(0, 100 - (d["cost"] / max(1, d["area_sqm"]) - 1500) * 0.05)
+    cost = d["area"] * 1600
+    cost_score = max(0, 100 - cost / 100000)
 
-    complexity = min(100, len(d["rooms"]) * 3)
+    complexity = min(100, len(d["rooms"]) * 2)
 
     return {
         "structural": structural,
-        "cost": cost_eff,
+        "cost": cost_score,
         "complexity": complexity
     }
 
 def score(f):
-    return int(sum(f.values()) / len(f))
+    return sum(f.values()) / 3
 
-def evolution_loop(typology, floors, rooms_per_floor, generations, pop_size):
-    population = [
-        generate_base_design(typology, floors, rooms_per_floor)
-        for _ in range(pop_size)
-    ]
+def evolve():
+    pop = [generate() for _ in range(pop_size)]
+    hist = []
 
-    history = []
-
-    for _ in range(generations):
+    for _ in range(gens):
         scored = []
-
-        for d in population:
+        for d in pop:
             f = fitness(d)
-            d["fitness"] = f
             d["score"] = score(f)
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
+        hist.append(scored[0]["score"])
 
-        survivors = scored[:max(2, pop_size // 2)]
+        survivors = scored[:max(2, len(scored)//2)]
+        new = []
 
-        new_pop = []
         for s in survivors:
-            new_pop.append(s)
-            new_pop.append(mutate_design(s))
+            new.append(s)
+            new.append(mutate(s))
 
-        population = new_pop[:pop_size]
+        pop = new[:pop_size]
 
-    return scored[0], history
+    return scored[0], hist
 
-def generate_floor_plan(d):
-    plan = [
-        {"name": "Living Core", "w": 6, "h": 5, "color": "#1e3a8a"},
-        {"name": "Kitchen Node", "w": 4, "h": 4, "color": "#065f46"},
-        {"name": "Service Hub", "w": 3, "h": 3, "color": "#78350f"}
-    ]
+# =========================================================
+# 2D FLOOR PLAN
+# =========================================================
 
-    for i in range(d["rooms_per_floor"]):
-        plan.append({
-            "name": f"Room Module {i+1}",
-            "w": 4,
-            "h": 4,
-            "color": "#4c1d95"
-        })
+def plan2d(d):
+    rooms = []
+    x = y = 0
 
-    return plan
+    for i, r in enumerate(d["rooms"][:d["rooms_pf"] * 2]):
+        w = 4 + (i % 3)
+        h = 4
 
-def render(plan):
-    html = '<div class="arc-blueprint">'
+        rooms.append({"name": r, "x": x, "y": y, "w": w, "h": h})
+
+        x += w + 1
+        if x > 18:
+            x = 0
+            y += 5
+
+    return rooms
+
+def render2d(plan):
+    fig = go.Figure()
+
     for r in plan:
-        html += f"""
-        <div class="arc-room" style="background:{r['color']}">
-            <b>{r['name']}</b><br>
-            {r['w']}m × {r['h']}m
-        </div>
-        """
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
+        fig.add_shape(
+            type="rect",
+            x0=r["x"], y0=r["y"],
+            x1=r["x"] + r["w"],
+            y1=r["y"] + r["h"],
+            line=dict(color="white"),
+            fillcolor="rgba(80,120,255,0.4)"
+        )
+
+        fig.add_annotation(
+            x=r["x"] + r["w"]/2,
+            y=r["y"] + r["h"]/2,
+            text=r["name"],
+            showarrow=False,
+            font=dict(size=10)
+        )
+
+    fig.update_layout(height=500, paper_bgcolor="#0b1220")
+    st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# SIDEBAR CONFIG (AEC + MEP + HVAC)
+# 3D MODEL
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio Engine")
+def render3d(d):
+    fig = go.Figure()
 
-typology = st.sidebar.selectbox(
-    "🏢 Building Typology",
-    ["Residential", "Commercial", "Industrial"]
-)
+    for f in range(d["floors"]):
+        z = f * 3
 
-floors = st.sidebar.slider("🏗️ Floors", 1, 60, 10)
-rooms_per_floor = st.sidebar.slider("🏠 Rooms per Floor", 1, 15, 5)
+        fig.add_trace(go.Mesh3d(
+            x=[0,10,10,0],
+            y=[0,0,10,10],
+            z=[z,z,z,z],
+            opacity=0.5
+        ))
 
-population = st.sidebar.slider("👥 Population Load", 0, 5000, 300)
+        for i in range(4):
+            fig.add_trace(go.Scatter3d(
+                x=[(i%2)*10, (i%2)*10],
+                y=[(i//2)*10, (i//2)*10],
+                z=[z, z+3],
+                mode="lines"
+            ))
 
-st.sidebar.markdown("### 🧬 Genetics")
-population_size = st.sidebar.slider("Population Size", 10, 200, 40)
-generations = st.sidebar.slider("Epoch Cycles", 2, 40, 10)
+    fig.update_layout(scene=dict(
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        zaxis=dict(visible=False)
+    ))
 
-st.sidebar.markdown("### 🌬️ MEP + HVAC")
-
-hvac = st.sidebar.selectbox(
-    "HVAC Mode",
-    ["Natural", "Hybrid", "Full Mechanical"]
-)
-
-ventilation = st.sidebar.slider("Ventilation Efficiency", 0, 100, 70)
-
-energy = st.sidebar.selectbox(
-    "Energy Model",
-    ["Low Energy", "Standard", "Smart Grid"]
-)
-
-water = st.sidebar.selectbox(
-    "Water System",
-    ["Basic", "Greywater", "Closed Loop"]
-)
+    st.plotly_chart(fig, use_container_width=True)
 
 # =========================================================
-# ENGINE STATE (NEW AEC CORE)
+# MEP + COST + AI
 # =========================================================
 
-arc_engine_state = {
-    "aec": {
-        "typology": typology,
-        "floors": floors,
-        "rooms_per_floor": rooms_per_floor,
-        "total_rooms": floors * rooms_per_floor,
-        "population": population
-    },
-    "genetics": {
-        "population_size": population_size,
-        "generations": generations
-    },
-    "systems": {
-        "hvac": hvac,
-        "ventilation": ventilation,
-        "energy": energy,
-        "water": water
+def boq(d):
+    area = d["area"]
+    return {
+        "Concrete": area * 0.35 * 130,
+        "Steel": area * 0.08 * 950,
+        "Finishes": area * 120
     }
-}
+
+def mep(d):
+    return {
+        "Power": d["area"] * 0.12,
+        "Water": d["area"] * 18,
+        "Cooling": d["area"] * 0.09
+    }
+
+def ai_review(d):
+    issues = []
+    if d["structure"]["beams"] < d["structure"]["columns"] * 1.5:
+        issues.append("Weak structural ratio")
+
+    return {
+        "issues": issues if issues else ["OK"],
+        "suggestion": "Optimize beam-column ratio"
+    }
 
 # =========================================================
 # UI
 # =========================================================
 
-st.title("📐 Arc Studio Engine v11")
-st.caption("AEC + MEP + HVAC Generative Architecture System")
+st.title("📐 Arc Studio Engine v12")
 
-run = st.button("🚀 Run Evolution Engine", use_container_width=True)
+if page == "Dashboard":
+    st.metric("Projects", len(mem["projects"]))
+    st.metric("Designs", len(mem["designs"]))
 
-if run:
-    best, history = evolution_loop(
-        typology,
-        floors,
-        rooms_per_floor,
-        generations,
-        population_size
-    )
+    if st.button("Run Evolution"):
+        best, hist = evolve()
+        st.session_state.active = best
+        st.session_state.history = hist
+        mem["designs"].append(best)
+        save()
+        log("Evolution run complete")
 
-    best["plan"] = generate_floor_plan(best)
+    if st.session_state.active:
+        d = st.session_state.active
 
-    st.session_state.active_design = best
-    st.session_state.active_history = history
+        st.subheader(f"Design {d['id']}")
+        st.metric("Score", d["score"])
 
-    mem["designs"].append(best)
-    mem["evolution"].append({
-        "id": str(uuid.uuid4())[:6],
-        "score": best["score"],
-        "time": datetime.now().isoformat()
-    })
+        tab1, tab2, tab3 = st.tabs(["2D", "3D", "Analytics"])
 
-    log_event(f"Generated design {best['id']}")
+        with tab1:
+            render2d(plan2d(d))
 
-# =========================================================
-# OUTPUT
-# =========================================================
+        with tab2:
+            render3d(d)
 
-if st.session_state.active_design:
-    d = st.session_state.active_design
+        with tab3:
+            st.line_chart(st.session_state.history)
+            st.json(boq(d))
+            st.json(mep(d))
+            st.json(ai_review(d))
 
-    st.subheader(f"🏗️ Design {d['id']}")
+elif page == "Design":
+    st.json(st.session_state.active)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Score", d["score"])
-    c2.metric("Area", f"{d['area_sqm']} m²")
-    c3.metric("Cost", f"${d['cost']:,}")
-
-    tab1, tab2 = st.tabs(["Blueprint", "Evolution"])
-
-    with tab1:
-        render(d["plan"])
-
-    with tab2:
-        st.line_chart(st.session_state.active_history)
-
-else:
-    st.info("Run the engine to generate a design.")
-
-# =========================================================
-# MEMORY VIEW
-# =========================================================
-
-with st.expander("🧠 System Memory"):
+elif page == "Memory":
     st.json(mem)
 
-if st.button("Reset Memory"):
-    st.session_state.memory = DEFAULT_STATE.copy()
-    st.session_state.active_design = None
-    st.session_state.active_history = []
-    save_memory()
-    st.rerun()
-
-
+    if st.button("Reset"):
+        st.session_state.mem = DEFAULT.copy()
+        save()
+        st.rerun()
