@@ -1,14 +1,14 @@
 # =========================================================
-# RANDOM V41 — FULL SYSTEM
-# AI Architecture + City Generator + BIM-lite Engine
-# Plotly 3D + BOQ + Timeline + Cost Simulation (EA Region)
+# RANDOM V42 — FULL BIM + AI BRAIN SYSTEM
+# Cognitive Architecture Engine + Structural BIM Model
+# AI Chief Architect + City Intelligence Layer
 # =========================================================
 
 import streamlit as st
 import uuid
 import random
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import plotly.graph_objects as go
 
@@ -16,13 +16,13 @@ import plotly.graph_objects as go
 # CONFIG
 # =========================================================
 
-st.set_page_config(page_title="RANDOM V41", layout="wide")
+st.set_page_config(page_title="RANDOM V42 BIM AI", layout="wide")
 
 # =========================================================
-# MEMORY CORE
+# MEMORY SYSTEM
 # =========================================================
 
-MEMORY_FILE = Path("v41_memory.json")
+MEMORY_FILE = Path("v42_bim_memory.json")
 
 def load_memory():
     if MEMORY_FILE.exists():
@@ -38,142 +38,137 @@ def uid():
     return str(uuid.uuid4())[:8]
 
 # =========================================================
-# 🌍 EAST AFRICA COST + MARKET SIMULATION
+# 🧠 BIM OBJECT MODEL (CORE SHIFT)
 # =========================================================
 
-BASE_COSTS = {
-    "cement": 42000,
-    "steel": 3800,
-    "sand": 60000,
-    "brick": 900,
-    "tile": 85000,
-    "paint": 28000
-}
-
-INFLATION = random.uniform(0.95, 1.25)
-
-def market_price(material):
-    return int(BASE_COSTS[material] * INFLATION)
-
-# =========================================================
-# 🏗 BUILDING ENGINE
-# =========================================================
-
-SPACE_TYPES = ["Living", "Kitchen", "Bedroom", "Office", "Bath", "Lobby", "Shop"]
-
-def generate_building(name, floors):
-    spaces = []
-    for f in range(floors):
-        for _ in range(random.randint(3, 6)):
-            spaces.append({
-                "floor": f+1,
-                "type": random.choice(SPACE_TYPES),
-                "area": random.randint(12, 80),
-                "height": random.choice([2.7, 3.0, 3.5])
-            })
-
+def create_wall(length, height, thickness=0.2):
     return {
-        "id": uid(),
-        "name": name,
-        "floors": floors,
-        "spaces": spaces,
-        "created": datetime.utcnow().isoformat()
+        "type": "wall",
+        "length": length,
+        "height": height,
+        "thickness": thickness,
+        "load_capacity": length * height * 1.8
+    }
+
+def create_slab(area):
+    return {
+        "type": "slab",
+        "area": area,
+        "thickness": 0.25,
+        "load_capacity": area * 5
+    }
+
+def create_beam(span):
+    return {
+        "type": "beam",
+        "span": span,
+        "stress_limit": span * 12
     }
 
 # =========================================================
-# 🏙 CITY GENERATOR
+# 🏗 BIM BUILDING ENGINE
 # =========================================================
 
-def generate_city(name, building_count=5):
+SPACE_TYPES = ["Living", "Kitchen", "Bedroom", "Office", "Hall", "Shop"]
+
+def generate_bim_building(name, floors):
+    building = {
+        "id": uid(),
+        "name": name,
+        "floors": [],
+        "created": datetime.utcnow().isoformat()
+    }
+
+    for f in range(floors):
+        floor = {
+            "level": f + 1,
+            "spaces": [],
+            "structural_elements": []
+        }
+
+        for _ in range(random.randint(3, 6)):
+            area = random.randint(15, 80)
+
+            floor["spaces"].append({
+                "type": random.choice(SPACE_TYPES),
+                "area": area
+            })
+
+            # BIM STRUCTURAL MAPPING
+            floor["structural_elements"].append(create_slab(area))
+            floor["structural_elements"].append(create_wall(area * 0.5, 3))
+            floor["structural_elements"].append(create_beam(area * 0.2))
+
+        building["floors"].append(floor)
+
+    return building
+
+# =========================================================
+# 🧠 AI BRAIN (CHIEF ARCHITECT SYSTEM)
+# =========================================================
+
+def ai_brain_analyze(building):
+    total_area = sum(
+        s["area"]
+        for f in building["floors"]
+        for s in f["spaces"]
+    )
+
+    structural_risk = random.randint(10, 40)
+
+    suggestions = []
+
+    if structural_risk > 25:
+        suggestions.append("Increase beam density on upper floors")
+    if total_area > 400:
+        suggestions.append("Add vertical circulation core (elevator/stairs)")
+    if len(building["floors"]) > 5:
+        suggestions.append("Introduce seismic reinforcement system")
+
+    return {
+        "total_area": total_area,
+        "structural_risk_index": structural_risk,
+        "recommendations": suggestions,
+        "efficiency_score": 100 - structural_risk
+    }
+
+# =========================================================
+# 🏙 CITY BIM SYSTEM
+# =========================================================
+
+def generate_city(name, buildings=4):
     city = {
         "id": uid(),
         "name": name,
         "buildings": []
     }
 
-    for i in range(building_count):
+    for i in range(buildings):
         city["buildings"].append(
-            generate_building(f"Bldg-{i+1}", random.randint(1, 8))
+            generate_bim_building(f"Building-{i+1}", random.randint(2, 8))
         )
 
     return city
 
 # =========================================================
-# 🧠 AI CHIEF ARCHITECT AGENTS
+# 🧠 CITY AI PLANNER
 # =========================================================
 
-def planner(city):
-    return {
-        "zones": ["residential", "commercial", "mixed"],
-        "logic": "zoning optimized for density flow"
-    }
+def city_brain(city):
+    total_buildings = len(city["buildings"])
+    avg_floors = sum(len(b["floors"]) for b in city["buildings"]) / total_buildings
 
-def engineer(building):
-    return {
-        "structure": "reinforced concrete frame",
-        "stability_score": random.randint(70, 95)
-    }
+    zoning = ["residential", "commercial", "mixed-use"]
 
-def quantity_surveyor(building):
-    area = sum(s["area"] for s in building["spaces"])
     return {
-        "cement_bags": int(area * 0.9),
-        "steel_kg": int(area * 11),
-        "sand_m3": int(area * 0.6),
-        "bricks": int(area * 40)
-    }
-
-def inspector():
-    return {
-        "violations": random.choice([
-            "none",
-            "minor ventilation issue",
-            "structural spacing warning"
-        ])
+        "buildings": total_buildings,
+        "avg_floors": round(avg_floors, 2),
+        "zoning_strategy": random.choice(zoning),
+        "traffic_flow_model": "optimized radial grid"
     }
 
 # =========================================================
-# 💰 COST ENGINE
-# =========================================================
-
-def compute_cost(boq):
-    total = 0
-    for k, v in boq.items():
-        if k == "cement_bags":
-            total += v * market_price("cement")
-        if k == "steel_kg":
-            total += v * market_price("steel")
-        if k == "sand_m3":
-            total += v * market_price("sand")
-        if k == "bricks":
-            total += v * market_price("brick")
-    return total
-
-# =========================================================
-# 📊 TIMELINE ENGINE (GANTT SIMULATION)
-# =========================================================
-
-def timeline():
-    base = datetime.today()
-    phases = [
-        ("Excavation", 7),
-        ("Foundation", 14),
-        ("Structure", 30),
-        ("Masonry", 25),
-        ("Finishing", 20)
-    ]
-
-    return [
-        {
-            "phase": p,
-            "start": (base + timedelta(days=sum(d for _, d in phases[:i]))).strftime("%Y-%m-%d"),
-            "duration": d
-        }
-        for i, (p, d) in enumerate(phases)
-    ]
-
-# =========================================================
-# 🧊 3D CITY VISUALIZATION (PLOTLY ORBIT STYLE)
+# 🧊 3D BIM VISUALIZER
 # =========================================================
 
 def plot_city(city):
@@ -182,22 +177,22 @@ def plot_city(city):
     x, y = 0, 0
 
     for b in city["buildings"]:
-        height = b["floors"] * 10
+        height = len(b["floors"]) * 10
 
         fig.add_trace(go.Scatter3d(
             x=[x],
             y=[y],
             z=[height],
-            mode='markers+text',
+            mode="markers+text",
             text=[b["name"]],
-            marker=dict(size=8)
+            marker=dict(size=6)
         ))
 
-        x += random.randint(10, 25)
-        y += random.randint(10, 25)
+        x += random.randint(10, 20)
+        y += random.randint(10, 20)
 
     fig.update_layout(
-        title="🏙 V41 City Orbit Model",
+        title="🏙 V42 BIM City Brain",
         scene=dict(
             xaxis_title="X",
             yaxis_title="Y",
@@ -208,88 +203,86 @@ def plot_city(city):
     return fig
 
 # =========================================================
-# UI HEADER
+# UI
 # =========================================================
 
-st.title("🧠 RANDOM V41 — AI Architecture + City BIM OS")
-st.caption("City-scale construction intelligence • BOQ • AI engineers • 3D orbit model")
-
-# =========================================================
-# SIDEBAR CONTROL
-# =========================================================
+st.title("🧠 RANDOM V42 — FULL BIM + AI ARCHITECT BRAIN")
+st.caption("Structural BIM engine • AI Chief Architect • City cognition system")
 
 st.sidebar.header("🎛 Control Center")
 
 mode = st.sidebar.selectbox("Mode", ["Building", "City"])
 
-name = st.sidebar.text_input("Name", "Neo-Kampala Core")
+name = st.sidebar.text_input("Project Name", "Neo-BIM Core")
 
-floors = st.sidebar.slider("Floors", 1, 10, 3)
+floors = st.sidebar.slider("Floors", 1, 10, 4)
 
-if st.sidebar.button("🚀 Generate"):
-    
+if st.sidebar.button("🚀 Generate BIM System"):
+
     if mode == "Building":
-        project = generate_building(name, floors)
-        memory["projects"].append(project)
-        st.session_state["building"] = project
+        obj = generate_bim_building(name, floors)
+        analysis = ai_brain_analyze(obj)
+
+        memory["projects"].append(obj)
+        st.session_state["building"] = obj
+        st.session_state["analysis"] = analysis
 
     else:
         city = generate_city(name)
         memory["cities"].append(city)
         st.session_state["city"] = city
+        st.session_state["city_ai"] = city_brain(city)
 
     save_memory(memory)
 
 # =========================================================
-# MAIN DASHBOARD
+# DASHBOARD
 # =========================================================
 
 if "building" in st.session_state:
 
     b = st.session_state["building"]
+    a = st.session_state["analysis"]
 
-    st.subheader("🏗 Building Engine Output")
+    st.subheader("🏗 BIM Building Model")
 
     st.json(b)
 
-    qs = quantity_surveyor(b)
-    eng = engineer(b)
-    insp = inspector()
+    st.markdown("## 🧠 AI Chief Architect Analysis")
 
-    st.markdown("### 🧱 BOQ")
-    st.json(qs)
+    col1, col2 = st.columns(2)
 
-    st.markdown("### 🧠 Engineering Analysis")
-    st.json(eng)
+    with col1:
+        st.metric("Structural Risk Index", a["structural_risk_index"])
 
-    st.markdown("### ⚠ Inspector Report")
-    st.json(insp)
+    with col2:
+        st.metric("Efficiency Score", a["efficiency_score"])
 
-    st.markdown("### 💰 Cost Estimate (UGX)")
-    st.success(f"{compute_cost(qs):,}")
-
-    st.markdown("### 📊 Construction Timeline")
-    st.json(timeline())
+    st.markdown("### 💡 Recommendations")
+    st.write(a["recommendations"])
 
 elif "city" in st.session_state:
 
     c = st.session_state["city"]
+    ai = st.session_state["city_ai"]
 
-    st.subheader("🏙 City Engine Output")
+    st.subheader("🏙 BIM City System")
 
     st.json(c)
 
-    st.markdown("### 🧠 AI Planner")
-    st.json(planner(c))
+    st.markdown("## 🧠 City AI Brain")
 
-    st.markdown("### 🧊 3D City Orbit View")
+    st.json(ai)
+
+    st.markdown("## 🧊 3D BIM City View")
+
     st.plotly_chart(plot_city(c), use_container_width=True)
 
 else:
-    st.info("Generate a building or city to activate V41 system.")
+    st.info("Generate a BIM building or city to activate V42 AI brain system.")
 
 # =========================================================
-# MEMORY DEBUG PANEL
+# MEMORY
 # =========================================================
 
 st.sidebar.markdown("---")
