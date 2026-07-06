@@ -78,3 +78,50 @@ ai-architecture-bot/
 ├── requirements.txt
 ├── README.md
 └── .gitignore
+
+
+RANDOM/
+│
+├── streamlit_app.py
+│
+├── engine/
+│   ├── evolution.py
+│   ├── optimizer.py
+│   ├── genetics.py
+│   ├── planner.py
+│   └── scoring.py
+│
+├── agents/
+│   ├── architect.py
+│   ├── structural.py
+│   ├── boq.py
+│   ├── code_checker.py
+│   ├── sustainability.py
+│   └── project_manager.py
+│
+├── bim/
+│   ├── building.py
+│   ├── floor.py
+│   ├── room.py
+│   ├── wall.py
+│   ├── slab.py
+│   └── roof.py
+│
+├── visualization/
+│   ├── floorplan.py
+│   ├── renderer2d.py
+│   ├── renderer3d.py
+│   └── dashboard.py
+│
+├── memory/
+│   ├── memory.json
+│   ├── learning.py
+│   └── history.py
+│
+├── data/
+│
+├── exports/
+│
+├── reports/
+│
+└── plugins/
