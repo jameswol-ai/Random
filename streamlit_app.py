@@ -1,6 +1,6 @@
 # =========================================================
-# ARCHITECTURE INTELLIGENCE OS V38
-# Architectural + Structural AI + BOQ + 2D + 3D SYSTEM
+# V39 — CITY ARCHITECTURE SIMULATION ENGINE
+# Multi-Building Urban Intelligence System
 # =========================================================
 
 import streamlit as st
@@ -16,20 +16,19 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Architecture Intelligence OS V38",
-    page_icon="🏛️",
+    page_title="City Architecture Engine V39",
+    page_icon="🌆",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("city_memory.json")
 
 # =========================================================
-# SAFE MEMORY CORE
+# SAFE MEMORY
 # =========================================================
 
 DEFAULT = {
-    "projects": [],
-    "designs": [],
+    "cities": [],
     "logs": []
 }
 
@@ -57,221 +56,209 @@ def log(mem, msg):
 if "mem" not in st.session_state:
     st.session_state.mem = load()
 
-if "active" not in st.session_state:
-    st.session_state.active = None
+if "active_city" not in st.session_state:
+    st.session_state.active_city = None
 
 mem = st.session_state.mem
 
 # =========================================================
-# ARCHITECTURAL TAXONOMY ENGINE
+# CITY TAXONOMY
 # =========================================================
 
-ARCH_PROGRAM = {
-    "Residential": {
-        "spaces": ["Living Room", "Kitchen", "Master Bedroom", "Bathroom", "Dining"],
-        "struct_factor": 1.0,
-        "cost_factor": 1.0
-    },
-    "Commercial": {
-        "spaces": ["Lobby", "Office Floor", "Meeting Room", "Server Room", "Reception"],
-        "struct_factor": 1.3,
-        "cost_factor": 1.5
-    },
-    "Industrial": {
-        "spaces": ["Production Hall", "Storage Bay", "Loading Dock", "Control Room"],
-        "struct_factor": 1.8,
-        "cost_factor": 2.0
-    }
+BUILDING_TYPES = {
+    "Residential": {"color": 1, "pop": 3},
+    "Commercial": {"color": 2, "pop": 1},
+    "Industrial": {"color": 3, "pop": 0}
 }
 
 # =========================================================
-# STRUCTURAL ENGINE
+# CITY GENERATION ENGINE
 # =========================================================
 
-def structural_system(area, typology):
-    f = ARCH_PROGRAM[typology]["struct_factor"]
+CITY_SIZE = (30, 12, 30)
 
-    columns = int((area / 25) * f)
-    beams = int(columns * random.uniform(1.8, 2.6))
-
+def create_building(btype):
     return {
-        "columns": max(8, columns),
-        "beams": max(12, beams)
+        "id": str(uuid.uuid4())[:6],
+        "type": btype,
+        "height": random.randint(2, 8),
+        "size": random.randint(2, 5)
     }
 
-def structural_score(struct):
-    ratio = struct["beams"] / max(1, struct["columns"])
-    return max(0, 100 - abs(ratio - 2.2) * 20)
+def generate_city(n_buildings=25):
+    city = np.zeros(CITY_SIZE)
+
+    buildings = []
+
+    for _ in range(n_buildings):
+        btype = random.choice(list(BUILDING_TYPES.keys()))
+        b = create_building(btype)
+
+        x = random.randint(2, 27)
+        z = random.randint(2, 27)
+
+        h = b["height"]
+
+        city[x:x+2, :h, z:z+2] = BUILDING_TYPES[btype]["color"]
+
+        buildings.append({
+            **b,
+            "x": x,
+            "z": z
+        })
+
+    return city, buildings
 
 # =========================================================
-# ARCHITECTURAL AI (PROGRAM GENERATOR)
+# ROAD NETWORK ENGINE
 # =========================================================
 
-def generate_program(typology, floors):
-    base = ARCH_PROGRAM[typology]["spaces"]
-    program = []
+def generate_roads(buildings):
+    roads = []
 
-    for f in range(floors):
-        for s in base:
-            program.append({
-                "name": f"{s} - L{f+1}",
-                "floor": f+1,
-                "area": random.randint(20, 80)
-            })
+    for i in range(len(buildings)-1):
+        a = buildings[i]
+        b = buildings[i+1]
 
-    return program
+        roads.append(((a["x"], a["z"]), (b["x"], b["z"])))
+
+    return roads
 
 # =========================================================
-# COST + BOQ ENGINE
+# CITY AI BRAIN
 # =========================================================
 
-def boq(struct, area, typology):
-    steel_rate = 3.2
-    concrete_rate = 2.6
-    block_rate = 42
+def city_brain(buildings):
+    res = sum(1 for b in buildings if b["type"] == "Residential")
+    com = sum(1 for b in buildings if b["type"] == "Commercial")
+    ind = sum(1 for b in buildings if b["type"] == "Industrial")
+
+    advice = []
+
+    if res < com:
+        advice.append("Housing shortage detected.")
+    if ind > res:
+        advice.append("Over-industrialized city risk.")
+    if com == 0:
+        advice.append("No economic core detected.")
+
+    if not advice:
+        advice.append("City balance is stable.")
 
     return {
-        "Concrete (m³)": round(struct["columns"] * 2.5 * ARCH_PROGRAM[typology]["struct_factor"], 2),
-        "Steel (tons)": round(struct["beams"] * 0.48, 2),
-        "Blocks (units)": int(area * block_rate),
-        "Estimated Cost ($)": int(area * 1500 * ARCH_PROGRAM[typology]["cost_factor"])
+        "residential": res,
+        "commercial": com,
+        "industrial": ind,
+        "advice": advice
     }
 
 # =========================================================
-# 3D VOXEL ENGINE
+# ECONOMY ENGINE
 # =========================================================
 
-WORLD = (20, 12, 20)
+def economy(buildings):
+    income = sum(
+        200 if b["type"] == "Commercial" else
+        100 if b["type"] == "Residential" else
+        300
+        for b in buildings
+    )
 
-def voxel(struct):
-    w = np.zeros(WORLD)
+    maintenance = len(buildings) * 40
 
-    for _ in range(struct["columns"]):
-        x, z = random.randint(0, 19), random.randint(0, 19)
-        h = random.randint(2, 7)
-        w[x, :h, z] = 1
+    return {
+        "income": income,
+        "maintenance": maintenance,
+        "net": income - maintenance
+    }
 
-    for _ in range(struct["beams"]):
-        x, z = random.randint(0, 19), random.randint(0, 19)
-        y = random.randint(2, 6)
-        w[x, y, z] = 2
+# =========================================================
+# 3D CITY VIEW
+# =========================================================
 
-    return w
+def render_slice(city, y):
+    grid = city[:, y, :]
 
-def slice_view(w, y):
-    grid = w[:, y, :]
-    out = ""
-
-    for z in range(20):
+    for z in range(30):
         row = ""
-        for x in range(20):
+        for x in range(30):
             v = grid[x, z]
-            row += "⬛" if v == 0 else "🟦" if v == 1 else "🟨"
-        out += row + "\n"
-
-    st.code(out)
-
-# =========================================================
-# DESIGN ENGINE
-# =========================================================
-
-def generate_design(typology, floors, area):
-    struct = structural_system(area, typology)
-
-    return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "typology": typology,
-        "floors": floors,
-        "area": area,
-        "structure": struct,
-        "program": generate_program(typology, floors),
-        "boq": boq(struct, area, typology),
-        "score": structural_score(struct)
-    }
+            row += "⬛" if v == 0 else "🟦" if v == 1 else "🟨" if v == 2 else "🟩"
+        st.code(row)
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🏛️ ARCH AI V38")
+st.sidebar.title("🌆 CITY V39")
 
-typology = st.sidebar.selectbox(
-    "Project Type",
-    ["Residential", "Commercial", "Industrial"]
-)
+page = st.sidebar.radio("Mode", ["Dashboard", "City Lab", "Analytics"])
 
-floors = st.sidebar.slider("Floors", 1, 10, 3)
-area = st.sidebar.slider("Total Area (sqm)", 100, 2000, 500)
-
-page = st.sidebar.radio(
-    "Mode",
-    ["Dashboard", "Design Lab", "BOQ", "Memory"]
-)
+n = st.sidebar.slider("Buildings", 10, 60, 25)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🏛️ Architectural Intelligence OS V38")
+    st.title("🌆 City Simulation Engine V39")
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Projects", len(mem["projects"]))
-    c3.metric("Logs", len(mem["logs"]))
-
-# =========================================================
-# DESIGN LAB
-# =========================================================
-
-elif page == "Design Lab":
-    st.title("🧠 AI Architectural Generator")
-
-    if st.button("Generate Design"):
-        d = generate_design(typology, floors, area)
-
-        d["world"] = voxel(d["structure"])
-
-        mem["designs"].append(d)
-        st.session_state.active = d
-
-        log(mem, f"Generated {d['id']}")
-
-    if st.session_state.active:
-        d = st.session_state.active
-
-        st.subheader(f"Design {d['id']}")
-
-        a, b, c = st.columns(3)
-        a.metric("Structural Score", round(d["score"], 2))
-        b.metric("Area", d["area"])
-        c.metric("Floors", d["floors"])
-
-        tab1, tab2, tab3 = st.tabs(["Program", "Structure", "3D"])
-
-        with tab1:
-            st.subheader("Space Program")
-            st.json(d["program"])
-
-        with tab2:
-            st.subheader("Structural System")
-            st.json(d["structure"])
-
-        with tab3:
-            y = st.slider("Section Cut", 0, 11, 0)
-            slice_view(d["world"], y)
+    c1, c2 = st.columns(2)
+    c1.metric("Cities Generated", len(mem["cities"]))
+    c2.metric("Logs", len(mem["logs"]))
 
 # =========================================================
-# BOQ MODULE
+# CITY LAB
 # =========================================================
 
-elif page == "BOQ":
-    st.title("📊 Bill of Quantities (BOQ)")
+elif page == "City Lab":
+    st.title("🏙️ Urban Simulation Lab")
 
-    if st.session_state.active:
-        st.json(st.session_state.active["boq"])
+    if st.button("Generate City"):
+        city, buildings = generate_city(n)
+        roads = generate_roads(buildings)
+
+        mem["cities"].append({
+            "id": str(uuid.uuid4())[:6],
+            "buildings": buildings,
+            "roads": roads
+        })
+
+        st.session_state.active_city = {
+            "city": city,
+            "buildings": buildings,
+            "roads": roads
+        }
+
+        log(mem, "City generated")
+
+    if st.session_state.active_city:
+        c = st.session_state.active_city
+
+        st.subheader("City Slice View")
+        y = st.slider("Height Layer", 0, 11, 0)
+        render_slice(c["city"], y)
+
+# =========================================================
+# ANALYTICS
+# =========================================================
+
+elif page == "Analytics":
+    st.title("📊 City Intelligence Layer")
+
+    if st.session_state.active_city:
+        b = st.session_state.active_city["buildings"]
+
+        brain = city_brain(b)
+        econ = economy(b)
+
+        st.subheader("City Balance AI")
+        st.json(brain)
+
+        st.subheader("Economy")
+        st.json(econ)
     else:
-        st.info("Generate a design first.")
+        st.info("Generate a city first.")
 
 # =========================================================
 # MEMORY
@@ -280,9 +267,3 @@ elif page == "BOQ":
 elif page == "Memory":
     st.title("🧠 Memory Core")
     st.json(mem)
-
-    if st.button("Reset"):
-        st.session_state.mem = DEFAULT.copy()
-        st.session_state.active = None
-        save(mem)
-        st.rerun()
