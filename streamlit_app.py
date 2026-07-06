@@ -1,7 +1,6 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE — V39
-# Architect Brain + Physics Layer + BIM Export Core
-# Stable Streamlit OS (Production Hardened)
+# ARC V40 — FULL BIM + STRUCTURAL SOLVER + CITY SCALE OS
+# Single-File Production Streamlit Architecture Engine
 # =========================================================
 
 import streamlit as st
@@ -16,29 +15,27 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="ARC V39 OS",
+    page_title="ARC V40 OS",
     page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("arc_v40_memory.json")
 
 # =========================================================
-# SAFE MEMORY LOADER (FIXES JSONDecodeError CRASH)
+# SAFE MEMORY SYSTEM (NO JSON CRASHES)
 # =========================================================
 
 DEFAULT_STATE = {
-    "projects": [],
     "designs": [],
-    "logs": [],
-    "evolution": [],
-    "bim_exports": []
+    "bim": [],
+    "city": [],
+    "logs": []
 }
 
-def safe_load_memory():
+def safe_load():
     if not MEMORY_FILE.exists():
         return DEFAULT_STATE.copy()
-
     try:
         raw = MEMORY_FILE.read_text(encoding="utf-8").strip()
         if not raw:
@@ -47,33 +44,29 @@ def safe_load_memory():
     except Exception:
         return DEFAULT_STATE.copy()
 
-def save_memory():
+def save():
     try:
-        MEMORY_FILE.write_text(
-            json.dumps(st.session_state.memory, indent=2),
-            encoding="utf-8"
-        )
+        MEMORY_FILE.write_text(json.dumps(st.session_state.mem, indent=2))
     except Exception:
         pass
 
 def log(msg):
-    st.session_state.memory["logs"].append({
+    st.session_state.mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory()
+    save()
 
-# init
-if "memory" not in st.session_state:
-    st.session_state.memory = safe_load_memory()
+if "mem" not in st.session_state:
+    st.session_state.mem = safe_load()
 
 if "active" not in st.session_state:
     st.session_state.active = None
 
-mem = st.session_state.memory
+mem = st.session_state.mem
 
 # =========================================================
-# ARCHITECTURE BRAIN (DOMAIN ENGINE)
+# ARCHITECTURE DOMAIN SYSTEM
 # =========================================================
 
 ARCH = {
@@ -82,7 +75,7 @@ ARCH = {
     "Industrial": ["Warehouse", "Factory"]
 }
 
-def domain(t):
+def get_domain(t):
     for k, v in ARCH.items():
         if t in v:
             return k
@@ -96,18 +89,14 @@ def generate_design(btype, floors, bedrooms):
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "type": btype,
-        "domain": domain(btype),
+        "domain": get_domain(btype),
         "floors": floors,
         "bedrooms": bedrooms,
-        "area_sqm": 80 + (floors * 55) + (bedrooms * 18),
+        "area_sqm": 70 + floors * 60 + bedrooms * 18,
         "structure": {
-            "columns": random.randint(12, 40),
-            "beams": random.randint(25, 80),
+            "columns": random.randint(12, 42),
+            "beams": random.randint(25, 85),
             "slabs": floors
-        },
-        "materials": {
-            "concrete_grade": random.choice(["C25", "C30", "C35"]),
-            "steel_grade": random.choice(["S275", "S355"])
         }
     }
 
@@ -118,79 +107,79 @@ def mutate(d):
     return d
 
 # =========================================================
-# PHYSICS ENGINE (LOAD + STABILITY SIMULATION)
+# PHYSICS ENGINE (LOAD + STABILITY)
 # =========================================================
 
-def physics_check(d):
+def physics(d):
     col = d["structure"]["columns"]
     beam = d["structure"]["beams"]
     floors = d["structure"]["slabs"]
 
-    load_factor = (beam / max(1, col)) * floors
+    load_index = (beam / max(1, col)) * floors
 
-    stress = min(100, load_factor * 12)
-    stability = max(0, 100 - abs(load_factor - 2.2) * 30)
+    stability = max(0, 100 - abs(load_index - 2.2) * 30)
+    stress = min(100, load_index * 14)
 
     return {
-        "load_factor": round(load_factor, 2),
-        "stress_index": round(stress, 2),
-        "stability_score": int(stability)
+        "load_index": round(load_index, 2),
+        "stability": int(stability),
+        "stress": int(stress)
     }
 
 # =========================================================
-# COST ENGINE (EAST AFRICA BASED APPROX)
+# COST ENGINE (EAST AFRICA MODEL)
 # =========================================================
 
-def cost_engine(d):
+def cost(d):
     sqm = d["area_sqm"]
 
-    base_rate = random.choice([
-        450, 500, 600, 700  # USD/m² simplified EA band
-    ])
+    rate = random.choice([450, 500, 600, 700, 850])  # USD/m² band
+    multiplier = 1 + (d["structure"]["slabs"] * 0.08)
 
-    structure_multiplier = 1 + (d["structure"]["slabs"] * 0.08)
-
-    total = sqm * base_rate * structure_multiplier
+    total = sqm * rate * multiplier
 
     return {
-        "rate_per_sqm": base_rate,
-        "total_cost_usd": int(total)
+        "rate_per_sqm": rate,
+        "total_usd": int(total)
     }
 
 # =========================================================
-# BIM EXPORT ENGINE (IFC-LIKE STRUCTURE)
+# BOQ ENGINE (FULL CONSTRUCTION BREAKDOWN)
 # =========================================================
 
-def bim_export(d):
-    export = {
-        "IFC_CLASS": "IFCSITE_SIM",
-        "project_id": d["id"],
+def boq(d):
+    a = d["area_sqm"]
+
+    return [
+        ("Foundation Works", int(a * 55)),
+        ("Substructure", int(a * 40)),
+        ("Concrete Frame", int(a * 120)),
+        ("Walling", int(a * 70)),
+        ("Roofing", int(a * 85)),
+        ("Finishes", int(a * 110)),
+        ("MEP Systems", int(a * 95))
+    ]
+
+# =========================================================
+# BIM EXPORT (DIGITAL TWIN)
+# =========================================================
+
+def bim(d, phys, cost_data):
+    return {
+        "IFC_CLASS": "ARC_V40_BUILDING",
+        "id": d["id"],
         "geometry": {
             "floors": d["floors"],
             "area": d["area_sqm"]
         },
-        "structural": d["structure"],
-        "materials": d["materials"],
+        "structure": d["structure"],
+        "physics": phys,
+        "cost": cost_data,
         "timestamp": datetime.now().isoformat()
     }
 
-    mem["bim_exports"].append(export)
-    save_memory()
-
-    return export
-
 # =========================================================
-# FITNESS + AI BRAIN SCORE
-# =========================================================
-
-def score(d, phys):
-    stability = phys["stability_score"]
-    stress_penalty = max(0, 100 - phys["stress_index"])
-
-    return int((stability * 0.6) + (stress_penalty * 0.4))
-
-# =========================================================
-# EVOLUTION LOOP
+# EVOLUTION ENGINE
 # =========================================================
 
 def evolve(btype, floors, bedrooms, gen=6, pop=8):
@@ -201,9 +190,9 @@ def evolve(btype, floors, bedrooms, gen=6, pop=8):
         scored = []
 
         for d in popu:
-            phys = physics_check(d)
+            phys = physics(d)
             d["physics"] = phys
-            d["score"] = score(d, phys)
+            d["score"] = phys["stability"] - phys["stress"] * 0.3
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
@@ -216,7 +205,7 @@ def evolve(btype, floors, bedrooms, gen=6, pop=8):
     return scored[0], history
 
 # =========================================================
-# SIMPLE FLOOR SYSTEM
+# FLOOR PLAN RENDER
 # =========================================================
 
 def floor_plan(d):
@@ -235,49 +224,57 @@ def floor_plan(d):
 
     return rooms
 
-# =========================================================
-# UI RENDER
-# =========================================================
-
 def render(plan):
-    html = '<div style="display:flex;gap:12px;flex-wrap:wrap;padding:12px;background:#0b0f1a;border-radius:12px;">'
+    html = '<div style="display:flex;flex-wrap:wrap;gap:10px;padding:10px;background:#0b0f1a;border-radius:12px;">'
     for r in plan:
         html += f"""
-        <div style="background:{r['color']};padding:12px;border-radius:10px;color:white;min-width:140px">
-            <b>{r['name']}</b><br>
-            {r['w']} × {r['h']}
+        <div style="background:{r['color']};padding:10px;border-radius:10px;color:white;min-width:140px">
+            <b>{r['name']}</b><br>{r['w']}×{r['h']}
         </div>
         """
     html += "</div>"
     st.markdown(html, unsafe_allow_html=True)
 
 # =========================================================
+# CITY GENERATOR (SIMPLE SCALE LAYER)
+# =========================================================
+
+def city(n=10):
+    return [
+        {
+            "id": str(uuid.uuid4())[:6],
+            "type": random.choice(sum(ARCH.values(), [])),
+            "height": random.randint(1, 12),
+            "density": round(random.random(), 2)
+        }
+        for _ in range(n)
+    ]
+
+# =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🏗️ ARC V39 OS")
+st.sidebar.title("🏗️ ARC V40 OS")
 
-page = st.sidebar.radio("Mode", ["Dashboard", "Design Lab", "BIM Export", "Memory"])
+mode = st.sidebar.radio("Mode", ["Dashboard", "Design Lab", "BIM", "City", "Memory"])
 
 btype = st.sidebar.selectbox("Building Type", sum(ARCH.values(), []))
 floors = st.sidebar.slider("Floors", 1, 5, 2)
 bedrooms = st.sidebar.slider("Bedrooms", 1, 8, 3)
-gens = st.sidebar.slider("Generations", 3, 12, 6)
-pop = st.sidebar.slider("Population", 4, 16, 8)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
-if page == "Dashboard":
-    st.title("🏗️ ARC CONTROL BRAIN")
+if mode == "Dashboard":
+    st.title("🏗️ ARC V40 CONTROL CORE")
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Designs", len(mem["designs"]))
-    c2.metric("BIM Models", len(mem["bim_exports"]))
-    c3.metric("Evolution Runs", len(mem["evolution"]))
+    c2.metric("BIM Models", len(mem["bim"]))
+    c3.metric("City Nodes", len(mem["city"]))
 
-    st.subheader("System Logs")
+    st.subheader("Logs")
     for l in mem["logs"][-6:]:
         st.caption(f"{l['time']} — {l['msg']}")
 
@@ -285,73 +282,81 @@ if page == "Dashboard":
 # DESIGN LAB
 # =========================================================
 
-elif page == "Design Lab":
-    st.title("🧠 ARCHITECT + ENGINEER AI")
+elif mode == "Design Lab":
+    st.title("🧠 ENGINEERING AI CORE")
 
-    if st.button("Run AI Evolution Engine"):
-        best, hist = evolve(btype, floors, bedrooms, gens, pop)
+    if st.button("Run Evolution Engine"):
+        best, hist = evolve(btype, floors, bedrooms)
 
         best["plan"] = floor_plan(best)
 
         mem["designs"].append(best)
-        mem["evolution"].append({
-            "id": str(uuid.uuid4())[:6],
-            "best": best["id"],
-            "score": best["score"]
-        })
-
         st.session_state.active = best
+
         log(f"Generated {best['id']}")
 
     if st.session_state.active:
         d = st.session_state.active
 
-        st.subheader(f"Design {d['id']}")
-
         phys = d["physics"]
-        cost = cost_engine(d)
+        cost_data = cost(d)
 
         c1, c2, c3 = st.columns(3)
-        c1.metric("Score", d["score"])
-        c2.metric("Stability", phys["stability_score"])
-        c3.metric("Cost (USD)", cost["total_cost_usd"])
+        c1.metric("Stability", phys["stability"])
+        c2.metric("Stress", phys["stress"])
+        c3.metric("Cost USD", cost_data["total_usd"])
 
-        tab1, tab2 = st.tabs(["2D Plan", "Physics"])
+        tab1, tab2 = st.tabs(["2D Plan", "BOQ"])
 
         with tab1:
             render(d["plan"])
 
         with tab2:
-            st.json(phys)
+            st.table(boq(d))
 
 # =========================================================
-# BIM EXPORT
+# BIM
 # =========================================================
 
-elif page == "BIM Export":
-    st.title("🏗️ BIM EXPORT SYSTEM")
+elif mode == "BIM":
+    st.title("🏗️ BIM DIGITAL TWIN")
 
     if st.session_state.active:
         d = st.session_state.active
-        export = bim_export(d)
+        phys = d["physics"]
+        cost_data = cost(d)
+
+        model = bim(d, phys, cost_data)
+        mem["bim"].append(model)
 
         st.success("BIM model generated")
-
-        st.json(export)
+        st.json(model)
     else:
         st.info("Run a design first.")
+
+# =========================================================
+# CITY MODE
+# =========================================================
+
+elif mode == "City":
+    st.title("🏙️ CITY SIMULATION LAYER")
+
+    c = city(12)
+    mem["city"] = c
+
+    st.json(c)
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-elif page == "Memory":
+elif mode == "Memory":
     st.title("🧠 MEMORY CORE")
 
     st.json(mem)
 
-    if st.button("Reset Memory"):
-        st.session_state.memory = DEFAULT_STATE.copy()
+    if st.button("Reset"):
+        st.session_state.mem = DEFAULT_STATE.copy()
         st.session_state.active = None
-        save_memory()
+        save()
         st.rerun()
