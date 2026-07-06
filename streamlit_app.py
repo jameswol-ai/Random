@@ -1,6 +1,7 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V29 — Neural Unreal Engine (Python Spatial Universe Core)
+# V30 — FINAL NEURAL ARCHITECTURE OS
+# Evolutionary + BIM + AI Studio Simulation Layer
 # =========================================================
 
 import streamlit as st
@@ -11,255 +12,306 @@ import math
 from pathlib import Path
 from datetime import datetime
 
+# =========================================================
+# CONFIG
+# =========================================================
+
 st.set_page_config(
-    page_title="Neural Unreal Architecture Engine V29",
-    page_icon="🌌",
+    page_title="Random Neural Architecture OS V30",
+    page_icon="🏗",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# MEMORY CORE
+# STYLE LAYER
 # =========================================================
 
-DEFAULT_STATE = {
-    "worlds": [],
-    "buildings": [],
-    "simulations": [],
-    "lightmaps": [],
-    "agents": []
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
+
+html, body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-def load_memory():
-    if MEMORY_FILE.exists():
-        return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-    return DEFAULT_STATE.copy()
+h1, h2, h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.03em;
+}
 
-def save_memory():
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(st.session_state.memory, f, indent=2)
-
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
-
-mem = st.session_state.memory
-
-# =========================================================
-# NEURAL WORLD GENERATOR
-# =========================================================
-
-def generate_world(seed):
-    return {
-        "id": str(uuid.uuid4())[:8],
-        "seed": seed,
-        "size": random.randint(80, 300),
-        "terrain": random.choice(["flat", "valley", "coastal", "urban grid"]),
-        "sky_intensity": random.uniform(0.4, 1.2),
-        "time_of_day": random.randint(0, 24),
-        "weather": random.choice(["clear", "fog", "rain", "storm"])
-    }
-
-# =========================================================
-# 3D BUILDING GENERATION (MESH LOGIC)
-# =========================================================
-
-def generate_building(world):
-    floors = random.randint(1, 6)
-
-    building = {
-        "id": str(uuid.uuid4())[:8],
-        "floors": floors,
-        "footprint": random.randint(20, 120),
-        "materials": {
-            "concrete": random.uniform(0.4, 1.0),
-            "glass": random.uniform(0.2, 0.8),
-            "steel": random.uniform(0.3, 0.9)
-        },
-        "mesh": []
-    }
-
-    for f in range(floors):
-        building["mesh"].append({
-            "floor": f,
-            "height": 3 + random.random() * 2,
-            "rotation": random.choice([0, 90, 180, 270]),
-            "offset": random.uniform(-1, 1)
-        })
-
-    return building
-
-# =========================================================
-# LIGHTING ENGINE (UNREAL STYLE APPROXIMATION)
-# =========================================================
-
-def compute_light(world):
-    sun_angle = (world["time_of_day"] / 24) * 360
-    intensity = max(0.2, math.cos(math.radians(sun_angle - 180)))
-
-    return {
-        "sun_angle": sun_angle,
-        "light_intensity": round(intensity * world["sky_intensity"], 3),
-        "shadow_sharpness": round(1 - intensity, 3),
-        "global_illumination": round(intensity * 0.8, 3)
-    }
-
-# =========================================================
-# CAMERA SYSTEM (SIMULATED)
-# =========================================================
-
-def camera_simulation(building):
-    return {
-        "mode": random.choice(["orbit", "first_person", "fly"]),
-        "position": [random.uniform(-10, 10), random.uniform(1, 10), random.uniform(-10, 10)],
-        "look_at_floor": random.randint(0, building["floors"] - 1)
-    }
-
-# =========================================================
-# AI AGENTS (NEURAL CONSTRUCTION BEINGS)
-# =========================================================
-
-AGENTS = [
-    "Architect Agent",
-    "Structural Agent",
-    "Lighting Agent",
-    "Material Agent",
-    "Chaos Agent"
-]
-
-def run_agents(world, building):
-    results = []
-
-    for a in AGENTS:
-        score = random.randint(60, 99)
-
-        results.append({
-            "agent": a,
-            "evaluation": score,
-            "decision": f"{a} modifies geometry stability"
-        })
-
-    return results
-
-# =========================================================
-# PHYSICS SIMULATION (ABSTRACT LOAD SYSTEM)
-# =========================================================
-
-def physics_sim(building):
-    load = building["footprint"] * building["floors"]
-
-    stress = load / max(1, len(building["mesh"]))
-
-    return {
-        "structural_load": load,
-        "stress_index": round(stress, 2),
-        "stability": max(0, 100 - stress * 0.5)
-    }
-
-# =========================================================
-# UI
-# =========================================================
-
-st.sidebar.title("🌌 Neural Unreal Engine V29")
-
-seed = st.sidebar.text_input("World Seed", "neo-city-alpha")
-
-if st.sidebar.button("Generate Neural World"):
-    world = generate_world(seed)
-    building = generate_building(world)
-
-    mem["worlds"].append(world)
-    mem["buildings"].append(building)
-
-    st.session_state.world = world
-    st.session_state.building = building
-
-    save_memory()
-
-world = st.session_state.get("world", None)
-building = st.session_state.get("building", None)
-
-page = st.sidebar.radio(
-    "Simulation Layers",
-    [
-        "🌍 World View",
-        "🏗 Building Mesh",
-        "💡 Lighting Engine",
-        "📷 Camera System",
-        "🤖 AI Agents",
-        "⚙ Physics Simulation",
-        "🧠 Memory Core"
-    ]
-)
-
-# =========================================================
-# WORLD VIEW
-# =========================================================
-
-if page == "🌍 World View":
-    st.title("🌍 Neural World Layer")
-
-    if world:
-        st.json(world)
-    else:
-        st.info("Generate a world first.")
-
-# =========================================================
-# BUILDING MESH
-# =========================================================
-
-elif page == "🏗 Building Mesh":
-    st.title("🏗 Procedural Building Mesh")
-
-    if building:
-        st.json(building)
-
-# =========================================================
-# LIGHTING
-# =========================================================
-
-elif page == "💡 Lighting Engine":
-    st.title("💡 Global Illumination System")
-
-    if world:
-        st.json(compute_light(world))
-
-# =========================================================
-# CAMERA
-# =========================================================
-
-elif page == "📷 Camera System":
-    st.title("📷 Virtual Camera Simulation")
-
-    if building:
-        st.json(camera_simulation(building))
-
-# =========================================================
-# AI AGENTS
-# =========================================================
-
-elif page == "🤖 AI Agents":
-    st.title("🤖 Construction Intelligence Council")
-
-    if world and building:
-        st.json(run_agents(world, building))
-
-# =========================================================
-# PHYSICS
-# =========================================================
-
-elif page == "⚙ Physics Simulation":
-    st.title("⚙ Structural Physics Engine")
-
-    if building:
-        st.metric("Stability", f"{physics_sim(building)['stability']:.1f}/100")
-        st.json(physics_sim(building))
+.card {
+    background: #0b1220;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 16px;
+    border-radius: 12px;
+    margin: 10px 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-elif page == "🧠 Memory Core":
-    st.title("🧠 Neural Memory Archive")
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "logs": [],
+    "evolution": [],
+    "plugins": []
+}
+
+def load_memory():
+    if MEMORY_FILE.exists():
+        try:
+            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
+        except:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
+
+def save_memory():
+    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(st.session_state.memory, f, indent=2)
+
+def log(msg):
+    st.session_state.memory["logs"].append({
+        "time": datetime.now().isoformat(),
+        "msg": msg
+    })
+    save_memory()
+
+# init
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
+
+if "active" not in st.session_state:
+    st.session_state.active = None
+
+mem = st.session_state.memory
+
+# =========================================================
+# CORE ENGINE
+# =========================================================
+
+def generate_design(goal):
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "goal": goal,
+        "area": random.randint(120, 900),
+        "cost": random.randint(80_000, 950_000),
+        "structure": {
+            "columns": random.randint(12, 55),
+            "beams": random.randint(20, 110)
+        },
+        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
+    }
+
+def fitness(d):
+    return (
+        d["area"] * 0.2 +
+        d["structure"]["columns"] * 1.5 +
+        d["structure"]["beams"] * 1.2 -
+        d["cost"] * 0.0001
+    )
+
+def evolve(goal, generations=6):
+    pop = [generate_design(goal) for _ in range(8)]
+    history = []
+
+    for _ in range(generations):
+        pop.sort(key=fitness, reverse=True)
+        history.append(fitness(pop[0]))
+
+        survivors = pop[:4]
+        new_pop = []
+
+        for s in survivors:
+            new_pop.append(s)
+            mutated = dict(s)
+            mutated["structure"]["columns"] += random.randint(-2, 3)
+            mutated["structure"]["beams"] += random.randint(-3, 4)
+            mutated["cost"] += random.randint(-5000, 5000)
+            new_pop.append(mutated)
+
+        pop = new_pop[:8]
+
+    return pop[0], history
+
+def floor_plan(d):
+    return [{"room": r, "size": random.randint(20, 70)} for r in d["rooms"]]
+
+# =========================================================
+# SIDEBAR NAVIGATION (FULL BIM OS)
+# =========================================================
+
+st.sidebar.title("🏗 Neural Architecture OS V30")
+
+page = st.sidebar.radio(
+    "Workspace",
+    [
+        "🏠 Dashboard",
+        "📂 Projects",
+        "📐 Design Studio",
+        "🧠 AI Architect",
+        "🏗 Structural Analysis",
+        "💰 Cost Estimation",
+        "🌱 Sustainability",
+        "📋 Code Compliance",
+        "🏢 BIM Manager",
+        "📊 Analytics",
+        "🧠 Memory",
+        "🔌 Plugins",
+        "⚙ Settings"
+    ]
+)
+
+goal = st.sidebar.text_input("Design Goal", "Eco smart tower")
+run = st.sidebar.button("Generate")
+
+# =========================================================
+# GENERATION TRIGGER
+# =========================================================
+
+if run:
+    design, hist = evolve(goal)
+
+    mem["designs"].append(design)
+    st.session_state.active = design
+
+    log(f"Generated design {design['id']}")
+
+# =========================================================
+# ACTIVE DESIGN
+# =========================================================
+
+d = st.session_state.get("active", None)
+
+# =========================================================
+# PAGES
+# =========================================================
+
+if page == "🏠 Dashboard":
+    st.title("🏠 Dashboard")
+
+    st.markdown("### System Overview")
+
+    st.metric("Designs", len(mem["designs"]))
+    st.metric("Logs", len(mem["logs"]))
+    st.metric("Evolution Runs", len(mem["evolution"]))
+
+    st.markdown("---")
+    for l in mem["logs"][-5:]:
+        st.write(l)
+
+# ---------------------------------------------------------
+
+elif page == "📂 Projects":
+    st.title("📂 Projects")
+
+    st.json(mem["projects"])
+
+# ---------------------------------------------------------
+
+elif page == "📐 Design Studio":
+    st.title("📐 Design Studio")
+
+    if d:
+        st.json(d)
+        st.json(floor_plan(d))
+    else:
+        st.info("Generate a design first.")
+
+# ---------------------------------------------------------
+
+elif page == "🧠 AI Architect":
+    st.title("🧠 AI Architect")
+
+    if d:
+        st.write("Neural interpretation layer active")
+        st.json({
+            "complexity": len(d["rooms"]) * 10,
+            "efficiency": 100 - (d["cost"] / 10000)
+        })
+
+# ---------------------------------------------------------
+
+elif page == "🏗 Structural Analysis":
+    st.title("🏗 Structural Analysis")
+
+    if d:
+        st.json(d["structure"])
+
+# ---------------------------------------------------------
+
+elif page == "💰 Cost Estimation":
+    st.title("💰 Cost Estimation")
+
+    if d:
+        st.metric("Total Cost", f"${d['cost']:,}")
+
+# ---------------------------------------------------------
+
+elif page == "🌱 Sustainability":
+    st.title("🌱 Sustainability")
+
+    if d:
+        score = max(0, 100 - d["structure"]["columns"])
+        st.metric("Sustainability Score", f"{score:.1f}/100")
+
+# ---------------------------------------------------------
+
+elif page == "📋 Code Compliance":
+    st.title("📋 Code Compliance")
+
+    st.success("Simulated compliance: PASSED (V30 BIM ruleset)")
+
+# ---------------------------------------------------------
+
+elif page == "🏢 BIM Manager":
+    st.title("🏢 BIM Manager")
+
+    st.info("Building Information Model layer active (simulated)")
+
+    if d:
+        st.json({
+            "materials": ["Concrete", "Steel", "Glass"],
+            "elements": d["structure"]
+        })
+
+# ---------------------------------------------------------
+
+elif page == "📊 Analytics":
+    st.title("📊 Analytics")
+
+    if d:
+        st.line_chart([random.randint(60, 100) for _ in range(10)])
+
+# ---------------------------------------------------------
+
+elif page == "🧠 Memory":
+    st.title("🧠 Memory")
 
     st.json(mem)
+
+# ---------------------------------------------------------
+
+elif page == "🔌 Plugins":
+    st.title("🔌 Plugins")
+
+    mem["plugins"].append("BIM_CORE_V30")
+
+    st.write("Loaded plugins:")
+    st.json(mem["plugins"])
+
+# ---------------------------------------------------------
+
+elif page == "⚙ Settings":
+    st.title("⚙ Settings")
+
+    if st.button("Reset System"):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        st.session_state.active = None
+        save_memory()
+        st.success("Reset complete")
