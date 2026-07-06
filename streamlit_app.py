@@ -1,13 +1,13 @@
 # =========================================================
-# RANDOM V14
-# Self-Writing Architecture Intelligence OS
-# Kernel + Plugin Evolution System
+# RANDOM V15
+# Multi-Agent Architecture Civilization OS
+# Swarm Intelligence Design System
 # =========================================================
 
 import streamlit as st
 import uuid
-import json
 import random
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -16,254 +16,226 @@ from pathlib import Path
 # =========================================================
 
 st.set_page_config(
-    page_title="Random AIOS V14",
-    page_icon="🧠",
+    page_title="Random AIOS V15",
+    page_icon="🏛️",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
-KERNEL_FILE = Path("arc_kernel.json")
 
 # =========================================================
-# CORE STATE
+# MEMORY
 # =========================================================
 
 DEFAULT_STATE = {
-    "projects": [],
     "designs": [],
-    "plugins": [],
     "logs": [],
-    "evolution": [],
-    "self_writes": []
+    "civilization_history": []
 }
 
-DEFAULT_KERNEL = {
-    "modules": {
-        "Dashboard": True,
-        "Design Studio": True,
-        "AI Architect": True,
-        "Plugins": True
-    },
-    "generated_modules": []
-}
-
-# =========================================================
-# MEMORY SYSTEM
-# =========================================================
-
-def load_json(path, default):
-    if path.exists():
+def load_memory():
+    if MEMORY_FILE.exists():
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            return default.copy()
-    return default.copy()
+            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
+        except:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
 
-def save_json(path, data):
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+def save_memory(mem):
+    MEMORY_FILE.write_text(json.dumps(mem, indent=2), encoding="utf-8")
 
-memory = load_json(MEMORY_FILE, DEFAULT_STATE)
-kernel = load_json(KERNEL_FILE, DEFAULT_KERNEL)
-
-# =========================================================
-# LOGGING
-# =========================================================
-
-def log(msg):
-    memory["logs"].append({
+def log(mem, msg):
+    mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_json(MEMORY_FILE, memory)
+    save_memory(mem)
+
+mem = load_memory()
 
 # =========================================================
-# SELF-WRITING ENGINE (CORE IDEA)
+# MULTI-AGENT SYSTEM (THE CIVILIZATION)
 # =========================================================
 
-def ai_propose_module():
-    """AI generates a new system module idea"""
-    ideas = [
-        "Seismic Simulation Engine",
-        "Carbon Impact Analyzer",
-        "Structural Load Predictor",
-        "Urban Density Optimizer",
-        "Material Supply Chain AI",
-        "Auto-BIM Generator",
-        "Climate Adaptive Facade Designer"
-    ]
+def structural_agent(design):
+    ratio = design["beams"] / max(1, design["columns"])
+    score = max(0, 100 - abs(2.0 - ratio) * 25)
+    return score
 
-    name = random.choice(ideas)
+def cost_agent(design):
+    cost_per_sqm = design["cost"] / max(1, design["area"])
+    score = max(0, 100 - abs(cost_per_sqm - 1600) * 0.03)
+    return score
 
-    return {
-        "id": str(uuid.uuid4())[:6],
-        "name": name,
-        "type": "auto_generated_module",
-        "created": datetime.now().isoformat(),
-        "status": "proposed"
+def sustainability_agent(design):
+    score = max(40, 100 - design["area"] * 0.05)
+    return score
+
+def compliance_agent(design):
+    violations = 0
+    if design["columns"] < 12:
+        violations += 1
+    if design["beams"] < 20:
+        violations += 1
+    return max(0, 100 - violations * 25)
+
+# =========================================================
+# AGGREGATOR (CIVILIZATION COUNCIL VOTE)
+# =========================================================
+
+def council_vote(design):
+    votes = {
+        "structural": structural_agent(design),
+        "cost": cost_agent(design),
+        "sustainability": sustainability_agent(design),
+        "compliance": compliance_agent(design)
     }
 
-def register_module(module):
-    kernel["generated_modules"].append(module)
-    save_json(KERNEL_FILE, kernel)
-    log(f"Module registered: {module['name']}")
+    final_score = sum(votes.values()) / len(votes)
+
+    return final_score, votes
 
 # =========================================================
-# EVOLUTION ENGINE (SYSTEM SELF-IMPROVEMENT)
+# GENERATION SYSTEM
 # =========================================================
 
-def evolve_system():
-    new_module = ai_propose_module()
+def generate_design():
+    return {
+        "id": str(uuid.uuid4())[:8],
+        "area": random.randint(120, 800),
+        "cost": random.randint(100000, 900000),
+        "columns": random.randint(8, 40),
+        "beams": random.randint(15, 80),
+    }
 
-    # probabilistic acceptance (governance gate)
-    if random.random() > 0.35:
-        new_module["status"] = "accepted"
-        register_module(new_module)
-        return new_module, True
-    else:
-        new_module["status"] = "rejected"
-        return new_module, False
+def run_civilization(pop_size=10):
+    population = [generate_design() for _ in range(pop_size)]
+
+    evaluated = []
+    for d in population:
+        score, votes = council_vote(d)
+        d["score"] = score
+        d["votes"] = votes
+        evaluated.append(d)
+
+    evaluated.sort(key=lambda x: x["score"], reverse=True)
+
+    return evaluated
 
 # =========================================================
-# STREAMLIT UI
+# EVOLUTION ENGINE (SELECTION OF BEST CIVILIZATION DESIGN)
 # =========================================================
 
-st.sidebar.title("🧠 Random AIOS V14")
+def evolve_civilization(pop_size):
+    population = run_civilization(pop_size)
+
+    best = population[0]
+    history = [p["score"] for p in population]
+
+    mem["designs"].append(best)
+    mem["civilization_history"].append({
+        "id": best["id"],
+        "score": best["score"],
+        "time": datetime.now().isoformat()
+    })
+
+    log(mem, f"Civilization evolved design {best['id']} with score {best['score']:.2f}")
+
+    return best, history
+
+# =========================================================
+# UI
+# =========================================================
+
+st.sidebar.title("🏛️ AIOS Civilization V15")
+
 page = st.sidebar.radio(
-    "System Core",
+    "Civilization Layer",
     [
         "🏠 Dashboard",
-        "🧪 Design Studio",
-        "🧠 AI Architect",
-        "🔌 Plugin Engine",
-        "🧬 Self-Writing Kernel",
-        "📜 System Memory"
+        "🏗 Simulation",
+        "🧠 Council View",
+        "📊 Evolution History",
+        "📜 Memory"
     ]
 )
-
-st.sidebar.markdown("---")
-st.sidebar.caption("V14 • Self-Writing Architecture Kernel")
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "🏠 Dashboard":
-    st.title("🧠 Self-Writing Architecture OS")
+    st.title("🏛 Architecture Civilization OS")
 
     c1, c2, c3 = st.columns(3)
+    c1.metric("Designs", len(mem["designs"]))
+    c2.metric("Civilization Events", len(mem["civilization_history"]))
+    c3.metric("Logs", len(mem["logs"]))
 
-    c1.metric("Projects", len(memory["projects"]))
-    c2.metric("Plugins", len(memory["plugins"]))
-    c3.metric("Generated Modules", len(kernel["generated_modules"]))
-
-    st.subheader("Recent System Activity")
-
-    for log_entry in memory["logs"][-8:][::-1]:
-        st.write(f"⏱ {log_entry['time'][11:19]} → {log_entry['msg']}")
+    st.subheader("Recent Activity")
+    for l in mem["logs"][-6:][::-1]:
+        st.write(f"⏱ {l['time'][11:19]} → {l['msg']}")
 
 # =========================================================
-# DESIGN STUDIO
+# SIMULATION
 # =========================================================
 
-elif page == "🧪 Design Studio":
-    st.title("🧪 Generative Architecture Studio")
+elif page == "🏗 Simulation":
+    st.title("🏗 Civilization Simulation Engine")
 
-    if st.button("Generate Design"):
-        design = {
-            "id": str(uuid.uuid4())[:8],
-            "area": random.randint(120, 700),
-            "score": random.randint(60, 100),
-            "structure": {
-                "columns": random.randint(10, 50),
-                "beams": random.randint(20, 90)
-            }
-        }
+    pop = st.slider("Population Size", 4, 30, 10)
 
-        memory["designs"].append(design)
-        log(f"Design generated {design['id']}")
+    if st.button("Run Civilization Evolution"):
+        best, history = evolve_civilization(pop)
 
-        st.success("Design generated")
-        st.json(design)
+        st.success("Civilization step completed")
+
+        st.metric("Best Design Score", round(best["score"], 2))
+        st.json(best)
+
+        st.line_chart(history)
 
 # =========================================================
-# AI ARCHITECT CORE
+# COUNCIL VIEW
 # =========================================================
 
-elif page == "🧠 AI Architect":
-    st.title("🧠 AI Architecture Brain")
+elif page == "🧠 Council View":
+    st.title("🧠 Architecture Council")
 
-    st.info("This layer will eventually generate architecture logic, zoning plans, and structural reasoning.")
+    sample = generate_design()
+    score, votes = council_vote(sample)
 
-    if st.button("Run Cognitive Simulation"):
-        thought = random.choice([
-            "Optimizing beam-to-column ratio",
-            "Simulating urban density flow",
-            "Evaluating thermal efficiency",
-            "Rebalancing structural load paths"
-        ])
+    st.write("Sample Design")
+    st.json(sample)
 
-        st.success(f"AI Thought: {thought}")
-        log(thought)
+    st.write("Council Votes")
+    st.json(votes)
+
+    st.metric("Final Consensus Score", round(score, 2))
 
 # =========================================================
-# PLUGIN ENGINE
+# HISTORY
 # =========================================================
 
-elif page == "🔌 Plugin Engine":
-    st.title("🔌 Plugin Registry")
+elif page == "📊 Evolution History":
+    st.title("📊 Civilization Evolution History")
 
-    name = st.text_input("New Plugin Name")
-
-    if st.button("Register Plugin"):
-        plugin = {
-            "id": str(uuid.uuid4())[:6],
-            "name": name,
-            "created": datetime.now().isoformat()
-        }
-
-        memory["plugins"].append(plugin)
-        log(f"Plugin registered: {name}")
-
-        st.success("Plugin added")
-
-    st.json(memory["plugins"])
+    if mem["civilization_history"]:
+        scores = [x["score"] for x in mem["civilization_history"]]
+        st.line_chart(scores)
+    else:
+        st.info("No evolution history yet.")
 
 # =========================================================
-# SELF-WRITING KERNEL
+# MEMORY
 # =========================================================
 
-elif page == "🧬 Self-Writing Kernel":
-    st.title("🧬 Self-Writing System Kernel")
+elif page == "📜 Memory":
+    st.title("📜 Civilization Memory")
 
-    st.write("System can now propose and evolve its own modules.")
+    st.json(mem)
 
-    if st.button("Evolve System"):
-        module, accepted = evolve_system()
-
-        if accepted:
-            st.success(f"Accepted Module: {module['name']}")
-        else:
-            st.warning(f"Rejected Module: {module['name']}")
-
-        st.json(module)
-
-    st.subheader("Generated Modules")
-    st.json(kernel["generated_modules"])
-
-# =========================================================
-# SYSTEM MEMORY
-# =========================================================
-
-elif page == "📜 System Memory":
-    st.title("📜 Memory Core")
-
-    st.json(memory)
-
-    if st.button("Reset System"):
-        memory = DEFAULT_STATE.copy()
-        kernel = DEFAULT_KERNEL.copy()
-
-        save_json(MEMORY_FILE, memory)
-        save_json(KERNEL_FILE, kernel)
-
+    if st.button("Reset Civilization"):
+        mem = DEFAULT_STATE.copy()
+        save_memory(mem)
         st.rerun()
