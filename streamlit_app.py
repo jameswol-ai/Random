@@ -1,201 +1,160 @@
 # =========================================================
-# V31 — 3D WORLD KERNEL
-# Procedural Spatial Simulation Engine (Voxel + Agent Layer)
+# V33 SIMULATION OS — STREAMLIT ENTRYPOINT
+# Thin UI Layer (Orchestrates Modular Engine)
 # =========================================================
 
 import streamlit as st
 import numpy as np
-import random
-import math
-from dataclasses import dataclass
-from pathlib import Path
 
-st.set_page_config(page_title="V31 World Kernel", layout="wide")
+from world.voxel import VoxelWorld
+from world.terrain import generate_terrain
+from world.fluids import apply_gravity
 
-# =========================================================
-# WORLD CONFIG
-# =========================================================
+from architecture.generator import generate_design
+from evolution.evolutionary_loop import evolve_population
 
-WORLD_SIZE = 30  # 30x30x30 voxel world
+from meta.rule_engine import evolve_rules
+from meta.observation import collect_stats
 
-EMPTY = 0
-GROUND = 1
-BUILDING = 2
-WATER = 3
-AGENT = 9
+from memory.logger import log_event
+
 
 # =========================================================
-# STATE
+# CONFIG
+# =========================================================
+
+st.set_page_config(
+    page_title="V33 Simulation OS",
+    page_icon="🌐",
+    layout="wide"
+)
+
+st.title("🌐 V33 — Simulation Operating System")
+
+# =========================================================
+# SESSION INIT
 # =========================================================
 
 if "world" not in st.session_state:
-    st.session_state.world = np.zeros((WORLD_SIZE, WORLD_SIZE, WORLD_SIZE), dtype=np.int8)
+    st.session_state.world = VoxelWorld(size=30)
 
-if "agent" not in st.session_state:
-    st.session_state.agent = [15, 15, 10]
+if "agents" not in st.session_state:
+    st.session_state.agents = [{"x": 15, "y": 15, "z": 10}]
 
-# =========================================================
-# WORLD GENERATION
-# =========================================================
+if "design" not in st.session_state:
+    st.session_state.design = None
 
-def generate_terrain():
-    world = np.zeros((WORLD_SIZE, WORLD_SIZE, WORLD_SIZE), dtype=np.int8)
+if "history" not in st.session_state:
+    st.session_state.history = []
 
-    # terrain height map
-    for x in range(WORLD_SIZE):
-        for y in range(WORLD_SIZE):
-            height = int(
-                6 * math.sin(x * 0.25) +
-                6 * math.cos(y * 0.25) +
-                random.randint(0, 3)
-            )
-            height = max(1, min(WORLD_SIZE - 1, height + 12))
+world = st.session_state.world
 
-            for z in range(height):
-                world[x, y, z] = GROUND
-
-    # water layer
-    for x in range(WORLD_SIZE):
-        for y in range(WORLD_SIZE):
-            if random.random() < 0.08:
-                world[x, y, 5:7] = WATER
-
-    return world
 
 # =========================================================
-# BUILDINGS (PROCEDURAL CITIES)
+# SIDEBAR CONTROL PANEL
 # =========================================================
 
-def spawn_buildings(world, count=40):
-    for _ in range(count):
-        x = random.randint(3, WORLD_SIZE - 3)
-        y = random.randint(3, WORLD_SIZE - 3)
-        h = random.randint(3, 10)
-
-        for z in range(h):
-            if world[x, y, z] == GROUND:
-                world[x, y, z] = BUILDING
-
-    return world
-
-# =========================================================
-# AGENT SYSTEM (WALKABLE ENTITY)
-# =========================================================
-
-def move_agent(world, dx, dy, dz):
-    x, y, z = st.session_state.agent
-
-    nx, ny, nz = x + dx, y + dy, z + dz
-
-    if 0 <= nx < WORLD_SIZE and 0 <= ny < WORLD_SIZE and 0 <= nz < WORLD_SIZE:
-        if world[nx, ny, nz] != BUILDING:
-            st.session_state.agent = [nx, ny, max(0, nz)]
-
-# =========================================================
-# SIMPLE "PHYSICS" (GRAVITY)
-# =========================================================
-
-def apply_gravity(world):
-    x, y, z = st.session_state.agent
-
-    while z > 0 and world[x, y, z - 1] == EMPTY:
-        z -= 1
-
-    st.session_state.agent[2] = z
-
-# =========================================================
-# 3D → 2D PROJECTION (KERNEL RENDER)
-# =========================================================
-
-def project(world):
-    view = []
-
-    ax, ay, az = st.session_state.agent
-
-    for x in range(WORLD_SIZE):
-        for y in range(WORLD_SIZE):
-            for z in range(WORLD_SIZE):
-                if world[x, y, z] != EMPTY:
-                    dx = x - ax
-                    dy = y - ay
-                    dz = z - az
-
-                    # simple pseudo perspective
-                    depth = max(1, dz + 15)
-                    px = int(200 + dx * (300 / depth))
-                    py = int(200 + dy * (300 / depth))
-
-                    view.append((px, py, world[x, y, z]))
-
-    return view
-
-# =========================================================
-# UI CONTROLS
-# =========================================================
-
-st.sidebar.title("🧠 V31 World Kernel")
+st.sidebar.title("🧠 Control Panel")
 
 if st.sidebar.button("🌍 Generate World"):
-    st.session_state.world = generate_terrain()
-    st.session_state.world = spawn_buildings(st.session_state.world)
+    world.grid = generate_terrain(world.size)
+    log_event("World generated")
 
-if st.sidebar.button("⬆ Move Forward"):
-    move_agent(st.session_state.world, 0, 1, 0)
+if st.sidebar.button("🌊 Simulate Step"):
+    apply_gravity(world)
+    stats = collect_stats(world, st.session_state.agents)
 
-if st.sidebar.button("⬇ Move Back"):
-    move_agent(st.session_state.world, 0, -1, 0)
+    evolve_rules(stats)
+    log_event("Simulation step executed")
 
-if st.sidebar.button("⬅ Left"):
-    move_agent(st.session_state.world, -1, 0, 0)
+if st.sidebar.button("🏗 Evolve Architecture"):
+    population = [generate_design() for _ in range(10)]
+    best, history = evolve_population(population)
 
-if st.sidebar.button("➡ Right"):
-    move_agent(st.session_state.world, 1, 0, 0)
+    st.session_state.design = best
+    st.session_state.history = history
 
-if st.sidebar.button("⬆ Jump"):
-    move_agent(st.session_state.world, 0, 0, 3)
+    log_event(f"Architecture evolved: {best['id']}")
 
-# =========================================================
-# ENGINE LOOP
-# =========================================================
-
-apply_gravity(st.session_state.world)
-render = project(st.session_state.world)
 
 # =========================================================
-# MAIN VIEW
+# WORLD VIEW
 # =========================================================
 
-st.title("🌐 V31 — 3D WORLD KERNEL")
+st.subheader("🌐 World State")
 
-x, y, z = st.session_state.agent
-st.markdown(f"### Agent Position: `{x}, {y}, {z}`")
+voxel_count = np.count_nonzero(world.grid)
 
-# fake 3D visualization
-canvas = ""
+st.metric("Active Voxels", voxel_count)
+st.metric("World Size", world.size)
 
-for px, py, t in render[:800]:
-    if t == BUILDING:
-        color = "🟥"
-    elif t == WATER:
-        color = "🟦"
-    else:
-        color = "🟩"
+st.text("Voxel Preview (compressed)")
 
-    canvas += color
+preview = ""
 
-st.markdown("### World Slice Render")
-st.text(canvas[:3000])
+for x in range(world.size):
+    for y in range(world.size):
+        z = int(np.argmax(world.grid[x, y]))
+        val = world.grid[x, y, z]
+
+        if val == 0:
+            preview += "⬛"
+        elif val == 1:
+            preview += "🟩"
+        elif val == 2:
+            preview += "🟥"
+        else:
+            preview += "🟦"
+
+st.text(preview[:1500])
+
 
 # =========================================================
-# WORLD INTROSPECTION
+# ARCHITECTURE VIEW
 # =========================================================
 
-st.markdown("### 🧠 Kernel Diagnostics")
+st.subheader("🏗 Latest Design Output")
+
+if st.session_state.design:
+    d = st.session_state.design
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Fitness", round(d["fitness"], 2))
+    col2.metric("Area", d["area"])
+    col3.metric("Columns", d["columns"])
+
+    st.json(d)
+else:
+    st.info("No design generated yet.")
+
+
+# =========================================================
+# SYSTEM ANALYTICS
+# =========================================================
+
+st.subheader("🧠 System Diagnostics")
+
+stats = collect_stats(world, st.session_state.agents)
 
 st.json({
-    "world_size": WORLD_SIZE,
-    "agent": st.session_state.agent,
-    "voxels": int(np.count_nonzero(st.session_state.world)),
-    "buildings": int(np.sum(st.session_state.world == BUILDING)),
-    "water": int(np.sum(st.session_state.world == WATER))
+    "voxels": voxel_count,
+    "agents": len(st.session_state.agents),
+    "rules": "adaptive",
+    "simulation_health": "stable",
+    "stats": stats
 })
+
+
+# =========================================================
+# LIVE LOG OUTPUT
+# =========================================================
+
+st.subheader("📜 Event Log")
+
+try:
+    from memory.store import load_logs
+    logs = load_logs()
+    for l in logs[-10:]:
+        st.caption(f"{l['time']} — {l['msg']}")
+except:
+    st.caption("Logging system initializing...")
