@@ -1,9 +1,8 @@
 # ============================================================
-# RANDOM AI ARCHITECTURE INTELLIGENCE ENGINE
-# V52 BIM STUDIO CORE
+# RANDOM AI BIM STUDIO V53
 #
-# Evolutionary Spatial Layout Synthesis
-# AI Assisted Architecture + BIM Intelligence
+# AI Architecture + BIM Intelligence Engine
+# Evolutionary Spatial Synthesis
 # Single File Streamlit Edition
 # ============================================================
 
@@ -18,7 +17,7 @@ from datetime import datetime
 
 
 # ============================================================
-# APPLICATION CONFIGURATION
+# CONFIGURATION
 # ============================================================
 
 
@@ -29,12 +28,14 @@ st.set_page_config(
 )
 
 
-MEMORY_FILE = Path("random_memory.json")
+MEMORY_FILE = Path(
+    "random_bim_memory.json"
+)
 
 
 
 # ============================================================
-# RANDOM AI VISUAL SYSTEM
+# VISUAL SYSTEM
 # ============================================================
 
 
@@ -42,9 +43,11 @@ st.markdown(
 """
 <style>
 
+
 @import url(
 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Space+Grotesk:wght@400;700'
 );
+
 
 
 html, body {
@@ -63,8 +66,6 @@ font-family:
 'Space Grotesk',
 sans-serif;
 
-letter-spacing:-0.03em;
-
 }
 
 
@@ -74,7 +75,7 @@ letter-spacing:-0.03em;
 background:
 linear-gradient(
 180deg,
-#090d16,
+#050816,
 #111827
 );
 
@@ -82,18 +83,18 @@ linear-gradient(
 
 
 
-.random-header {
+.random-banner {
 
 background:
 linear-gradient(
 135deg,
 #111827,
-#1e3a8a
+#2563eb
 );
 
-padding:25px;
+padding:30px;
 
-border-radius:20px;
+border-radius:22px;
 
 color:white;
 
@@ -106,23 +107,20 @@ margin-bottom:25px;
 .random-card {
 
 background:
-rgba(255,255,255,0.05);
+rgba(255,255,255,0.06);
+
+border-radius:18px;
 
 padding:20px;
 
-border-radius:16px;
-
 border:
-
-1px solid
-rgba(255,255,255,0.12);
+1px solid rgba(255,255,255,0.15);
 
 }
 
 
 
-.arc-blueprint-canvas {
-
+.blueprint {
 
 display:flex;
 
@@ -130,81 +128,43 @@ flex-wrap:wrap;
 
 gap:16px;
 
-
-background:
-
-#090d16;
-
+background:#070b14;
 
 padding:25px;
 
-
-border-radius:18px;
-
+border-radius:20px;
 
 border:
-
 1px dashed #475569;
-
 
 }
 
 
 
-.arc-room-module {
-
-
-min-width:220px;
-
+.room {
 
 padding:22px;
 
+min-width:220px;
 
-border-radius:14px;
-
+border-radius:15px;
 
 color:white;
 
-
-transition:
-0.25s;
-
-
 box-shadow:
-
-0 15px 30px rgba(0,0,0,.35);
-
+0 15px 35px rgba(0,0,0,.3);
 
 }
 
 
 
-.arc-room-module:hover {
-
-
-transform:
-
-translateY(-6px);
-
-
-}
-
-
-
-.room-meta {
-
+.small {
 
 opacity:.75;
 
-
 font-size:.85rem;
 
-
-margin-top:10px;
-
-
 }
-
 
 
 </style>
@@ -220,24 +180,26 @@ unsafe_allow_html=True
 # ============================================================
 
 
-DEFAULT_STATE = {
-
-
-    "projects": [],
-
-
-    "designs": [],
-
-
-    "logs": [],
-
-
-    "evolution": [],
-
+DEFAULT_MEMORY = {
 
     "version":
+    "V53 BIM STUDIO",
 
-    "V52 BIM CORE"
+
+    "projects":
+    [],
+
+
+    "designs":
+    [],
+
+
+    "evolution":
+    [],
+
+
+    "logs":
+    []
 
 }
 
@@ -255,16 +217,16 @@ def load_memory():
                 MEMORY_FILE,
                 "r",
                 encoding="utf-8"
-            ) as file:
+            ) as f:
 
-                data = json.load(file)
+                data=json.load(f)
 
 
-            for key in DEFAULT_STATE:
+            for key in DEFAULT_MEMORY:
 
                 if key not in data:
 
-                    data[key] = DEFAULT_STATE[key]
+                    data[key]=DEFAULT_MEMORY[key]
 
 
             return data
@@ -272,11 +234,10 @@ def load_memory():
 
         except Exception:
 
-            return DEFAULT_STATE.copy()
+            return DEFAULT_MEMORY.copy()
 
 
-    return DEFAULT_STATE.copy()
-
+    return DEFAULT_MEMORY.copy()
 
 
 
@@ -289,12 +250,11 @@ def save_memory():
             MEMORY_FILE,
             "w",
             encoding="utf-8"
-        ) as file:
-
+        ) as f:
 
             json.dump(
                 st.session_state.memory,
-                file,
+                f,
                 indent=4
             )
 
@@ -306,24 +266,21 @@ def save_memory():
 
 
 
-
-def log_event(message):
+def log_event(text):
 
     st.session_state.memory["logs"].append(
 
         {
 
-            "timestamp":
+            "time":
             datetime.now().isoformat(),
 
-
-            "message":
-            message
+            "event":
+            text
 
         }
 
     )
-
 
     save_memory()
 
@@ -344,47 +301,49 @@ if "memory" not in st.session_state:
 
 if "active_design" not in st.session_state:
 
-    st.session_state.active_design = None
+    st.session_state.active_design=None
 
 
 
-if "active_history" not in st.session_state:
+if "history" not in st.session_state:
 
-    st.session_state.active_history = []
+    st.session_state.history=[]
 
 
 
 if "unit_system" not in st.session_state:
 
-    st.session_state.unit_system = "Metric"
+    st.session_state.unit_system="Metric"
 
 
 
-mem = st.session_state.memory
+memory = st.session_state.memory
 
 
 
 
 
 # ============================================================
-# UNIT CONVERSION SYSTEM
+# UNIT SYSTEM
 # ============================================================
 
 
-def convert_area(value):
-
-    if st.session_state.unit_system == "Imperial":
-
-        return f"{value * 10.7639:.1f} ft²"
+def area_display(value):
 
 
-    if st.session_state.unit_system == "Dual":
+    if st.session_state.unit_system=="Imperial":
+
+        return f"{value*10.7639:.1f} ft²"
+
+
+
+    if st.session_state.unit_system=="Dual":
 
         return (
 
             f"{value:.1f} m² | "
 
-            f"{value * 10.7639:.1f} ft²"
+            f"{value*10.7639:.1f} ft²"
 
         )
 
@@ -394,74 +353,79 @@ def convert_area(value):
 
 
 
-
-def convert_length(value):
-
-    if st.session_state.unit_system == "Imperial":
-
-        return f"{value * 3.28084:.2f} ft"
+def length_display(value):
 
 
-    if st.session_state.unit_system == "Dual":
+    if st.session_state.unit_system=="Imperial":
+
+        return f"{value*3.28084:.2f} ft"
+
+
+
+    if st.session_state.unit_system=="Dual":
 
         return (
 
             f"{value:.2f} m | "
 
-            f"{value * 3.28084:.2f} ft"
+            f"{value*3.28084:.2f} ft"
 
         )
 
 
     return f"{value:.2f} m"
 
+
+
+
+
 # ============================================================
-# ARCHITECTURAL KNOWLEDGE DOMAINS
+# ARCHITECTURAL KNOWLEDGE BASE
 # ============================================================
 
 
-ARCH_DOMAINS = {
+ARCHITECTURE_TYPES = {
 
 
-    "Residential":
+"Residential":
 
-    [
+[
 
-        "Luxury Villa",
+"Luxury Villa",
 
-        "Modern Apartment",
+"Modern Apartment",
 
-        "Townhouse"
+"Townhouse"
 
-    ],
-
-
-
-    "Commercial":
-
-    [
-
-        "Boutique Office",
-
-        "Corporate Hub",
-
-        "Hotel Resort",
-
-        "Medical Clinic"
-
-    ],
+],
 
 
 
-    "Industrial":
+"Commercial":
 
-    [
+[
 
-        "Distribution Warehouse",
+"Boutique Office",
 
-        "Advanced Manufacturing Plant"
+"Corporate Hub",
 
-    ]
+"Hotel Resort",
+
+"Medical Clinic"
+
+],
+
+
+
+"Industrial":
+
+[
+
+"Distribution Warehouse",
+
+"Manufacturing Facility"
+
+]
 
 }
 
@@ -469,72 +433,60 @@ ARCH_DOMAINS = {
 
 
 
-def get_domain(building_type):
+def get_domain(name):
 
-    for domain, types in ARCH_DOMAINS.items():
 
-        if building_type in types:
+    for domain,items in ARCHITECTURE_TYPES.items():
+
+        if name in items:
 
             return domain
 
 
-    return "Unknown"
+    return "General"
 
 
 
 
 
 # ============================================================
-# AI DESIGN GENETICS ENGINE
+# AI DESIGN DNA GENERATOR
 # ============================================================
 
 
-def generate_base_design(
-        building_type,
-        spatial_modules
+def generate_design(
+        building,
+        modules
 ):
 
 
-    rooms = (
+    rooms = [
 
-        [
+        "Living Core",
 
-            "Living Core",
+        "Kitchen Intelligence Hub",
 
-            "Kitchen Hub",
+        "Service Zone"
 
-            "Primary Service Zone"
+    ]
 
-        ]
 
-        +
 
-        [
-
-            "Adaptive Flex Module"
-
-        ]
-
-        *
+    for i in range(
 
         random.randint(1,3)
 
-    )
+    ):
 
+        rooms.append(
 
-    base_area = (
+            "Adaptive AI Module"
 
-        120
-
-        +
-
-        spatial_modules * 18
-
-    )
+        )
 
 
 
-    design = {
+    return {
 
 
         "id":
@@ -543,21 +495,21 @@ def generate_base_design(
 
 
 
-        "type":
+        "building":
 
-        building_type,
+        building,
 
 
 
         "domain":
 
-        get_domain(building_type),
+        get_domain(building),
 
 
 
         "modules":
 
-        spatial_modules,
+        modules,
 
 
 
@@ -567,9 +519,9 @@ def generate_base_design(
 
 
 
-        "area_sqm":
+        "area":
 
-        base_area,
+        120 + modules*20,
 
 
 
@@ -577,22 +529,14 @@ def generate_base_design(
 
         {
 
-
             "columns":
 
-            random.randint(
-                14,
-                40
-            ),
-
+            random.randint(15,40),
 
 
             "beams":
 
-            random.randint(
-                30,
-                90
-            )
+            random.randint(35,90)
 
         },
 
@@ -605,84 +549,66 @@ def generate_base_design(
     }
 
 
-    return design
-
-
 
 
 
 # ============================================================
-# GENETIC MUTATION
+# MUTATION ENGINE
 # ============================================================
 
 
-def mutate_design(design):
+def mutate(design):
 
 
-    child = json.loads(
+    child=json.loads(
 
         json.dumps(design)
 
     )
 
 
-
     child["structure"]["columns"] += random.randint(
-        -2,
-        4
+        -2,4
     )
-
-
-
-    child["structure"]["columns"] = max(
-
-        10,
-
-        child["structure"]["columns"]
-
-    )
-
 
 
     child["structure"]["beams"] += random.randint(
-        -5,
-        8
+        -5,8
     )
 
 
+    child["structure"]["columns"]=max(
+        10,
+        child["structure"]["columns"]
+    )
 
-    child["structure"]["beams"] = max(
 
-        16,
-
+    child["structure"]["beams"]=max(
+        15,
         child["structure"]["beams"]
-
     )
 
 
-
-    if random.random() > 0.5:
-
+    if random.random()>0.5:
 
         child["rooms"].append(
 
-            "AI Generated Adaptive Space"
+            "Generated Spatial Intelligence Zone"
 
         )
 
-
-        child["area_sqm"] += 20
-
+        child["area"]+=20
 
 
-    child["cost"] = int(
 
-        child["area_sqm"]
+    child["cost"]=int(
+
+        child["area"]
 
         *
 
         random.randint(
-            1400,
+            1500,
             2600
         )
 
@@ -691,19 +617,15 @@ def mutate_design(design):
 
     return child
 
-
-
-
-
 # ============================================================
-# FITNESS INTELLIGENCE
+# FITNESS INTELLIGENCE ENGINE
 # ============================================================
 
 
-def calculate_fitness(design):
+def evaluate_design(design):
 
 
-    beam_ratio = (
+    ratio = (
 
         design["structure"]["beams"]
 
@@ -717,77 +639,69 @@ def calculate_fitness(design):
     )
 
 
-
-    structural_score = max(
+    structural = max(
 
         0,
 
         100 -
 
         int(
-
             abs(
-                beam_ratio - 2.2
+                ratio - 2.2
             )
-
             *
-
             20
-
         )
 
     )
 
 
 
-    cost_ratio = (
+    if design["cost"] == 0:
 
-        design["cost"]
+        economic = 80
 
-        /
 
-        max(
-            1,
-            design["area_sqm"]
+    else:
+
+        cost_rate = (
+
+            design["cost"]
+
+            /
+
+            design["area"]
+
         )
 
-    )
 
+        economic = max(
 
+            0,
 
-    cost_score = max(
+            100 -
 
-        0,
-
-        100 -
-
-        int(
-
-            abs(
-                cost_ratio - 1800
+            int(
+                abs(
+                    cost_rate - 1800
+                )
+                *
+                0.04
             )
 
-            *
-
-            0.04
-
         )
 
-    )
 
 
-
-    spatial_score = min(
+    spatial = min(
 
         100,
 
         len(
             design["rooms"]
         )
-
         *
-
-        10
+        12
 
     )
 
@@ -796,21 +710,19 @@ def calculate_fitness(design):
     return {
 
 
-        "structural":
+        "Structural Score":
 
-        structural_score,
-
-
-
-        "economic":
-
-        cost_score,
+        structural,
 
 
+        "Economic Score":
 
-        "spatial":
+        economic,
 
-        spatial_score
+
+        "Spatial Score":
+
+        spatial
 
     }
 
@@ -818,7 +730,8 @@ def calculate_fitness(design):
 
 
 
-def calculate_score(metrics):
+def total_score(metrics):
+
 
     return int(
 
@@ -837,13 +750,13 @@ def calculate_score(metrics):
 
 
 # ============================================================
-# EVOLUTION PIPELINE
+# EVOLUTIONARY BIM ENGINE
 # ============================================================
 
 
-def run_evolution(
+def evolve_design(
 
-        building_type,
+        building,
 
         modules,
 
@@ -856,8 +769,8 @@ def run_evolution(
 
     population = [
 
-        generate_base_design(
-            building_type,
+        generate_design(
+            building,
             modules
         )
 
@@ -866,41 +779,39 @@ def run_evolution(
     ]
 
 
-    history = []
+
+    history=[]
 
 
 
-    for cycle in range(generations):
+    for generation in range(generations):
 
 
-        scored = []
-
+        evaluated=[]
 
 
         for design in population:
 
 
-            design["fitness"] = calculate_fitness(
+            design["fitness"] = evaluate_design(
                 design
             )
 
 
-            design["score"] = calculate_score(
+            design["score"] = total_score(
 
                 design["fitness"]
 
             )
 
 
-            scored.append(design)
+            evaluated.append(design)
 
 
 
-        scored.sort(
+        evaluated.sort(
 
-            key=lambda x:
-
-            x["score"],
+            key=lambda x:x["score"],
 
             reverse=True
 
@@ -910,26 +821,26 @@ def run_evolution(
 
         history.append(
 
-            scored[0]["score"]
+            evaluated[0]["score"]
 
         )
 
 
 
-        survivors = scored[
+        survivors = evaluated[
 
             :
 
             max(
                 2,
-                population_size // 2
+                population_size//2
             )
 
         ]
 
 
 
-        next_population = []
+        next_population=[]
 
 
 
@@ -945,9 +856,7 @@ def run_evolution(
 
             next_population.append(
 
-                mutate_design(
-                    parent
-                )
+                mutate(parent)
 
             )
 
@@ -963,81 +872,70 @@ def run_evolution(
 
 
 
-    return scored[0], history
+    return evaluated[0], history
 
 
 
 
 
 # ============================================================
-# PARAMETRIC BIM SPACE GENERATOR
+# BIM SPACE GENERATOR
 # ============================================================
 
 
-def generate_floor_plan(design):
+def create_bim_plan(design):
 
 
-    rooms = [
+    spaces=[
+
 
         {
 
-            "name":
+        "name":
+        "Central Living Atrium",
 
-            "Central Living Atrium",
+        "width":
+        7,
 
-            "width":
+        "height":
+        5,
 
-            6.5,
-
-            "height":
-
-            5.5,
-
-            "color":
-
-            "#1e40af"
+        "color":
+        "#2563eb"
 
         },
 
 
         {
 
-            "name":
+        "name":
+        "AI Kitchen Hub",
 
-            "Smart Kitchen Hub",
+        "width":
+        5,
 
-            "width":
+        "height":
+        4,
 
-            4.5,
-
-            "height":
-
-            4.0,
-
-            "color":
-
-            "#047857"
+        "color":
+        "#059669"
 
         },
 
 
         {
 
-            "name":
+        "name":
+        "Service Core",
 
-            "Service Core",
+        "width":
+        3,
 
-            "width":
+        "height":
+        3,
 
-            3.0,
-
-            "height":
-
-            3.0,
-
-            "color":
-
-            "#92400e"
+        "color":
+        "#d97706"
 
         }
 
@@ -1052,458 +950,288 @@ def generate_floor_plan(design):
     ):
 
 
-        rooms.append(
+        spaces.append(
 
             {
 
-                "name":
-
-                f"Spatial Module {i+1}",
-
-
-                "width":
-
-                4.2,
-
-
-                "height":
-
-                4.0,
-
-
-                "color":
-
-                "#6b21a8"
-
-            }
-
-        )
-
-
-
-    return rooms
-
-
-
-
-
 # ============================================================
-# BIM BLUEPRINT RENDERER
-# ============================================================
-
-
-def render_blueprint(plan):
-
-
-    st.markdown(
-
-        "### 🏛️ AI Generated Spatial Blueprint"
-
-    )
-
-
-
-    html = (
-
-        "<div class='arc-blueprint-canvas'>"
-
-    )
-
-
-
-    for room in plan:
-
-
-        html += f"""
-
-        <div class="arc-room-module"
-
-        style="background:{room['color']}">
-
-
-        <b>
-
-        {room['name']}
-
-        </b>
-
-
-        <div class="room-meta">
-
-        📐 {room['width']}m × {room['height']}m
-
-        </div>
-
-
-        </div>
-
-        """
-
-
-
-    html += "</div>"
-
-
-
-    st.markdown(
-
-        html,
-
-        unsafe_allow_html=True
-
-    )
-
-# ============================================================
-# STRUCTURAL INTELLIGENCE ENGINE
-# ============================================================
-
-
-def structural_analysis(design):
-
-    results = []
-
-
-    columns = design["structure"]["columns"]
-
-    beams = design["structure"]["beams"]
-
-
-    ratio = beams / max(
-        1,
-        columns
-    )
-
-
-    if columns < 16:
-
-        results.append(
-            "🔴 Structural grid density is low. Review column distribution."
-        )
-
-
-    else:
-
-        results.append(
-            "🟢 Column grid density acceptable."
-        )
-
-
-
-    if ratio < 1.9:
-
-        results.append(
-            "🔵 Beam-column relationship requires optimization."
-        )
-
-
-    elif ratio > 3.5:
-
-        results.append(
-            "🟡 High beam intensity detected."
-        )
-
-
-    else:
-
-        results.append(
-            "🟢 Structural proportion balanced."
-        )
-
-
-    return results
-
-
-
-
-
-def calculate_structural_index(design):
-
-
-    ratio = (
-
-        design["structure"]["beams"]
-
-        /
-
-        max(
-            1,
-            design["structure"]["columns"]
-        )
-
-    )
-
-
-    return int(
-
-        max(
-
-            0,
-
-            100 -
-
-            abs(
-                ratio - 2.2
-            )
-
-            *
-
-            25
-
-        )
-
-    )
-
-
-
-
-
-# ============================================================
-# COST INTELLIGENCE ENGINE
-# ============================================================
-
-
-def calculate_cost_analysis(design):
-
-
-    area = design["area_sqm"]
-
-
-    base_rate = 1800
-
-
-    construction_cost = (
-
-        area
-
-        *
-
-        base_rate
-
-    )
-
-
-
-    structural_factor = (
-
-        design["structure"]["columns"]
-
-        +
-
-        design["structure"]["beams"]
-
-    )
-
-
-
-    adjusted_cost = int(
-
-        construction_cost
-
-        +
-
-        structural_factor
-
-        *
-
-        250
-
-    )
-
-
-    return {
-
-
-        "gross_area":
-
-        area,
-
-
-        "base_rate":
-
-        base_rate,
-
-
-        "estimated_cost":
-
-        adjusted_cost,
-
-
-        "cost_per_sqm":
-
-        int(
-            adjusted_cost / area
-        )
-
-    }
-
-
-
-
-
-# ============================================================
-# MATERIAL TAKEOFF INTELLIGENCE
-# ============================================================
-
-
-def material_takeoff(design):
-
-
-    return [
-
-
-        {
-
-            "Material":
-
-            "High Performance Concrete",
-
-
-            "Quantity":
-
-            f"{design['structure']['columns'] * 2.8:.1f} m³"
-
-        },
-
-
-        {
-
-            "Material":
-
-            "Structural Steel Reinforcement",
-
-
-            "Quantity":
-
-            f"{design['structure']['beams'] * 0.55:.2f} MT"
-
-        },
-
-
-        {
-
-            "Material":
-
-            "Masonry Units",
-
-
-            "Quantity":
-
-            f"{int(design['area_sqm'] * 38):,} units"
-
-        },
-
-
-        {
-
-            "Material":
-
-            "Floor Finish Area",
-
-
-            "Quantity":
-
-            f"{design['area_sqm']:.1f} m²"
-
-        }
-
-
-    ]
-
-
-
-
-
-# ============================================================
-# SUSTAINABILITY INTELLIGENCE ENGINE
-# ============================================================
-
-
-def sustainability_analysis(design):
-
-
-    daylight = random.randint(
-        65,
-        95
-    )
-
-
-    material_efficiency = random.randint(
-        60,
-        90
-    )
-
-
-    energy_score = int(
-
-        (
-
-            daylight
-
-            +
-
-            material_efficiency
-
-        )
-
-        /
-
-        2
-
-    )
-
-
-    return {
-
-
-        "Daylight Potential":
-
-        f"{daylight}%",
-
-
-
-        "Material Efficiency":
-
-        f"{material_efficiency}%",
-
-
-
-        "Energy Performance Index":
-
-        f"{energy_score}/100"
-
-    }
-
-
-
-
-
-# ============================================================
-# PROJECT METADATA ENGINE
+# PROJECT SUMMARY
 # ============================================================
 
 
 def project_summary(design):
 
-
     return {
 
-
         "Design ID":
-
         design["id"],
 
-
-
-        "Typology":
-
-        design["type"],
-
-
+        "Building Type":
+        design["building"],
 
         "Domain":
-
         design["domain"],
 
+        "Area":
+        area_display(
+            design["area"]
+        ),
+
+        "Modules":
+        design["modules"],
+
+        "Fitness":
+        design.get(
+            "score",
+            0
+        )
+
+    }
 
 
-       
+
+
+
+# ============================================================
+# APPLICATION HEADER
+# ============================================================
+
+
+st.markdown(
+
+"""
+<div class="random-banner">
+
+<h1>
+📐 RANDOM AI BIM STUDIO V53
+</h1>
+
+<p>
+Evolutionary Architecture • BIM Intelligence • Generative Spatial Design
+</p>
+
+</div>
+""",
+
+unsafe_allow_html=True
+
+)
+
+
+
+
+# ============================================================
+# SIDEBAR CONTROL PANEL
+# ============================================================
+
+
+with st.sidebar:
+
+
+    st.title(
+        "⚙️ Studio Controls"
+    )
+
+
+    st.session_state.unit_system = st.selectbox(
+
+        "Unit System",
+
+        [
+
+            "Metric",
+
+            "Imperial",
+
+            "Dual"
+
+        ]
+
+    )
+
+
+
+    building = st.selectbox(
+
+        "Architectural Typology",
+
+        sum(
+            ARCHITECTURE_TYPES.values(),
+            []
+        )
+
+    )
+
+
+
+    modules = st.slider(
+
+        "Spatial Modules",
+
+        1,
+
+        10,
+
+        4
+
+    )
+
+
+
+    generations = st.slider(
+
+        "AI Evolution Cycles",
+
+        2,
+
+        30,
+
+        8
+
+    )
+
+
+
+    population = st.slider(
+
+        "Population",
+
+        4,
+
+        40,
+
+        12
+
+    )
+
+
+
+
+
+# ============================================================
+# MAIN TABS
+# ============================================================
+
+
+tabs = st.tabs(
+
+[
+
+"🏠 Dashboard",
+
+"🧬 Evolution Lab",
+
+"🏛️ BIM Viewer",
+
+"🧱 Structural AI",
+
+"💰 Cost + Materials",
+
+"🌱 Sustainability",
+
+"🧠 Memory Core",
+
+"📦 Export"
+
+]
+
+)
+
+
+
+
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+
+with tabs[0]:
+
+
+    st.subheader(
+        "System Dashboard"
+    )
+
+
+    c1,c2,c3 = st.columns(3)
+
+
+    c1.metric(
+
+        "Stored Designs",
+
+        len(
+            memory["designs"]
+        )
+
+    )
+
+
+    c2.metric(
+
+        "Evolution Runs",
+
+        len(
+            memory["evolution"]
+        )
+
+    )
+
+
+    c3.metric(
+
+        "System Version",
+
+        "V53"
+
+    )
+
+
+    st.divider()
+
+
+    st.info(
+
+        "Generate a design in the Evolution Lab."
+
+    )
+
+
+
+
+
+# ============================================================
+# EVOLUTION LAB
+# ============================================================
+
+
+with tabs[1]:
+
+
+    st.subheader(
+
+        "🧬 AI Evolution Laboratory"
+
+    )
+
+
+
+    if st.button(
+
+        "🚀 Generate BIM Design",
+
+        type="primary"
+
+    ):
+
+
+        with st.spinner(
+
+            "Evolving architectural DNA..."
+
+        ):
+
+
+            design
+           
