@@ -1,48 +1,55 @@
 # =========================================================
-# V39 — CITY ARCHITECTURE SIMULATION ENGINE
-# Multi-Building Urban Intelligence System
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE — V37
+# Architectural + Structural + Cost + 2D + 3D BIM-Lite OS
+# Deployment-Grade Streamlit Single File
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
-import numpy as np
 from pathlib import Path
 from datetime import datetime
+import numpy as np
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="City Architecture Engine V39",
-    page_icon="🌆",
+    page_title="ARC V37 OS",
+    page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("city_memory.json")
+MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# SAFE MEMORY
+# SAFE MEMORY (CRASH-PROOF JSON LOADER)
 # =========================================================
 
-DEFAULT = {
-    "cities": [],
-    "logs": []
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "boq": [],
+    "logs": [],
+    "evolution": []
 }
 
-def load():
+def safe_load():
     if not MEMORY_FILE.exists():
-        return DEFAULT.copy()
+        return DEFAULT_STATE.copy()
     try:
-        return json.loads(MEMORY_FILE.read_text())
+        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return {**DEFAULT_STATE, **data}
     except:
-        return DEFAULT.copy()
+        return DEFAULT_STATE.copy()
 
-def save(mem):
+def safe_save(mem):
     try:
-        MEMORY_FILE.write_text(json.dumps(mem, indent=2))
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(mem, f, indent=2)
     except:
         pass
 
@@ -51,219 +58,237 @@ def log(mem, msg):
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save(mem)
+    safe_save(mem)
 
+# init
 if "mem" not in st.session_state:
-    st.session_state.mem = load()
-
-if "active_city" not in st.session_state:
-    st.session_state.active_city = None
+    st.session_state.mem = safe_load()
 
 mem = st.session_state.mem
 
 # =========================================================
-# CITY TAXONOMY
+# DOMAIN ENGINE
 # =========================================================
 
-BUILDING_TYPES = {
-    "Residential": {"color": 1, "pop": 3},
-    "Commercial": {"color": 2, "pop": 1},
-    "Industrial": {"color": 3, "pop": 0}
+ARCH_TYPES = {
+    "Residential": ["Villa", "Apartment", "Townhouse"],
+    "Commercial": ["Office", "Mall", "Hotel", "Clinic"],
+    "Industrial": ["Warehouse", "Factory", "Plant"]
+}
+
+def domain(t):
+    for k,v in ARCH_TYPES.items():
+        if t in v:
+            return k
+    return "Unknown"
+
+# =========================================================
+# EAST AFRICA COST ENGINE (BASE RATES)
+# =========================================================
+# editable baseline (UGX per unit)
+RATES = {
+    "foundation_m3": 280000,
+    "slab_m2": 120000,
+    "wall_m2": 95000,
+    "roof_m2": 140000,
+    "column_unit": 180000,
+    "beam_unit": 220000,
+    "door_unit": 350000,
+    "window_unit": 280000
 }
 
 # =========================================================
-# CITY GENERATION ENGINE
+# ARCHITECTURAL GENERATION
 # =========================================================
 
-CITY_SIZE = (30, 12, 30)
-
-def create_building(btype):
+def generate_design(btype, floors, rooms):
     return {
-        "id": str(uuid.uuid4())[:6],
+        "id": str(uuid.uuid4())[:8],
         "type": btype,
-        "height": random.randint(2, 8),
-        "size": random.randint(2, 5)
+        "domain": domain(btype),
+        "floors": floors,
+        "rooms": rooms,
+        "structure": {
+            "columns": random.randint(12, 40),
+            "beams": random.randint(20, 80)
+        }
     }
 
-def generate_city(n_buildings=25):
-    city = np.zeros(CITY_SIZE)
+# =========================================================
+# SPACE GENERATION (2D BIM)
+# =========================================================
 
-    buildings = []
+def generate_spaces(design):
+    base = [
+        {"name": "Living Room", "type": "social", "area": 35},
+        {"name": "Kitchen", "type": "service", "area": 18},
+        {"name": "Bathroom", "type": "wet", "area": 8}
+    ]
 
-    for _ in range(n_buildings):
-        btype = random.choice(list(BUILDING_TYPES.keys()))
-        b = create_building(btype)
-
-        x = random.randint(2, 27)
-        z = random.randint(2, 27)
-
-        h = b["height"]
-
-        city[x:x+2, :h, z:z+2] = BUILDING_TYPES[btype]["color"]
-
-        buildings.append({
-            **b,
-            "x": x,
-            "z": z
+    for i in range(design["rooms"]):
+        base.append({
+            "name": f"Bedroom {i+1}",
+            "type": "private",
+            "area": 22 if i == 0 else 16
         })
 
-    return city, buildings
+    # doors & windows
+    for s in base:
+        s["doors"] = random.randint(1, 2)
+        s["windows"] = random.randint(1, 4)
+
+    return base
 
 # =========================================================
-# ROAD NETWORK ENGINE
+# 3D VOXEL ENGINE (SIMPLIFIED BIM KERNEL)
 # =========================================================
 
-def generate_roads(buildings):
-    roads = []
+WORLD = (20, 10, 20)
 
-    for i in range(len(buildings)-1):
-        a = buildings[i]
-        b = buildings[i+1]
+def voxel_world(design):
+    w = np.zeros(WORLD)
 
-        roads.append(((a["x"], a["z"]), (b["x"], b["z"])))
+    for _ in range(design["structure"]["columns"]):
+        x, z = random.randint(0,19), random.randint(0,19)
+        for y in range(random.randint(2,6)):
+            w[x,y,z] = 1
 
-    return roads
+    for _ in range(design["structure"]["beams"]):
+        x,z = random.randint(0,19), random.randint(0,19)
+        y = random.randint(2,5)
+        for i in range(3):
+            w[min(19,x+i), y, z] = 2
 
-# =========================================================
-# CITY AI BRAIN
-# =========================================================
+    return w
 
-def city_brain(buildings):
-    res = sum(1 for b in buildings if b["type"] == "Residential")
-    com = sum(1 for b in buildings if b["type"] == "Commercial")
-    ind = sum(1 for b in buildings if b["type"] == "Industrial")
-
-    advice = []
-
-    if res < com:
-        advice.append("Housing shortage detected.")
-    if ind > res:
-        advice.append("Over-industrialized city risk.")
-    if com == 0:
-        advice.append("No economic core detected.")
-
-    if not advice:
-        advice.append("City balance is stable.")
-
+def voxel_metrics(w):
     return {
-        "residential": res,
-        "commercial": com,
-        "industrial": ind,
-        "advice": advice
+        "solid": int(np.sum(w == 1)),
+        "beams": int(np.sum(w == 2)),
+        "density": float(np.sum(w > 0) / w.size)
     }
 
 # =========================================================
-# ECONOMY ENGINE
+# BOQ ENGINE (FOUNDATION → ROOF)
 # =========================================================
 
-def economy(buildings):
-    income = sum(
-        200 if b["type"] == "Commercial" else
-        100 if b["type"] == "Residential" else
-        300
-        for b in buildings
-    )
+def boq(design, spaces):
+    floors = design["floors"]
+    area = sum(s["area"] for s in spaces)
 
-    maintenance = len(buildings) * 40
+    foundation = area * 0.6
+    slab = area * floors
+    walls = area * 2.8
+    roof = area * 1.0
 
-    return {
-        "income": income,
-        "maintenance": maintenance,
-        "net": income - maintenance
-    }
+    return [
+        ("Foundation Concrete (m3)", foundation, foundation * RATES["foundation_m3"]),
+        ("Floor Slab (m2)", slab, slab * RATES["slab_m2"]),
+        ("Walling (m2)", walls, walls * RATES["wall_m2"]),
+        ("Roofing (m2)", roof, roof * RATES["roof_m2"]),
+        ("Columns (units)", design["structure"]["columns"], design["structure"]["column_unit"]),
+        ("Beams (units)", design["structure"]["beams"], design["structure"]["beam_unit"]),
+        ("Doors (units)", sum(s["doors"] for s in spaces), RATES["door_unit"]),
+        ("Windows (units)", sum(s["windows"] for s in spaces), RATES["window_unit"])
+    ]
 
 # =========================================================
-# 3D CITY VIEW
+# COST SUMMARIZER
 # =========================================================
 
-def render_slice(city, y):
-    grid = city[:, y, :]
-
-    for z in range(30):
-        row = ""
-        for x in range(30):
-            v = grid[x, z]
-            row += "⬛" if v == 0 else "🟦" if v == 1 else "🟨" if v == 2 else "🟩"
-        st.code(row)
+def total_cost(items):
+    return int(sum(v * c for _, v, c in items))
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🌆 CITY V39")
+st.sidebar.title("🏗️ ARC V37 OS")
 
-page = st.sidebar.radio("Mode", ["Dashboard", "City Lab", "Analytics"])
+mode = st.sidebar.radio("Mode", ["Design Lab", "Dashboard", "Memory"])
 
-n = st.sidebar.slider("Buildings", 10, 60, 25)
+btype = st.sidebar.selectbox("Building Type", sum(ARCH_TYPES.values(), []))
+floors = st.sidebar.slider("Floors", 1, 5, 2)
+rooms = st.sidebar.slider("Bedrooms", 1, 8, 3)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
-if page == "Dashboard":
-    st.title("🌆 City Simulation Engine V39")
+if mode == "Dashboard":
+    st.title("🏗️ ARCH SYSTEM CORE")
 
-    c1, c2 = st.columns(2)
-    c1.metric("Cities Generated", len(mem["cities"]))
-    c2.metric("Logs", len(mem["logs"]))
+    c1,c2,c3 = st.columns(3)
+    c1.metric("Designs", len(mem["designs"]))
+    c2.metric("BOQs", len(mem["boq"]))
+    c3.metric("Logs", len(mem["logs"]))
 
-# =========================================================
-# CITY LAB
-# =========================================================
-
-elif page == "City Lab":
-    st.title("🏙️ Urban Simulation Lab")
-
-    if st.button("Generate City"):
-        city, buildings = generate_city(n)
-        roads = generate_roads(buildings)
-
-        mem["cities"].append({
-            "id": str(uuid.uuid4())[:6],
-            "buildings": buildings,
-            "roads": roads
-        })
-
-        st.session_state.active_city = {
-            "city": city,
-            "buildings": buildings,
-            "roads": roads
-        }
-
-        log(mem, "City generated")
-
-    if st.session_state.active_city:
-        c = st.session_state.active_city
-
-        st.subheader("City Slice View")
-        y = st.slider("Height Layer", 0, 11, 0)
-        render_slice(c["city"], y)
+    st.line_chart([d.get("structure", {}).get("columns", 0) for d in mem["designs"]])
 
 # =========================================================
-# ANALYTICS
+# DESIGN LAB
 # =========================================================
 
-elif page == "Analytics":
-    st.title("📊 City Intelligence Layer")
+elif mode == "Design Lab":
+    st.title("🧠 ARCHITECT + ENGINEER AI")
 
-    if st.session_state.active_city:
-        b = st.session_state.active_city["buildings"]
+    if st.button("Generate Full BIM Model"):
+        design = generate_design(btype, floors, rooms)
+        spaces = generate_spaces(design)
+        world = voxel_world(design)
+        metrics = voxel_metrics(world)
+        boq_items = boq(design, spaces)
 
-        brain = city_brain(b)
-        econ = economy(b)
+        design["spaces"] = spaces
+        design["boq"] = boq_items
+        design["total_cost"] = total_cost(boq_items)
+        design["voxel"] = metrics
 
-        st.subheader("City Balance AI")
-        st.json(brain)
+        mem["designs"].append(design)
+        mem["boq"].append(boq_items)
 
-        st.subheader("Economy")
-        st.json(econ)
-    else:
-        st.info("Generate a city first.")
+        log(mem, f"Generated {design['id']}")
+
+        st.session_state.active = design
+
+    if "active" in st.session_state:
+        d = st.session_state.active
+
+        st.subheader(f"Project {d['id']}")
+
+        a,b,c = st.columns(3)
+        a.metric("Cost (UGX)", d["total_cost"])
+        b.metric("Columns", d["structure"]["columns"])
+        c.metric("Density", round(d["voxel"]["density"],3))
+
+        tab1, tab2, tab3 = st.tabs(["Spaces", "BOQ", "3D Voxel"])
+
+        with tab1:
+            for s in d["spaces"]:
+                st.write(s)
+
+        with tab2:
+            st.table([
+                {"Item": i, "Qty": q, "Cost": c}
+                for i,q,c in d["boq"]
+            ])
+
+        with tab3:
+            layer = st.slider("Voxel Layer", 0, WORLD[1]-1, 0)
+            grid = d["voxel"]
+
+            st.write("Slice View (simplified)")
+            st.write(grid)
 
 # =========================================================
 # MEMORY
 # =========================================================
 
-elif page == "Memory":
-    st.title("🧠 Memory Core")
+else:
+    st.title("🧠 MEMORY CORE")
     st.json(mem)
+
+    if st.button("Reset"):
+        st.session_state.mem = DEFAULT_STATE.copy()
+        safe_save(st.session_state.mem)
+        st.rerun()
