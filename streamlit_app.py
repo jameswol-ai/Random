@@ -1,14 +1,14 @@
 # =========================================================
-# RANDOM V12+ CORE
-# Architecture Intelligence OS - Unified Engine
+# RANDOM V13
+# Architecture Intelligence OS - Modular Navigation Core
 # =========================================================
 
 import streamlit as st
 import uuid
 import random
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # =========================================================
 # CONFIG
@@ -23,13 +23,14 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# MEMORY SYSTEM
+# MEMORY CORE
 # =========================================================
 
 DEFAULT_STATE = {
     "projects": [],
     "designs": [],
     "logs": [],
+    "plugins": [],
     "evolution": []
 }
 
@@ -42,12 +43,9 @@ def load_memory():
     return DEFAULT_STATE.copy()
 
 def save_memory(mem):
-    try:
-        MEMORY_FILE.write_text(json.dumps(mem, indent=2), encoding="utf-8")
-    except Exception:
-        pass
+    MEMORY_FILE.write_text(json.dumps(mem, indent=2), encoding="utf-8")
 
-def log_event(mem, msg):
+def log(mem, msg):
     mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
@@ -61,166 +59,195 @@ def log_event(mem, msg):
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
-
-if "active_history" not in st.session_state:
-    st.session_state.active_history = []
-
 mem = st.session_state.memory
 
 # =========================================================
-# STYLE
+# NAVIGATION MAP (YOUR ARCHITECTURE OS BRAIN)
 # =========================================================
 
-st.markdown("""
-<style>
-    .title {
-        font-size: 28px;
-        font-weight: 800;
-        margin-bottom: 12px;
-    }
-    .card {
-        padding: 14px;
-        border-radius: 12px;
-        background: #0f172a;
-        color: white;
-        margin-bottom: 10px;
-    }
-</style>
-""", unsafe_allow_html=True)
+NAV = [
+    "🏠 Dashboard",
+    "📂 Projects",
+    "📐 Design Studio",
+    "🧠 AI Architect",
+    "🏗 Structural Analysis",
+    "💰 Cost Estimation",
+    "🌱 Sustainability",
+    "📋 Code Compliance",
+    "🏢 BIM Manager",
+    "📊 Analytics",
+    "🧠 Memory",
+    "🔌 Plugins",
+    "⚙ Settings"
+]
 
-# =========================================================
-# CORE EVOLUTION ENGINE
-# =========================================================
+page = st.sidebar.radio("Random AIOS", NAV)
 
-ARCH_TYPES = ["Luxury Villa", "Modern Apartment", "Townhouse", "Office Hub", "Clinic"]
-
-def generate_design(btype, bedrooms):
-    base_area = random.randint(120, 500)
-
-    return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": btype,
-        "bedrooms": bedrooms,
-        "area_sqm": base_area,
-        "score": random.randint(60, 100),
-        "cost": base_area * random.randint(1200, 2600),
-        "rooms": ["Living", "Kitchen", "Bath"] + ["Bedroom"] * bedrooms,
-        "structure": {
-            "columns": random.randint(14, 40),
-            "beams": random.randint(20, 80)
-        }
-    }
-
-def run_evolution(pop_size):
-    population = [generate_design(random.choice(ARCH_TYPES), random.randint(1, 5)) for _ in range(pop_size)]
-    best = max(population, key=lambda x: x["score"])
-    history = sorted([p["score"] for p in population])
-    return best, history
-
-# =========================================================
-# SIDEBAR NAV
-# =========================================================
-
-page = st.sidebar.radio(
-    "Random AIOS",
-    ["🏠 Dashboard", "🧪 Design Lab", "📊 Analytics", "🧠 Memory", "⚙ Settings"]
-)
-
-st.sidebar.caption("Random V12+ Unified Engine")
+st.sidebar.markdown("---")
+st.sidebar.caption("Random V13 • Modular Architecture OS")
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "🏠 Dashboard":
-    st.markdown("<div class='title'>🏗 Random AIOS Control Core</div>", unsafe_allow_html=True)
+    st.title("🏗 Architecture Intelligence Dashboard")
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Projects", len(mem["projects"]))
     c2.metric("Designs", len(mem["designs"]))
-    c3.metric("Evolution Runs", len(mem["evolution"]))
+    c3.metric("Plugins", len(mem["plugins"]))
+    c4.metric("Logs", len(mem["logs"]))
 
-    st.markdown("### 🧠 System Logs")
-    logs = mem["logs"][-6:]
-    if logs:
-        for l in reversed(logs):
-            st.write(f"⏱ {l['time'][11:19]} → {l['msg']}")
-    else:
-        st.info("No activity yet.")
+    st.subheader("System Activity Feed")
+    for l in mem["logs"][-8:][::-1]:
+        st.write(f"⏱ {l['time'][11:19]} → {l['msg']}")
 
 # =========================================================
-# DESIGN LAB
+# PROJECTS
 # =========================================================
 
-elif page == "🧪 Design Lab":
-    st.markdown("<div class='title'>🧪 Evolution Design Engine</div>", unsafe_allow_html=True)
+elif page == "📂 Projects":
+    st.title("📂 Project Registry")
 
-    btype = st.selectbox("Building Type", ARCH_TYPES)
-    bedrooms = st.slider("Spatial Modules", 1, 8, 3)
-    population = st.slider("Population Size", 4, 20, 10)
+    name = st.text_input("Project Name")
+    if st.button("Create Project"):
+        p = {
+            "id": str(uuid.uuid4())[:8],
+            "name": name,
+            "created": datetime.now().isoformat()
+        }
+        mem["projects"].append(p)
+        log(mem, f"Project created: {name}")
+        st.success("Project added")
 
-    if st.button("🚀 Run Evolution Engine", use_container_width=True):
-        with st.spinner("Evolving architectural genomes..."):
-            best, history = run_evolution(population)
+    st.json(mem["projects"])
 
-            st.session_state.active_design = best
-            st.session_state.active_history = history
+# =========================================================
+# DESIGN STUDIO
+# =========================================================
 
-            mem["designs"].append(best)
-            mem["evolution"].append({
-                "id": str(uuid.uuid4())[:6],
-                "best_id": best["id"],
-                "score": best["score"],
-                "time": datetime.now().isoformat()
-            })
+elif page == "📐 Design Studio":
+    st.title("📐 Generative Design Studio")
 
-            log_event(mem, f"Generated design {best['id']}")
+    if st.button("Generate Design"):
+        design = {
+            "id": str(uuid.uuid4())[:8],
+            "area": random.randint(120, 600),
+            "score": random.randint(60, 100),
+            "structure": {
+                "columns": random.randint(10, 40),
+                "beams": random.randint(20, 80)
+            }
+        }
+        mem["designs"].append(design)
+        log(mem, f"Design generated {design['id']}")
+        st.session_state.last_design = design
 
-    if st.session_state.active_design:
-        d = st.session_state.active_design
+    if "last_design" in st.session_state:
+        st.json(st.session_state.last_design)
 
-        st.markdown("### 🏗 Best Design Output")
+# =========================================================
+# AI ARCHITECT (CORE INTELLIGENCE LAYER)
+# =========================================================
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Score", d["score"])
-        c2.metric("Area", f"{d['area_sqm']} m²")
-        c3.metric("Cost", f"${d['cost']:,}")
+elif page == "🧠 AI Architect":
+    st.title("🧠 AI Architecture Engine")
 
-        st.markdown("### 🧱 Structure")
-        st.json(d["structure"])
+    st.info("Future layer: multi-agent reasoning, generative planning, structural cognition, BIM synthesis AI.")
+
+# =========================================================
+# STRUCTURAL ANALYSIS
+# =========================================================
+
+elif page == "🏗 Structural Analysis":
+    st.title("🏗 Structural Diagnostics")
+
+    st.info("Future: beam-column ratio solver, load simulation, Eurocode validation, seismic modelling.")
+
+# =========================================================
+# COST ESTIMATION
+# =========================================================
+
+elif page == "💰 Cost Estimation":
+    st.title("💰 Cost Engine")
+
+    st.info("Future: material pricing model, regional cost indexing, contractor simulation, budget optimizer.")
+
+# =========================================================
+# SUSTAINABILITY
+# =========================================================
+
+elif page == "🌱 Sustainability":
+    st.title("🌱 Green Architecture Layer")
+
+    st.info("Future: carbon scoring, energy efficiency AI, solar optimization, lifecycle analysis.")
+
+# =========================================================
+# CODE COMPLIANCE
+# =========================================================
+
+elif page == "📋 Code Compliance":
+    st.title("📋 Regulatory Engine")
+
+    st.info("Future: zoning laws, building codes, compliance validation AI, permit simulation system.")
+
+# =========================================================
+# BIM MANAGER
+# =========================================================
+
+elif page == "🏢 BIM Manager":
+    st.title("🏢 BIM Integration Layer")
+
+    st.info("Future: IFC export, Revit sync, 3D model generation, structural BIM graph builder.")
 
 # =========================================================
 # ANALYTICS
 # =========================================================
 
 elif page == "📊 Analytics":
-    st.markdown("### 📊 Evolution Curve")
+    st.title("📊 System Analytics")
 
-    if st.session_state.active_history:
-        st.line_chart(st.session_state.active_history)
-    else:
-        st.info("Run evolution first.")
+    st.write("Designs:", len(mem["designs"]))
+    st.write("Projects:", len(mem["projects"]))
 
 # =========================================================
 # MEMORY
 # =========================================================
 
 elif page == "🧠 Memory":
-    st.markdown("### 🧠 System Memory")
+    st.title("🧠 Memory Core")
 
     st.json(mem)
 
-    if st.button("🧹 Reset Memory"):
+    if st.button("Reset Memory"):
         st.session_state.memory = DEFAULT_STATE.copy()
         save_memory(st.session_state.memory)
         st.rerun()
+
+# =========================================================
+# PLUGINS
+# =========================================================
+
+elif page == "🔌 Plugins":
+    st.title("🔌 Plugin Registry")
+
+    plugin = st.text_input("Register Plugin")
+
+    if st.button("Add Plugin"):
+        mem["plugins"].append({
+            "id": str(uuid.uuid4())[:6],
+            "name": plugin
+        })
+        log(mem, f"Plugin registered: {plugin}")
+
+    st.json(mem["plugins"])
 
 # =========================================================
 # SETTINGS
 # =========================================================
 
 elif page == "⚙ Settings":
-    st.markdown("### ⚙ System Settings")
-    st.info("Future: multi-agent plugins, BIM export, structural AI simulation layer.")
+    st.title("⚙ System Settings")
+
+    st.info("Future: AI personality tuning, engine scaling, cloud sync, multi-agent orchestration.")
