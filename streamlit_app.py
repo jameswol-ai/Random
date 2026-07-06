@@ -1,160 +1,110 @@
-# =========================================================
-# V33 SIMULATION OS — STREAMLIT ENTRYPOINT
-# Thin UI Layer (Orchestrates Modular Engine)
-# =========================================================
-
 import streamlit as st
-import numpy as np
+import uuid
 
-from world.voxel import VoxelWorld
-from world.terrain import generate_terrain
-from world.fluids import apply_gravity
-
-from architecture.generator import generate_design
-from evolution.evolutionary_loop import evolve_population
-
-from meta.rule_engine import evolve_rules
-from meta.observation import collect_stats
-
+from config import DEFAULT_STATE
+from memory.store import load_memory, save_memory
 from memory.logger import log_event
 
-
-# =========================================================
-# CONFIG
-# =========================================================
-
-st.set_page_config(
-    page_title="V33 Simulation OS",
-    page_icon="🌐",
-    layout="wide"
+from core.engine import run_evolutionary_loop
+from visualization.blueprint_renderer import render_blueprint
+from analytics.diagnostics import (
+    run_structural_review,
+    calculate_material_takeoffs
 )
 
-st.title("🌐 V33 — Simulation Operating System")
+st.set_page_config(page_title="Random Studio Engine", layout="wide")
 
-# =========================================================
-# SESSION INIT
-# =========================================================
+# ---------------- MEMORY ----------------
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
 
-if "world" not in st.session_state:
-    st.session_state.world = VoxelWorld(size=30)
-
-if "agents" not in st.session_state:
-    st.session_state.agents = [{"x": 15, "y": 15, "z": 10}]
-
-if "design" not in st.session_state:
-    st.session_state.design = None
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-world = st.session_state.world
+mem = st.session_state.memory
 
 
-# =========================================================
-# SIDEBAR CONTROL PANEL
-# =========================================================
+# ---------------- SIDEBAR ----------------
+st.sidebar.title("📐 Arc Studio")
 
-st.sidebar.title("🧠 Control Panel")
+page = st.sidebar.radio(
+    "Workspace",
+    ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"]
+)
 
-if st.sidebar.button("🌍 Generate World"):
-    world.grid = generate_terrain(world.size)
-    log_event("World generated")
+# Config
+with st.sidebar.expander("Configure Engine"):
+    all_types = ["Luxury Villa", "Modern Apartment", "Townhouse",
+                 "Boutique Office", "Corporate Hub"]
 
-if st.sidebar.button("🌊 Simulate Step"):
-    apply_gravity(world)
-    stats = collect_stats(world, st.session_state.agents)
-
-    evolve_rules(stats)
-    log_event("Simulation step executed")
-
-if st.sidebar.button("🏗 Evolve Architecture"):
-    population = [generate_design() for _ in range(10)]
-    best, history = evolve_population(population)
-
-    st.session_state.design = best
-    st.session_state.history = history
-
-    log_event(f"Architecture evolved: {best['id']}")
+    design_type = st.selectbox("Typology", all_types)
+    bedrooms = st.slider("Bedrooms", 1, 8, 3)
+    generations = st.slider("Generations", 2, 20, 6)
+    pop = st.slider("Population", 4, 30, 10)
 
 
-# =========================================================
-# WORLD VIEW
-# =========================================================
+# ---------------- DASHBOARD ----------------
+if page == "Dashboard Control":
+    st.title("📐 Dashboard")
 
-st.subheader("🌐 World State")
-
-voxel_count = np.count_nonzero(world.grid)
-
-st.metric("Active Voxels", voxel_count)
-st.metric("World Size", world.size)
-
-st.text("Voxel Preview (compressed)")
-
-preview = ""
-
-for x in range(world.size):
-    for y in range(world.size):
-        z = int(np.argmax(world.grid[x, y]))
-        val = world.grid[x, y, z]
-
-        if val == 0:
-            preview += "⬛"
-        elif val == 1:
-            preview += "🟩"
-        elif val == 2:
-            preview += "🟥"
-        else:
-            preview += "🟦"
-
-st.text(preview[:1500])
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Projects", len(mem["projects"]))
+    c2.metric("Designs", len(mem["designs"]))
+    c3.metric("Evolution Runs", len(mem["evolution"]))
 
 
-# =========================================================
-# ARCHITECTURE VIEW
-# =========================================================
+# ---------------- LAB ----------------
+elif page == "Design Synthesis Lab":
+    st.title("🌍 Design Lab")
 
-st.subheader("🏗 Latest Design Output")
+    if st.button("Run Evolution Engine", type="primary"):
 
-if st.session_state.design:
-    d = st.session_state.design
+        best, trend = run_evolutionary_loop(
+            design_type,
+            bedrooms,
+            generations,
+            pop,
+            lambda: str(uuid.uuid4())[:8].upper()
+        )
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Fitness", round(d["fitness"], 2))
-    col2.metric("Area", d["area"])
-    col3.metric("Columns", d["columns"])
+        best["plan"] = [
+            {"name": "Living", "w": 5, "h": 4, "color": "#1e3a8a"}
+        ]
 
-    st.json(d)
-else:
-    st.info("No design generated yet.")
+        mem["designs"].append(best)
+        mem["evolution"].append({
+            "id": str(uuid.uuid4())[:6],
+            "best": best["id"],
+            "score": best["score"]
+        })
+
+        st.session_state.active = best
+        st.session_state.trend = trend
+
+        log_event(mem, f"Generated design {best['id']}")
+        save_memory(mem)
+
+    if "active" in st.session_state:
+        d = st.session_state.active
+
+        st.metric("Score", d["score"])
+        st.metric("Area", d["area_sqm"])
+        st.metric("Cost", d["cost"])
+
+        render_blueprint(d["plan"])
+
+        st.subheader("Diagnostics")
+        for a in run_structural_review(d):
+            st.write(a)
+
+        st.subheader("Materials")
+        st.table(calculate_material_takeoffs(d))
 
 
-# =========================================================
-# SYSTEM ANALYTICS
-# =========================================================
+# ---------------- MEMORY ----------------
+elif page == "Memory Repositories":
+    st.title("🧠 Memory")
 
-st.subheader("🧠 System Diagnostics")
+    st.json(mem)
 
-stats = collect_stats(world, st.session_state.agents)
-
-st.json({
-    "voxels": voxel_count,
-    "agents": len(st.session_state.agents),
-    "rules": "adaptive",
-    "simulation_health": "stable",
-    "stats": stats
-})
-
-
-# =========================================================
-# LIVE LOG OUTPUT
-# =========================================================
-
-st.subheader("📜 Event Log")
-
-try:
-    from memory.store import load_logs
-    logs = load_logs()
-    for l in logs[-10:]:
-        st.caption(f"{l['time']} — {l['msg']}")
-except:
-    st.caption("Logging system initializing...")
+    if st.button("Reset Memory"):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        save_memory(st.session_state.memory)
+        st.rerun()
