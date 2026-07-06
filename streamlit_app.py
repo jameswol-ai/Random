@@ -1,16 +1,17 @@
 # ============================================================
-# RANDOM AI BIM STUDIO V56
+# RANDOM V56.0 AI BIM STUDIO
 # Parametric Architecture + BIM Intelligence Engine
 #
-# streamlit_app.py
+# Single File Streamlit Edition
 # ============================================================
 
 import streamlit as st
 import uuid
 import json
 import re
-from dataclasses import dataclass, asdict, field
+
 from datetime import datetime
+from dataclasses import dataclass, field, asdict
 
 
 # ============================================================
@@ -20,136 +21,97 @@ from datetime import datetime
 try:
     import plotly.graph_objects as go
     PLOTLY = True
+
 except Exception:
     PLOTLY = False
 
 
 
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIGURATION
 # ============================================================
 
 st.set_page_config(
+
     page_title="RANDOM AI BIM Studio V56",
+
     page_icon="🏛️",
+
     layout="wide"
+
 )
 
 
 
 # ============================================================
-# STYLE
-# ============================================================
-
-st.markdown("""
-<style>
-
-.main{
-background:#070b18;
-}
-
-.hero{
-
-background:
-linear-gradient(
-135deg,
-#111936,
-#070b18
-);
-
-padding:35px;
-border-radius:25px;
-border:1px solid #263252;
-
-}
-
-
-.logo{
-
-font-size:45px;
-font-weight:900;
-
-}
-
-
-.subtitle{
-
-color:#aab7d8;
-font-size:18px;
-
-}
-
-
-.card{
-
-background:#11182d;
-padding:20px;
-border-radius:20px;
-border:1px solid #263252;
-
-}
-
-
-.metric{
-
-font-size:35px;
-font-weight:900;
-color:#8ea2ff;
-
-}
-
-</style>
-
-""",
-unsafe_allow_html=True)
-
-
-
-# ============================================================
-# BIM DATA MODEL
+# BIM OBJECT MODEL
 # ============================================================
 
 
 @dataclass
-class Room:
+class BIMElement:
+
+    id:str
+
+    type:str
 
     name:str
+
+
+
+@dataclass
+class Space(BIMElement):
+
+    area:float
+
+    x:float
+
+    y:float
+
     width:float
+
     depth:float
-    x:float
-    y:float
 
-
-    def area(self):
-
-        return round(
-            self.width*self.depth,
-            2
-        )
+    height:float=3000
 
 
 
 @dataclass
-class Wall:
+class Wall(BIMElement):
 
-    id:str
     x1:float
+
     y1:float
+
     x2:float
+
     y2:float
-    height:float=3
+
+    thickness:float=200
+
+    height:float=3000
 
 
 
 @dataclass
-class Opening:
+class Opening(BIMElement):
 
-    id:str
-    type:str
     width:float
+
     height:float
+
     x:float
+
     y:float
+
+
+
+@dataclass
+class Column(BIMElement):
+
+    size:str="300x300mm"
+
+    material:str="Reinforced Concrete"
 
 
 
@@ -157,31 +119,45 @@ class Opening:
 class BIMProject:
 
 
-    name:str
-
-    id:str=field(
+    id:str = field(
         default_factory=lambda:
         str(uuid.uuid4())
     )
 
 
-    created:str=field(
+    created:str = field(
         default_factory=lambda:
         str(datetime.now())
     )
 
 
-    rooms:list=field(
+    name:str="AI Residence"
+
+
+    spaces:list=field(
         default_factory=list
     )
+
 
     walls:list=field(
         default_factory=list
     )
 
+
     openings:list=field(
         default_factory=list
     )
+
+
+    columns:list=field(
+        default_factory=list
+    )
+
+
+    structure:dict=field(
+        default_factory=dict
+    )
+
 
     cost:dict=field(
         default_factory=dict
@@ -194,7 +170,7 @@ class BIMProject:
 # ============================================================
 
 
-def interpret_brief(text):
+def analyse_design_brief(text):
 
     text=text.lower()
 
@@ -204,30 +180,75 @@ def interpret_brief(text):
     bathrooms=2
 
 
-    match=re.search(
+    bed_match=re.search(
         r"(\d+)\s*bedroom",
         text
     )
 
 
-    if match:
-
-        bedrooms=int(
-            match.group(1)
-        )
-
-
-    match=re.search(
+    bath_match=re.search(
         r"(\d+)\s*bathroom",
         text
     )
 
 
-    if match:
+    if bed_match:
+
+        bedrooms=int(
+            bed_match.group(1)
+        )
+
+
+    if bath_match:
 
         bathrooms=int(
-            match.group(1)
+            bath_match.group(1)
         )
+
+
+    features=[]
+
+
+    keywords={
+
+        "courtyard":
+        "Internal Courtyard",
+
+        "solar":
+        "Solar Roof",
+
+        "pool":
+        "Swimming Pool",
+
+        "garage":
+        "Vehicle Garage",
+
+        "office":
+        "Home Office"
+
+    }
+
+
+    for key,value in keywords.items():
+
+        if key in text:
+
+            features.append(value)
+
+
+
+    style="Modern"
+
+
+    if "tropical" in text:
+
+        style="Tropical Modern"
+
+
+    if "luxury" in text:
+
+        style="Luxury Contemporary"
+
 
 
     return {
@@ -236,64 +257,95 @@ def interpret_brief(text):
 
         "bathrooms":bathrooms,
 
-        "courtyard":
-        "courtyard" in text,
+        "style":style,
 
-        "luxury":
-        "luxury" in text,
-
-        "solar":
-        "solar" in text
+        "features":features
 
     }
 
 
 
 # ============================================================
-# BIM GENERATOR
+# PARAMETRIC ARCHITECTURAL GENERATOR
 # ============================================================
 
 
-def create_rooms(config):
+def generate_spaces(config):
 
 
-    rooms=[]
+    spaces=[]
 
 
-    rooms.append(
+    spaces.append(
 
-        Room(
+        Space(
+
+            "RM001",
+
+            "Space",
+
             "Living Room",
-            7,
-            5,
+
+            35,
+
             0,
-            0
+
+            0,
+
+            7,
+
+            5
+
         )
 
     )
 
 
-    rooms.append(
+    spaces.append(
 
-        Room(
+        Space(
+
+            "RM002",
+
+            "Space",
+
             "Kitchen",
-            4,
-            4,
+
+            18,
+
             7,
-            0
+
+            0,
+
+            4,
+
+            4
+
         )
 
     )
 
 
-    rooms.append(
+    spaces.append(
 
-        Room(
+        Space(
+
+            "RM003",
+
+            "Space",
+
             "Dining",
-            4,
-            4,
+
+            16,
+
             7,
+
+            4,
+
+            4,
+
             4
+
         )
 
     )
@@ -303,107 +355,149 @@ def create_rooms(config):
         config["bedrooms"]
     ):
 
-        rooms.append(
 
-            Room(
+        spaces.append(
+
+            Space(
+
+                f"RM-B{i+1}",
+
+                "Space",
 
                 f"Bedroom {i+1}",
 
-                4,
-
-                4,
+                16,
 
                 (i%3)*4,
 
-                10+(i//3)*4
+                10+(i//3)*4,
+
+                4,
+
+                4
 
             )
 
         )
 
 
-    return rooms
+    return spaces
 
 
 
-def create_walls(rooms):
+# ============================================================
+# WALL GENERATOR
+# ============================================================
+
+
+def generate_walls(spaces):
+
 
     walls=[]
 
-    count=1
+
+    counter=1
 
 
-    for r in rooms:
+    for room in spaces:
 
 
         walls.extend([
 
 
-        Wall(
-            f"W{count}",
-            r.x,
-            r.y,
-            r.x+r.width,
-            r.y
-        ),
+            Wall(
+
+                f"W{counter}",
+
+                "Wall",
+
+                f"{room.name} North Wall",
+
+                room.x,
+
+                room.y,
+
+                room.x+room.width,
+
+                room.y
+
+            ),
 
 
-        Wall(
-            f"W{count+1}",
-            r.x+r.width,
-            r.y,
-            r.x+r.width,
-            r.y+r.depth
-        ),
+            Wall(
 
+                f"W{counter+1}",
 
-        Wall(
-            f"W{count+2}",
-            r.x+r.width,
-            r.y+r.depth,
-            r.x,
-            r.y+r.depth
-        ),
+                "Wall",
 
+                f"{room.name} East Wall",
 
-        Wall(
-            f"W{count+3}",
-            r.x,
-            r.y+r.depth,
-            r.x,
-            r.y
-        )
+                room.x+room.width,
+
+                room.y,
+
+                room.x+room.width,
+
+                room.y+room.depth
+
+            )
 
         ])
 
 
-        count+=4
+        counter+=2
+
 
 
     return walls
 
 
 
-def create_openings():
+# ============================================================
+# OPENING GENERATOR
+# ============================================================
+
+
+def generate_openings():
+
 
     return [
 
         Opening(
+
             "D001",
+
             "Door",
-            1,
-            2.1,
+
+            "Entrance Door",
+
+            1200,
+
+            2400,
+
             2,
+
             0
+
         ),
 
+
         Opening(
+
             "WIN001",
+
             "Window",
-            1.5,
-            1.2,
+
+            "Living Window",
+
+            1500,
+
+            1200,
+
             5,
+
             5
+
         )
 
     ]
@@ -411,334 +505,40 @@ def create_openings():
 
 
 # ============================================================
-# COST ENGINE
+# STRUCTURE GENERATOR
 # ============================================================
 
 
-def calculate_cost(project):
+def generate_structure():
 
 
-    area=sum(
-        r.area()
-        for r in project.rooms
-    )
+    columns=[]
+
+
+    for x in range(5):
+
+        for y in range(5):
+
+            columns.append(
+
+                Column(
+
+                    f"C{x}{y}",
+
+                    "Column",
+
+                    f"Grid {x+1}-{y+1}"
+
+                )
+
+            )
 
 
     return {
 
-        "Floor Area m2":
-        round(area,2),
+        "columns":columns,
 
-        "Concrete m3":
-        round(area*0.25,2),
-
-        "Steel Tonnes":
-        round(area*0.04,2),
-
-        "Estimated USD":
-        round(area*700,2)
+        "system":
+        "Reinforced Concrete Frame"
 
     }
-
-
-
-# ============================================================
-# SESSION
-# ============================================================
-
-
-if "project" not in st.session_state:
-
-    st.session_state.project = BIMProject(
-        "AI Residence"
-    )
-
-
-project=st.session_state.project
-
-
-
-# ============================================================
-# HEADER
-# ============================================================
-
-st.markdown("""
-<div class="hero">
-
-<div class="logo">
-🏛️ RANDOM AI BIM STUDIO V56
-</div>
-
-<div class="subtitle">
-AI Architecture • Parametric BIM • Digital Construction
-</div>
-
-</div>
-
-""",
-unsafe_allow_html=True)
-
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
-
-
-with st.sidebar:
-
-
-    st.header(
-        "🤖 AI Architect"
-    )
-
-
-    project.name=st.text_input(
-        "Project Name",
-        project.name
-    )
-
-
-    brief=st.text_area(
-
-        "Design Brief",
-
-"""
-Luxury tropical modern villa,
-4 bedroom,
-courtyard,
-solar roof
-"""
-
-    )
-
-
-    if st.button(
-        "🚀 Generate BIM Model"
-    ):
-
-
-        config=interpret_brief(
-            brief
-        )
-
-
-        project.rooms=create_rooms(
-            config
-        )
-
-
-        project.walls=create_walls(
-            project.rooms
-        )
-
-
-        project.openings=create_openings()
-
-
-        project.cost=calculate_cost(
-            project
-        )
-
-
-        st.success(
-            "BIM Generated"
-        )
-
-
-    st.divider()
-
-
-    st.download_button(
-
-        "📦 Export BIM JSON",
-
-        json.dumps(
-            asdict(project),
-            indent=2
-        ),
-
-        "random_bim.json"
-
-    )
-
-
-# ============================================================
-# METRICS
-# ============================================================
-
-
-c1,c2,c3,c4=st.columns(4)
-
-
-data=[
-
-(c1,"Rooms",len(project.rooms)),
-
-(c2,"Walls",len(project.walls)),
-
-(c3,"Openings",len(project.openings)),
-
-(c4,"Area",
-sum(r.area() for r in project.rooms))
-
-]
-
-
-for col,title,value in data:
-
-    col.markdown(
-    f"""
-
-<div class="card">
-
-<h3>{title}</h3>
-
-<div class="metric">
-
-{value}
-
-</div>
-
-</div>
-
-""",
-    unsafe_allow_html=True
-    )
-
-
-
-# ============================================================
-# FLOOR PLAN
-# ============================================================
-
-
-st.subheader(
-"📐 AI Generated Floor Plan"
-)
-
-
-if PLOTLY:
-
-
-    fig=go.Figure()
-
-
-    for wall in project.walls:
-
-
-        fig.add_shape(
-
-            type="line",
-
-            x0=wall.x1,
-
-            y0=wall.y1,
-
-            x1=wall.x2,
-
-            y1=wall.y2,
-
-            line=dict(
-                width=5
-            )
-
-        )
-
-
-    for room in project.rooms:
-
-
-        fig.add_annotation(
-
-            x=room.x+room.width/2,
-
-            y=room.y+room.depth/2,
-
-            text=room.name,
-
-            showarrow=False
-
-        )
-
-
-    fig.update_layout(
-
-        height=650,
-
-        title="RANDOM AI Parametric Plan"
-
-    )
-
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
-
-
-else:
-
-    st.warning(
-        "Install plotly for visualization"
-    )
-
-
-
-# ============================================================
-# BIM TREE
-# ============================================================
-
-
-tab1,tab2,tab3=st.tabs(
-[
-"🧱 BIM Objects",
-"💰 Cost",
-"🤖 AI Notes"
-]
-)
-
-
-with tab1:
-
-    st.json(
-        asdict(project)
-    )
-
-
-
-with tab2:
-
-    for k,v in project.cost.items():
-
-        st.metric(
-            k,
-            v
-        )
-
-
-
-with tab3:
-
-
-    st.info(
-
-"""
-AI Recommendations
-
-• Improve daylight orientation
-• Add passive ventilation
-• Optimize structural grid
-• Reserve roof for solar panels
-
-Architecture engine ready for IFC integration.
-
-"""
-
-    )
-
-
-
-st.caption(
-"RANDOM AI BIM STUDIO V56 | Parametric Architecture Intelligence"
-)
