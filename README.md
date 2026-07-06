@@ -125,3 +125,22 @@ RANDOM/
 ├── reports/
 │
 └── plugins/
+
+
+🏠 Project Overview
+
+📐 Floor Plan
+
+🏗 Structural Model
+
+💰 Cost Estimate
+
+🌍 Sustainability
+
+📋 Code Compliance
+
+📊 AI Evolution
+
+🧠 Memory
+
+⚙ Settings
