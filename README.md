@@ -1,331 +1,454 @@
-# Random
+# ============================================================
+# RANDOM V52 HYBRID ARCHITECTURE ENGINE
+# AI HOUSE GENERATOR + BIM FOUNDATION
+#
+# Single File Streamlit Edition
+# ============================================================
 
-Random is an AI tool that helps architects and engineers in East Africa design, check compliance, and prepare documentation quickly and efficiently.
-It provides references to regional building codes, automated compliance checks, and sample workflows for engineers and architects.
-
-What It Does
-- Generate concept drawings adapted to tropical climates and local materials  
-- Check designs against Uganda Building Code 2024 and South Sudan guidelines  
-- Create simple reports, proposals, and compliance checklists  
-- Support collaboration through GitHub workflows
-  
-
-Repo Structure
-
-├── docs/              (Regional building codes and standards references)
-├── src/               (Core bot logic)
-├── workflows/         (Predefined workflows (concepts, compliance, docs))
-├── examples/          (Sample usage scripts)
-├── tests/             (Unit tests)
-├── README.md          (Project overview)
-└── LICENSE           (License file)
+import streamlit as st
+import uuid
+from datetime import datetime
 
 
-Final Repo Structure (Extended)
-ai-architecture-bot/
-│
-├── src/
-│   ├── core/
-│   │   ├── engine.py              # Workflow engine (runs stages)
-│   │   ├── context.py             # Shared memory/state handler
-│   │   └── dispatcher.py          # Routes tasks between stages
-│   │
-│   ├── stages/
-│   │   ├── concept_stage.py       # Idea generation (design thinking)
-│   │   ├── compliance_stage.py    # Rules, safety, building codes
-│   │   ├── analysis_stage.py      # Climate, cost, feasibility logic
-│   │   └── output_stage.py        # Final architectural plan output
-│   │
-│   ├── models/
-│   │   ├── prompt_models.py       # Prompt templates for AI generation
-│   │   └── design_schema.py       # Structure of architectural output
-│   │
-│   ├── utils/
-│   │   ├── logger.py              # Debug + workflow tracking
-│   │   ├── validators.py          # Input/output validation
-│   │   └── helpers.py             # Small reusable tools
-│   │
-│   └── main.py                    # Entry point (run system here)
-│
-├── workflows/
-│   ├── basic_design.json          # Simple architecture pipeline
-│   ├── eco_building.json          # Eco-friendly workflow
-│   └── urban_plan.json            # Large-scale city design flow
-│
-├── docs/
-│   ├── building_codes/
-│   │   ├── global_standards.md
-│   │   ├── tropical_climate.md
-│   │   └── fire_safety_rules.md
-│   │
-│   ├── system_design.md
-│   └── architecture_notes.md
-│
-├── examples/
-│   ├── run_basic.py
-│   ├── run_eco.py
-│   └── sample_inputs.json
-│
-├── tests/
-│   ├── test_engine.py
-│   ├── test_stages.py
-│   └── test_workflows.py
-│
-├── config/
-│   ├── settings.py               # Global config
-│   └── api_keys.env.example
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
+# ============================================================
+# CONFIG
+# ============================================================
+
+st.set_page_config(
+    page_title="RANDOM V52 Architecture AI",
+    page_icon="🏗️",
+    layout="wide"
+)
 
 
-RANDOM/
-│
-├── streamlit_app.py
-│
-├── engine/
-│   ├── evolution.py
-│   ├── optimizer.py
-│   ├── genetics.py
-│   ├── planner.py
-│   └── scoring.py
-│
-├── agents/
-│   ├── architect.py
-│   ├── structural.py
-│   ├── boq.py
-│   ├── code_checker.py
-│   ├── sustainability.py
-│   └── project_manager.py
-│
-├── bim/
-│   ├── building.py
-│   ├── floor.py
-│   ├── room.py
-│   ├── wall.py
-│   ├── slab.py
-│   └── roof.py
-│
-├── visualization/
-│   ├── floorplan.py
-│   ├── renderer2d.py
-│   ├── renderer3d.py
-│   └── dashboard.py
-│
-├── memory/
-│   ├── memory.json
-│   ├── learning.py
-│   └── history.py
-│
-├── data/
-│
-├── exports/
-│
-├── reports/
-│
-└── plugins/
+# ============================================================
+# STYLE
+# ============================================================
+
+st.markdown(
+"""
+<style>
+
+.main {
+background:#0b1020;
+}
+
+.card {
+background:#151b32;
+padding:20px;
+border-radius:15px;
+margin:10px 0;
+}
+
+h1,h2,h3 {
+color:white;
+}
+
+</style>
+""",
+unsafe_allow_html=True
+)
 
 
-🏠 Project Overview
 
-📐 Floor Plan
+# ============================================================
+# SESSION DATA
+# ============================================================
 
-🏗 Structural Model
+if "model" not in st.session_state:
 
-💰 Cost Estimate
-
-🌍 Sustainability
-
-📋 Code Compliance
-
-📊 AI Evolution
-
-🧠 Memory
-
-⚙ Settings
-
-v33-simulation-os/
-│
-├── streamlit_app.py                # UI entrypoint only (thin shell)
-├── requirements.txt
-├── README.md
-│
-├── core/                           # 🧠 central simulation kernel
-│   ├── __init__.py
-│   ├── config.py                   # global constants + runtime config
-│   ├── engine.py                   # main simulation loop
-│   ├── scheduler.py                # tick system / time control
-│   └── registry.py                 # module/plugin registry
-│
-├── world/                          # 🌐 voxel + physics system
-│   ├── __init__.py
-│   ├── voxel.py                    # voxel grid representation
-│   ├── terrain.py                  # terrain generation
-│   ├── biomes.py                  # biome rules
-│   ├── fluids.py                  # water + flow simulation
-│   ├── erosion.py                 # terrain decay system
-│   └── renderer.py                # projection + visualization
-│
-├── agents/                         # 🤖 civilization layer
-│   ├── __init__.py
-│   ├── agent.py                   # base agent class
-│   ├── behavior.py                # decision logic
-│   ├── movement.py                # navigation system
-│   └── society.py                 # grouping + social structures
-│
-├── architecture/                   # 🏗 generative design engine
-│   ├── __init__.py
-│   ├── genome.py                  # building DNA system
-│   ├── generator.py               # procedural design creation
-│   ├── mutation.py                # evolutionary operators
-│   ├── fitness.py                # scoring functions
-│   └── floorplans.py             # spatial layout generation
-│
-├── evolution/                     # 🧬 meta-learning system
-│   ├── __init__.py
-│   ├── evolutionary_loop.py       # selection cycle
-│   ├── population.py              # population management
-│   ├── selection.py               # survival logic
-│   └── adaptive_rules.py          # self-modifying parameters
-│
-├── meta/                          # 🧠 system that changes system
-│   ├── __init__.py
-│   ├── rule_engine.py             # dynamic rule mutation
-│   ├── observation.py             # system monitoring
-│   ├── diagnostics.py             # anomaly detection
-│   └── self_tuner.py              # auto-optimization logic
-│
-├── memory/                        # 💾 persistence layer
-│   ├── __init__.py
-│   ├── store.py                  # JSON / disk storage
-│   ├── logger.py                 # event logging system
-│   └── snapshot.py               # world state snapshots
-│
-├── ui/                           # 🎛 streamlit interface layer
-│   ├── __init__.py
-│   ├── dashboard.py
-│   ├── world_view.py
-│   ├── architecture_view.py
-│   ├── agent_view.py
-│   └── memory_view.py
-│
-├── plugins/                     # 🔌 extensibility layer
-│   ├── __init__.py
-│   ├── base_plugin.py
-│   └── example_plugin.py
-│
-└── tests/                       # 🧪 system validation
-    ├── test_world.py
-    ├── test_agents.py
-    ├── test_architecture.py
-    └── test_evolution.py
-
-plugins/
-    council/
-        structural_agent.py
-        cost_agent.py
-        spatial_agent.py
-        aesthetic_agent.py
-        council_orchestrator.py
+    st.session_state.model = {
+        "id":str(uuid.uuid4()),
+        "created":str(datetime.now()),
+        "rooms":[],
+        "grid":[],
+        "structure":{},
+        "cost":{}
+    }
 
 
-Arc Studio Engine
-│
-├── 🧠 AI Core
-│   ├── Design Agent
-│   ├── Structural Agent
-│   ├── MEP Agent
-│   ├── HVAC Agent
-│   ├── Cost Agent
-│   └── Sustainability Agent
-│
-├── 📐 Architecture
-│   ├── Room Generator
-│   ├── Floor Planner
-│   ├── Space Optimization
-│   ├── Adjacency Rules
-│   └── Zoning
-│
-├── 🏗 Structural Engineering
-│   ├── Columns
-│   ├── Beams
-│   ├── Slabs
-│   ├── Foundations
-│   └── Load Analysis
-│
-├── ⚡ MEP
-│   ├── Electrical
-│   ├── Plumbing
-│   ├── Fire Protection
-│   └── Communications
-│
-├── 🌬 HVAC
-│   ├── Cooling
-│   ├── Heating
-│   ├── Ventilation
-│   └── Indoor Air Quality
-│
-├── 💰 Cost Intelligence
-│   ├── Material Database
-│   ├── Bill of Quantities
-│   ├── Labour
-│   ├── Equipment
-│   └── Project Cost
-│
-├── 📊 Analytics
-│   ├── AI Fitness
-│   ├── Structural Score
-│   ├── Energy Score
-│   ├── Cost Score
-│   └── Sustainability Score
-│
-├── 🗺 Visualization
-│   ├── 2D Plans
-│   ├── 3D Models
-│   ├── Sections
-│   └── Elevations
-│
-└── 📦 Export
-    ├── PDF
-    ├── Excel
-    ├── JSON
-    ├── PNG
-    └── IFC (future)        
-RANDOM V52 HOUSE INTELLIGENCE CORE
 
-streamlit_app.py
-│
-├── Project Dashboard
-├── AI Design Command
-├── House Generator
-│
-├── Space Engine
-│   ├── Bedrooms
-│   ├── Bathrooms
-│   ├── Kitchen
-│   ├── Living Areas
-│   ├── Corridors
-│   ├── Balconies
-│   └── Custom Spaces
-│
-├── BIM Engine
-│   ├── Grid System
-│   ├── Columns
-│   ├── Beams
-│   ├── Slabs
-│   ├── Roof
-│   ├── Foundations
-│   ├── Doors
-│   └── Windows
-│
-├── Drawing Engine
-│   ├── Plans
-│   ├── Elevations
-│   ├── Sections
-│   └── Schedules
-│
-└── Cost Engine
-    ├── Quantities
-    ├── Materials
-    └── Estimates
+# ============================================================
+# CONVERSION
+# ============================================================
+
+def metric_to_imperial(value):
+
+    return round(value * 3.28084,2)
+
+
+
+# ============================================================
+# GRID ENGINE
+# ============================================================
+
+def generate_grid(spacing, size_x, size_y):
+
+    grid=[]
+
+    x=0
+
+    while x <= size_x:
+
+        y=0
+
+        while y <= size_y:
+
+            grid.append(
+                {
+                    "x":round(x,2),
+                    "y":round(y,2)
+                }
+            )
+
+            y+=spacing
+
+        x+=spacing
+
+    return grid
+
+
+
+# ============================================================
+# SPACE ENGINE
+# ============================================================
+
+def generate_house(
+    bedrooms,
+    bathrooms
+):
+
+    spaces=[
+
+        {
+        "name":"Living Room",
+        "area":30
+        },
+
+        {
+        "name":"Kitchen",
+        "area":15
+        },
+
+        {
+        "name":"Dining",
+        "area":15
+        },
+
+        {
+        "name":"Corridor",
+        "area":10
+        },
+
+        {
+        "name":"Balcony",
+        "area":8
+        }
+
+    ]
+
+
+    for i in range(bedrooms):
+
+        spaces.append(
+            {
+            "name":f"Bedroom {i+1}",
+            "area":16
+            }
+        )
+
+
+    for i in range(bathrooms):
+
+        spaces.append(
+            {
+            "name":f"Bathroom {i+1}",
+            "area":6
+            }
+        )
+
+
+    return spaces
+
+
+
+# ============================================================
+# COST ENGINE
+# ============================================================
+
+def calculate_cost(area):
+
+    rate = 500
+
+    return {
+
+        "Floor Area m2":area,
+
+        "Concrete Estimate m3":
+        round(area*0.25,2),
+
+        "Floor Finish m2":
+        area,
+
+        "Estimated Construction Cost USD":
+        area*rate
+
+    }
+
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.title(
+"🧠 RANDOM V52"
+)
+
+st.subheader(
+"Hybrid Architecture + BIM Intelligence Engine"
+)
+
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+with st.sidebar:
+
+    st.header("🏠 House Parameters")
+
+
+    floors=st.number_input(
+        "Number of Floors",
+        1,
+        10,
+        2
+    )
+
+
+    bedrooms=st.number_input(
+        "Bedrooms",
+        1,
+        20,
+        4
+    )
+
+
+    bathrooms=st.number_input(
+        "Bathrooms",
+        1,
+        20,
+        3
+    )
+
+
+    unit=st.selectbox(
+        "Unit System",
+        [
+            "Metric",
+            "Imperial"
+        ]
+    )
+
+
+    grid_spacing=st.selectbox(
+        "Grid Spacing",
+        [
+            1,
+            1.5,
+            3
+        ]
+    )
+
+
+    generate=st.button(
+        "Generate House"
+    )
+
+
+
+# ============================================================
+# GENERATION
+# ============================================================
+
+if generate:
+
+    rooms=generate_house(
+        bedrooms,
+        bathrooms
+    )
+
+
+    grid=generate_grid(
+        grid_spacing,
+        18,
+        15
+    )
+
+
+    area=sum(
+        r["area"]
+        for r in rooms
+    )
+
+
+    st.session_state.model["rooms"]=rooms
+
+    st.session_state.model["grid"]=grid
+
+
+    st.session_state.model["structure"]={
+
+        "Columns":
+        "300x300 mm Reinforced Concrete",
+
+        "Beams":
+        "250x450 mm Reinforced Concrete",
+
+        "Foundation":
+        "Pad Foundation System",
+
+        "Roof":
+        "Pitched Roof 30 degrees",
+
+        "Ceiling":
+        "Gypsum Board System"
+
+    }
+
+
+    st.session_state.model["cost"]=calculate_cost(
+        area
+    )
+
+
+    st.success(
+        "RANDOM generated building model"
+    )
+
+
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+c1,c2,c3=st.columns(3)
+
+
+with c1:
+
+    st.markdown(
+    f"""
+    <div class="card">
+
+    🏠 Spaces
+
+    <h2>
+    {len(st.session_state.model["rooms"])}
+    </h2>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+with c2:
+
+    st.markdown(
+    f"""
+    <div class="card">
+
+    📐 Grid Points
+
+    <h2>
+    {len(st.session_state.model["grid"])}
+    </h2>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+with c3:
+
+    st.markdown(
+    """
+    <div class="card">
+
+    🧱 BIM Status
+
+    <h2>
+    Active
+    </h2>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+
+# ============================================================
+# OUTPUTS
+# ============================================================
+
+tab1,tab2,tab3,tab4=st.tabs(
+[
+"🏠 Spaces",
+"📐 Grid",
+"🏗 Structure",
+"💰 Cost"
+]
+)
+
+
+
+with tab1:
+
+    st.json(
+        st.session_state.model["rooms"]
+    )
+
+
+
+with tab2:
+
+    st.write(
+        "Grid spacing:",
+        grid_spacing,
+        "m"
+    )
+
+    st.json(
+        st.session_state.model["grid"]
+    )
+
+
+
+with tab3:
+
+    st.json(
+        st.session_state.model["structure"]
+    )
+
+
+
+with tab4:
+
+    st.json(
+        st.session_state.model["cost"]
+    )
+
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.caption(
+"RANDOM V52 Hybrid Architecture Engine | AI + BIM Foundation"
+)
