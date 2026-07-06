@@ -23,10 +23,6 @@ st.set_page_config(
 
 MEMORY_FILE = Path("arc_memory.json")
 
-# =========================================================
-# CUSTOM ARCHITECTURAL STUDIO UI SKIN
-# =========================================================
-
 st.markdown(
 """
 <style>
@@ -92,6 +88,7 @@ DEFAULT_STATE = {
     "evolution": []
 }
 
+
 def load_memory():
     if MEMORY_FILE.exists():
         try:
@@ -118,6 +115,7 @@ def log_event(msg):
     save_memory()
 
 
+# Initialize session state
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -130,7 +128,7 @@ if "active_history" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURAL GENETICS
+# ARCHITECTURAL GENETICS ENGINE
 # =========================================================
 
 ARCH_DOMAINS = {
@@ -148,8 +146,10 @@ def get_domain(btype):
 
 
 def generate_base_design(btype, bedrooms):
-    core_rooms = ["Living Room", "Gourmet Kitchen", "Primary Bathroom"] + \
-                 ["Flex Space"] * random.randint(1, 3)
+    core_rooms = (
+        ["Living Room", "Gourmet Kitchen", "Primary Bathroom"]
+        + ["Flex Space"] * random.randint(1, 3)
+    )
 
     est_area = 65 + 44 + (3 * 3) + (bedrooms * 18)
 
@@ -168,8 +168,8 @@ def generate_base_design(btype, bedrooms):
     }
 
 
-def mutate_design(d):
-    d = json.loads(json.dumps(d))
+def mutate_design(design):
+    d = json.loads(json.dumps(design))
 
     d["structure"]["columns"] = max(
         10, d["structure"]["columns"] + random.randint(-2, 4)
@@ -219,27 +219,27 @@ def run_evolutionary_loop(btype, bedrooms, generations, pop_size):
     history = []
 
     for _ in range(generations):
-        scored = []
+        scored_pop = []
 
         for d in population:
             fit = calculate_fitness(d)
             d["fitness"] = fit
             d["score"] = aggregate_score(fit)
-            scored.append(d)
+            scored_pop.append(d)
 
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
+        scored_pop.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored_pop[0]["score"])
 
-        survivors = scored[:max(2, pop_size // 2)]
+        survivors = scored_pop[:max(2, pop_size // 2)]
 
-        new_pop = []
-        for p in survivors:
-            new_pop.append(p)
-            new_pop.append(mutate_design(p))
+        new_generation = []
+        for parent in survivors:
+            new_generation.append(parent)
+            new_generation.append(mutate_design(parent))
 
-        population = new_pop[:pop_size]
+        population = new_generation[:pop_size]
 
-    return scored[0], history
+    return scored_pop[0], history
 
 
 def generate_floor_plan(design):
@@ -260,5 +260,111 @@ def generate_floor_plan(design):
     return rooms
 
 # =========================================================
-# (UI + rendering sections remain unchanged structurally)
+# UI LAYOUT + VIEWPORTS (structure preserved, cleaned)
 # =========================================================
+
+st.sidebar.title("📐 Arc Studio")
+st.sidebar.caption("v10.2 • Generative Structural Design Loop")
+st.sidebar.markdown("---")
+
+page = st.sidebar.radio(
+    "Studio Workspace",
+    ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"]
+)
+
+st.sidebar.markdown("---")
+
+with st.sidebar.expander("🛠️ Configure Arc Engine", expanded=False):
+    st.subheader("Synthesis Directives")
+
+    all_typologies = []
+    for sub_list in ARCH_DOMAINS.values():
+        all_typologies.extend(sub_list)
+
+    input_type = st.selectbox("Design Typology Target", all_typologies)
+    input_bedrooms = st.slider("Target Spatial Modules", 1, 8, 3)
+    input_generations = st.slider("Genetic Epoch Cycles", 2, 20, 6)
+    input_pop = st.slider("Population Bounds", 4, 30, 10)
+
+# =========================================================
+# DASHBOARD VIEW
+# =========================================================
+
+if page == "Dashboard Control":
+    st.title("📐 Studio Control Dashboard")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Tracked Space Profiles", len(mem["projects"]))
+    col2.metric("Evolved Blueprint Seeds", len(mem["designs"]))
+    col3.metric("Total Parametric Compute Loops", len(mem["evolution"]))
+
+    st.markdown("---")
+    st.subheader("Engine Logs")
+
+    if mem["logs"]:
+        for log in reversed(mem["logs"][-6:]):
+            st.caption(f"⏱️ `{log['time'][11:19]}` — {log['msg']}")
+    else:
+        st.info("No logs yet.")
+
+# =========================================================
+# SYNTHESIS LAB VIEW
+# =========================================================
+
+elif page == "Design Synthesis Lab":
+    st.title("🌍 Algorithmic Design Lab")
+
+    generate_now = st.button(
+        "Run Generative Architectural Evolution Pipeline",
+        use_container_width=True
+    )
+
+    if generate_now:
+        with st.spinner("Evolving architectural population..."):
+            best, trend = run_evolutionary_loop(
+                input_type,
+                input_bedrooms,
+                input_generations,
+                input_pop
+            )
+
+            best["plan"] = generate_floor_plan(best)
+
+            mem["designs"].append(best)
+            mem["evolution"].append({
+                "id": str(uuid.uuid4())[:6].upper(),
+                "best_id": best["id"],
+                "peak_score": best["score"],
+                "timestamp": datetime.now().isoformat()
+            })
+
+            st.session_state.active_design = best
+            st.session_state.active_history = trend
+
+            log_event(f"Evolved Design {best['id']}")
+
+    if st.session_state.active_design:
+        design = st.session_state.active_design
+
+        st.subheader(f"Design {design['id']}")
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Score", f"{design['score']} / 100")
+        c2.metric("Area", f"{design['area_sqm']} m²")
+        c3.metric("Cost", f"${design['cost']:,}")
+
+# =========================================================
+# MEMORY VIEW
+# =========================================================
+
+elif page == "Memory Repositories":
+    st.title("🧠 System Memory")
+
+    st.json(mem)
+
+    if st.button("Reset Memory", use_container_width=True):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        st.session_state.active_design = None
+        st.session_state.active_history = []
+        save_memory()
+        st.rerun()
