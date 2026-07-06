@@ -296,3 +296,52 @@ for c in st.session_state.chat[-6:]:
         st.markdown(f"🧑‍💻 **You:** {c['msg']}")
     else:
         st.markdown(f"🧠 **Copilot:** {c['msg']}")
+st.sidebar.markdown("## 🛠 Configure Arc Engine")
+
+building_category = st.selectbox(
+    "Building Category",
+    ["Residential", "Commercial", "Industrial", "Mixed Use"]
+)
+
+building_type = st.selectbox(
+    "Building Type",
+    ARCH_DOMAINS.get(building_category, [])
+)
+
+floors = st.slider("Number of Floors", 1, 60, 2)
+
+population = st.slider("Expected Occupancy", 1, 5000, 20)
+
+bedrooms = st.slider("Bedrooms", 0, 20, 3)
+
+bathrooms = st.slider("Bathrooms", 1, 20, 3)
+
+parking = st.slider("Parking Spaces", 0, 500, 2)
+
+generations = st.slider("Genetic Epoch Cycles", 2, 100, 25)
+
+population_size = st.slider("Evolution Population", 10, 500, 100)
+
+design["bim"] = {
+
+    "Site": {},
+
+    "Architecture": {},
+
+    "Structure": {},
+
+    "MEP": {},
+
+    "HVAC": {},
+
+    "Electrical": {},
+
+    "Fire Protection": {},
+
+    "Plumbing": {},
+
+    "Schedules": {},
+
+    "Cost Model": {}
+
+}
