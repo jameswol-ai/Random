@@ -1,7 +1,6 @@
 # =========================================================
-# RANDOM ARC HYBRID ENGINE
-# Seed Kernel + Evolutionary Architect + Chaos Mutator
-# Single-File Streamlit System
+# RANDOM ARC HYBRID ENGINE V2
+# Multi-Agent City Intelligence + Evolution + Chaos System
 # =========================================================
 
 import streamlit as st
@@ -16,22 +15,22 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Arc Hybrid Engine",
-    page_icon="🌐",
+    page_title="Random Arc Council Engine",
+    page_icon="🏙️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("random_arc_memory.json")
+MEMORY_FILE = Path("arc_council_memory.json")
 
 # =========================================================
 # MEMORY
 # =========================================================
 
 DEFAULT_STATE = {
-    "seeds": [],
     "cities": [],
-    "chaos_events": [],
-    "lineage": []
+    "agents": [],
+    "votes": [],
+    "chaos_log": []
 }
 
 def load_memory():
@@ -48,10 +47,10 @@ def save_memory():
     except:
         pass
 
-def log(event):
-    st.session_state.memory["chaos_events"].append({
+def log(msg):
+    st.session_state.memory["chaos_log"].append({
         "time": datetime.now().isoformat(),
-        "event": event
+        "msg": msg
     })
     save_memory()
 
@@ -64,179 +63,205 @@ if "active_city" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHETYPE CORE
+# AGENTS (THE ARCHITECT COUNCIL)
 # =========================================================
 
-BUILD_TYPES = [
-    "Sky Tower", "Arcology Block", "Floating Habitat",
-    "Subterranean Nexus", "Coastal Stack", "Modular Hive"
+AGENTS = [
+    {"name": "Structural Purist", "bias": "stability"},
+    {"name": "Chaos Architect", "bias": "innovation"},
+    {"name": "Cost Guardian", "bias": "efficiency"},
+    {"name": "Skyline Poet", "bias": "scale"},
+    {"name": "Urban Systems Analyst", "bias": "balance"}
 ]
 
-ROOM_MUTATIONS = [
-    "Gravity Neutral Chamber",
-    "Light Fold Atrium",
-    "Bio Adaptive Garden",
-    "Quantum Corridor",
-    "Reactive Wall Grid",
-    "Memory Storage Room"
+BUILDINGS = [
+    "Arc Tower", "Neon Habitat", "Floating Stack",
+    "Deep Core Block", "Spiral Megastructure", "Bio Dome Cluster"
 ]
 
-def generate_seed():
-    btype = random.choice(BUILD_TYPES)
+DISTRICTS = [
+    "Commercial Core", "Residential Ring", "Industrial Belt",
+    "Greenbelt Sector", "Transit Spine", "Innovation Quarter"
+]
 
-    base = {
+# =========================================================
+# CITY GENERATION
+# =========================================================
+
+def generate_city():
+    city = {
         "id": str(uuid.uuid4())[:8],
-        "type": btype,
-        "floors": random.randint(3, 80),
-        "modules": random.randint(5, 25),
-        "instability": random.random(),
-        "rooms": ["Core Hub", "Energy Spine", "Access Loop"],
-        "mass_index": random.randint(50, 500)
+        "name": f"City-{random.randint(100,999)}",
+        "districts": [],
+        "scale": random.randint(5, 50),
+        "stability": random.random(),
+        "innovation": random.random(),
+        "density": random.random()
     }
 
-    return base
+    for d in DISTRICTS:
+        city["districts"].append({
+            "name": d,
+            "buildings": random.randint(3, 15),
+            "signature": random.choice(BUILDINGS),
+            "energy_flow": random.random()
+        })
 
-def mutate(city):
+    return city
+
+# =========================================================
+# AGENT EVALUATION SYSTEM
+# =========================================================
+
+def agent_score(agent, city):
+    if agent["bias"] == "stability":
+        return 100 - city["stability"] * 120
+    if agent["bias"] == "innovation":
+        return city["innovation"] * 120
+    if agent["bias"] == "efficiency":
+        return (1 - city["density"]) * 100
+    if agent["bias"] == "scale":
+        return city["scale"] * 2
+    if agent["bias"] == "balance":
+        return 100 - abs(city["stability"] - city["innovation"]) * 120
+
+    return random.randint(0, 100)
+
+def council_vote(city):
+    votes = []
+    total = 0
+
+    for agent in AGENTS:
+        score = agent_score(agent, city)
+        votes.append({
+            "agent": agent["name"],
+            "score": round(score, 2)
+        })
+        total += score
+
+    city["council_score"] = total / len(AGENTS)
+    return votes
+
+# =========================================================
+# EVOLUTION ENGINE
+# =========================================================
+
+def mutate_city(city):
     c = json.loads(json.dumps(city))
 
-    # structural drift
-    c["floors"] = max(1, c["floors"] + random.randint(-5, 10))
-    c["modules"] += random.randint(-2, 5)
+    c["scale"] = max(1, c["scale"] + random.randint(-3, 5))
+    c["stability"] = min(1, max(0, c["stability"] + random.uniform(-0.1, 0.1)))
+    c["innovation"] = min(1, max(0, c["innovation"] + random.uniform(-0.1, 0.15)))
+    c["density"] = min(1, max(0, c["density"] + random.uniform(-0.1, 0.1)))
 
     # chaos injection
-    if random.random() > 0.6:
-        c["rooms"].append(random.choice(ROOM_MUTATIONS))
-        c["instability"] = min(1.0, c["instability"] + random.random() * 0.2)
-
-    c["mass_index"] += random.randint(-20, 40)
+    if random.random() > 0.7:
+        d = random.choice(c["districts"])
+        d["energy_flow"] += random.random() * 0.2
+        log("Chaos spike in district: " + d["name"])
 
     return c
 
-def fitness(city):
-    stability = max(0, 100 - city["instability"] * 120)
-    density = min(100, city["modules"] * 4)
-    scale = min(100, city["floors"])
-
-    return int((stability + density + scale) / 3)
-
-def evolve(seed, generations=5):
-    population = [seed]
+def evolve_city(city, steps=5):
+    current = city
     history = []
 
-    for _ in range(generations):
-        next_gen = []
+    for _ in range(steps):
+        current = mutate_city(current)
+        votes = council_vote(current)
+        current["votes"] = votes
 
-        for p in population:
-            child = mutate(p)
-            child["score"] = fitness(child)
-            next_gen.append(child)
+        score = current["council_score"]
+        history.append(score)
 
-        best = max(next_gen, key=lambda x: x["score"])
-        history.append(best["score"])
-
-        population = [best, mutate(best)]
-
-    return best, history
+    return current, history
 
 # =========================================================
-# CITY VIEW
+# RENDERING
 # =========================================================
 
-def render(city):
-    st.subheader(f"🌆 {city['type']} :: {city['id']}")
+def render_city(city):
+    st.subheader(f"🏙️ {city['name']} :: {city['id']}")
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Floors", city["floors"])
-    col2.metric("Modules", city["modules"])
-    col3.metric("Instability", round(city["instability"], 2))
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Scale", city["scale"])
+    col2.metric("Stability", round(city["stability"], 2))
+    col3.metric("Innovation", round(city["innovation"], 2))
+    col4.metric("Council Score", round(city.get("council_score", 0), 2))
 
-    st.markdown("### 🧠 Spatial Composition")
+    st.markdown("### 🧭 District Composition")
 
-    for r in city["rooms"]:
-        st.markdown(f"- {r}")
-
-# =========================================================
-# CHAOS ENGINE
-# =========================================================
-
-def chaos_event(city):
-    event = random.choice([
-        "Structural resonance shift detected",
-        "Module duplication anomaly",
-        "Temporal layout drift",
-        "Gravity redistribution spike",
-        "Memory corridor collapse"
-    ])
-
-    city["instability"] = min(1.0, city["instability"] + 0.15)
-    log(event)
-    return event
+    for d in city["districts"]:
+        st.markdown(
+            f"- **{d['name']}** → {d['signature']} "
+            f"(Buildings: {d['buildings']}, Flow: {round(d['energy_flow'],2)})"
+        )
 
 # =========================================================
 # UI
 # =========================================================
 
-st.title("🌐 RANDOM ARC HYBRID ENGINE")
-st.caption("Seed + Evolution + Chaos Unified Architecture System")
+st.title("🏙️ RANDOM ARC HYBRID ENGINE V2")
+st.caption("Multi-Agent Council • Evolutionary Cities • Chaos Injection Layer")
 
-mode = st.sidebar.radio("Mode", ["Seed Generator", "Evolution Lab", "Chaos Simulator", "Memory Vault"])
+mode = st.sidebar.radio(
+    "System Mode",
+    ["City Seed", "Council Evolution", "Agent Court", "Memory Vault"]
+)
 
 # =========================================================
 # SEED
 # =========================================================
 
-if mode == "Seed Generator":
-    st.subheader("🧬 Generate Architectural Seed")
+if mode == "City Seed":
+    st.subheader("🧬 Generate City Seed")
 
-    if st.button("Generate Seed"):
-        seed = generate_seed()
-        mem["seeds"].append(seed)
-        st.session_state.active_city = seed
+    if st.button("Spawn City"):
+        city = generate_city()
+        mem["cities"].append(city)
+        st.session_state.active_city = city
         save_memory()
 
     if st.session_state.active_city:
-        render(st.session_state.active_city)
+        render_city(st.session_state.active_city)
 
 # =========================================================
 # EVOLUTION
 # =========================================================
 
-elif mode == "Evolution Lab":
-    st.subheader("🏗️ Evolution Engine")
+elif mode == "Council Evolution":
+    st.subheader("⚖️ Council Evolution Engine")
 
-    if st.button("Evolve Latest Seed"):
-        if mem["seeds"]:
-            seed = mem["seeds"][-1]
-            best, history = evolve(seed)
+    if st.button("Evolve City Through Council"):
+        if mem["cities"]:
+            city = mem["cities"][-1]
+            evolved, history = evolve_city(city)
 
-            best["score"] = fitness(best)
-
-            mem["cities"].append(best)
-            st.session_state.active_city = best
-            save_memory()
+            mem["cities"].append(evolved)
+            st.session_state.active_city = evolved
 
             st.line_chart(history)
-        else:
-            st.warning("No seed available")
-
-    if st.session_state.active_city:
-        render(st.session_state.active_city)
-
-# =========================================================
-# CHAOS
-# =========================================================
-
-elif mode == "Chaos Simulator":
-    st.subheader("🌪️ Chaos Mutation Field")
-
-    if st.button("Trigger Chaos Event"):
-        if st.session_state.active_city:
-            event = chaos_event(st.session_state.active_city)
-            st.warning(event)
             save_memory()
+        else:
+            st.warning("No city exists yet")
 
     if st.session_state.active_city:
-        render(st.session_state.active_city)
+        render_city(st.session_state.active_city)
+
+# =========================================================
+# AGENT COURT
+# =========================================================
+
+elif mode == "Agent Court":
+    st.subheader("🧠 Architect Council Voting Panel")
+
+    if st.session_state.active_city:
+        votes = council_vote(st.session_state.active_city)
+
+        for v in votes:
+            st.write(f"🧾 {v['agent']} → {round(v['score'],2)}")
+
+        save_memory()
     else:
         st.info("No active city loaded")
 
@@ -245,11 +270,11 @@ elif mode == "Chaos Simulator":
 # =========================================================
 
 elif mode == "Memory Vault":
-    st.subheader("🧠 System Memory")
+    st.subheader("🧠 System Memory Archive")
 
     st.json(mem)
 
-    if st.button("Reset System"):
+    if st.button("Reset Universe"):
         st.session_state.memory = DEFAULT_STATE.copy()
         st.session_state.active_city = None
         save_memory()
