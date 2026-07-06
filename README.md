@@ -1,22 +1,3 @@
-# ============================================================
-# RANDOM V52 HYBRID ARCHITECTURE ENGINE
-# AI HOUSE GENERATOR + BIM FOUNDATION
-#
-# Single File Streamlit Edition
-# ============================================================
-
-import streamlit as st
-import uuid
-from datetime import datetime
-
-
-# ============================================================
-# CONFIG
-# ============================================================
-
-st.set_page_config(
-    page_title="RANDOM V52 Architecture AI",
-    page_icon="🏗️",
     layout="wide"
 )
 
