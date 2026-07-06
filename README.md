@@ -228,3 +228,67 @@ plugins/
         spatial_agent.py
         aesthetic_agent.py
         council_orchestrator.py
+
+
+Arc Studio Engine
+│
+├── 🧠 AI Core
+│   ├── Design Agent
+│   ├── Structural Agent
+│   ├── MEP Agent
+│   ├── HVAC Agent
+│   ├── Cost Agent
+│   └── Sustainability Agent
+│
+├── 📐 Architecture
+│   ├── Room Generator
+│   ├── Floor Planner
+│   ├── Space Optimization
+│   ├── Adjacency Rules
+│   └── Zoning
+│
+├── 🏗 Structural Engineering
+│   ├── Columns
+│   ├── Beams
+│   ├── Slabs
+│   ├── Foundations
+│   └── Load Analysis
+│
+├── ⚡ MEP
+│   ├── Electrical
+│   ├── Plumbing
+│   ├── Fire Protection
+│   └── Communications
+│
+├── 🌬 HVAC
+│   ├── Cooling
+│   ├── Heating
+│   ├── Ventilation
+│   └── Indoor Air Quality
+│
+├── 💰 Cost Intelligence
+│   ├── Material Database
+│   ├── Bill of Quantities
+│   ├── Labour
+│   ├── Equipment
+│   └── Project Cost
+│
+├── 📊 Analytics
+│   ├── AI Fitness
+│   ├── Structural Score
+│   ├── Energy Score
+│   ├── Cost Score
+│   └── Sustainability Score
+│
+├── 🗺 Visualization
+│   ├── 2D Plans
+│   ├── 3D Models
+│   ├── Sections
+│   └── Elevations
+│
+└── 📦 Export
+    ├── PDF
+    ├── Excel
+    ├── JSON
+    ├── PNG
+    └── IFC (future)        
