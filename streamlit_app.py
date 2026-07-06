@@ -909,3 +909,29 @@ with tabs[3]:
     }
 
     )
+
+# ============================================================
+# IMPERIAL CONVERSION ENGINE
+# ============================================================
+
+def meters_to_feet_inches(meters):
+
+    total_inches = meters * 39.3701
+
+    feet = int(total_inches // 12)
+
+    inches = round(total_inches % 12, 1)
+
+    return f"{feet}'-{inches}\""
+
+
+
+def mm_to_feet_inches(mm):
+
+    inches = mm / 25.4
+
+    feet = int(inches // 12)
+
+    remaining_inches = round(inches % 12, 1)
+
+    return f"{feet}'-{remaining_inches}\""
