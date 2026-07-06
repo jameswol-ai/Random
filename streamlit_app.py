@@ -1,483 +1,553 @@
 # ============================================================
 # RANDOM AI BIM STUDIO V56
-# Parametric Architecture + BIM Intelligence Engine
-#
-# streamlit_app.py
-#
-# Single File Edition
+# DASHBOARD UI
 # ============================================================
-
-import streamlit as st
-import uuid
-import json
-import math
-from dataclasses import dataclass, asdict, field
-from datetime import datetime
 
 
 # ============================================================
-# OPTIONAL LIBRARIES
+# HEADER
 # ============================================================
 
-try:
-    import plotly.graph_objects as go
-    PLOTLY = True
-except Exception:
-    PLOTLY = False
+st.markdown(
+"""
+<div class="hero">
 
+<div class="logo">
+🏛️ RANDOM AI BIM STUDIO V56
+</div>
 
-try:
-    import pyvista as pv
-    PYVISTA = True
-except Exception:
-    PYVISTA = False
+<div class="subtitle">
 
+Artificial Intelligence • Parametric Architecture • BIM Intelligence
 
+</div>
 
-# ============================================================
-# PAGE CONFIG
-# ============================================================
+</div>
 
-st.set_page_config(
-    page_title="RANDOM AI BIM Studio V56",
-    page_icon="🏛️",
-    layout="wide"
+""",
+unsafe_allow_html=True
 )
 
 
 
 # ============================================================
-# STYLE SYSTEM
+# SESSION INITIALIZATION
 # ============================================================
 
-st.markdown("""
 
-<style>
+if "project" not in st.session_state:
 
-body{
-background:#070b18;
-}
-
-.hero{
-
-background:
-linear-gradient(
-135deg,
-#111936,
-#070b18
-);
-
-padding:35px;
-
-border-radius:25px;
-
-border:1px solid #263252;
-
-}
-
-.logo{
-
-font-size:48px;
-font-weight:900;
-
-}
-
-.subtitle{
-
-color:#aab7d8;
-
-font-size:20px;
-
-}
+    st.session_state.project = BIMProject(
+        name="AI Residence"
+    )
 
 
-.card{
 
-background:#11182d;
-
-padding:20px;
-
-border-radius:20px;
-
-border:1px solid #263252;
-
-}
-
-
-.metric{
-
-font-size:35px;
-font-weight:900;
-color:#8ea2ff;
-
-}
-
-
-</style>
-
-""", unsafe_allow_html=True)
+project = st.session_state.project
 
 
 
 # ============================================================
-# BIM DATA MODEL
+# SIDEBAR AI DESIGN CONTROL
 # ============================================================
 
 
-@dataclass
-class BIMRoom:
-
-    name:str
-
-    width:float
-
-    depth:float
-
-    x:float
-
-    y:float
+with st.sidebar:
 
 
-    @property
-    def area(self):
-
-        return round(
-            self.width*self.depth,
-            2
-        )
-
-
-
-@dataclass
-class BIMWall:
-
-    id:str
-
-    x1:float
-
-    y1:float
-
-    x2:float
-
-    y2:float
-
-    height:float=3.0
-
-    thickness:float=0.2
-
-
-
-@dataclass
-class BIMOpening:
-
-    id:str
-
-    type:str
-
-    x:float
-
-    y:float
-
-    width:float
-
-    height:float
-
-
-
-@dataclass
-class BIMProject:
-
-
-    name:str
-
-    created:str=field(
-        default_factory=lambda:
-        str(datetime.now())
+    st.header(
+        "🧠 AI ARCHITECT"
     )
 
 
-    rooms:list=field(
-        default_factory=list
+    project.name = st.text_input(
+
+        "Project Name",
+
+        project.name
+
     )
 
 
-    walls:list=field(
-        default_factory=list
+    brief = st.text_area(
+
+        "Describe the building",
+
+"""
+Luxury tropical villa,
+4 bedroom,
+large windows,
+open kitchen,
+modern architecture
+"""
+
     )
 
 
-    openings:list=field(
-        default_factory=list
+    floors = st.slider(
+
+        "Building Floors",
+
+        1,
+
+        10,
+
+        2
+
     )
 
 
-    levels:list=field(
-        default_factory=lambda:
-        [
-            {
-            "name":"Ground Floor",
-            "height":3
-            }
-        ]
+    generate = st.button(
+
+        "🚀 GENERATE AI BIM MODEL",
+
+        use_container_width=True
+
     )
 
 
-    materials:dict=field(
-        default_factory=dict
+    st.divider()
+
+
+    st.subheader(
+        "Export Center"
     )
 
 
-    cost:dict=field(
-        default_factory=dict
+    export_json = st.button(
+        "📦 Export BIM JSON"
     )
 
 
-    id:str=field(
-        default_factory=lambda:
-        str(uuid.uuid4())
+    export_ifc = st.button(
+        "🏢 Export IFC"
     )
 
 
 
 # ============================================================
-# AI BRIEF GENERATOR
+# AI GENERATION PIPELINE
 # ============================================================
 
 
-def analyze_brief(text):
-
-    text=text.lower()
+if generate:
 
 
-    bedrooms=3
-
-    bathrooms=2
-
-
-    if "4 bedroom" in text:
-        bedrooms=4
-
-    elif "5 bedroom" in text:
-        bedrooms=5
-
-
-    if "luxury" in text:
-
-        size_multiplier=1.4
-
-    else:
-
-        size_multiplier=1
-
-
-    return {
-
-        "bedrooms":bedrooms,
-
-        "bathrooms":bathrooms,
-
-        "size_multiplier":
-        size_multiplier
-
-    }
-
-
-
-# ============================================================
-# PARAMETRIC ARCHITECTURE GENERATOR
-# ============================================================
-
-
-def generate_rooms(parameters):
-
-
-    rooms=[]
-
-
-    scale=parameters["size_multiplier"]
-
-
-    rooms.append(
-
-        BIMRoom(
-            "Living Room",
-            7*scale,
-            5*scale,
-            0,
-            0
-        )
-
+    parameters = analyze_brief(
+        brief
     )
 
 
-    rooms.append(
-
-        BIMRoom(
-            "Kitchen",
-            4*scale,
-            4*scale,
-            7*scale,
-            0
-        )
-
+    project.rooms = generate_rooms(
+        parameters
     )
 
 
-    rooms.append(
-
-        BIMRoom(
-            "Dining",
-            4*scale,
-            4*scale,
-            7*scale,
-            4*scale
-        )
-
+    project.walls = generate_walls(
+        project.rooms
     )
 
 
-    for i in range(parameters["bedrooms"]):
-
-        rooms.append(
-
-            BIMRoom(
-
-                f"Bedroom {i+1}",
-
-                4*scale,
-
-                4*scale,
-
-                (i%2)*4*scale,
-
-                7*scale+(i//2)*4*scale
-
-            )
-
-        )
+    project.openings = generate_openings()
 
 
-    return rooms
+    project.levels = [
 
+        {
+        "name":
+        f"Level {i+1}",
 
+        "height":
+        3
 
-def generate_walls(rooms):
+        }
 
-    walls=[]
-
-    counter=1
-
-
-    for room in rooms:
-
-        x=room.x
-
-        y=room.y
-
-
-        walls.extend(
-
-        [
-
-        BIMWall(
-            f"W{counter}",
-            x,
-            y,
-            x+room.width,
-            y
-        ),
-
-        BIMWall(
-            f"W{counter+1}",
-            x+room.width,
-            y,
-            x+room.width,
-            y+room.depth
-        ),
-
-        BIMWall(
-            f"W{counter+2}",
-            x+room.width,
-            y+room.depth,
-            x,
-            y+room.depth
-        ),
-
-        BIMWall(
-            f"W{counter+3}",
-            x,
-            y+room.depth,
-            x,
-            y
-        )
-
-        ]
-
-        )
-
-
-        counter+=4
-
-
-    return walls
-
-
-
-def generate_openings():
-
-    return [
-
-        BIMOpening(
-            "D001",
-            "Door",
-            2,
-            0,
-            1,
-            2.1
-        ),
-
-        BIMOpening(
-            "WIN001",
-            "Window",
-            5,
-            5,
-            1.5,
-            1.2
-        )
+        for i in range(floors)
 
     ]
 
 
-
-# ============================================================
-# COST ENGINE
-# ============================================================
-
-
-def calculate_cost(project):
-
-
-    area=sum(
-        room.area
-        for room in project.rooms
+    project.cost = calculate_cost(
+        project
     )
 
 
-    return {
-
-        "Floor Area m2":
-        round(area,2),
-
-
-        "Concrete m3":
-        round(area*0.25,2),
+    st.success(
+        "🏛️ AI BIM model generated successfully"
+    )
 
 
-        "Steel tonnes":
-        round(area*0.04,2),
+
+# ============================================================
+# TOP METRIC PANEL
+# ============================================================
 
 
-        "Estimated USD":
-        round(area*700,2)
+col1,col2,col3,col4 = st.columns(4)
 
-    }
+
+
+metrics=[
+
+(
+col1,
+"ROOMS",
+len(project.rooms)
+),
+
+(
+col2,
+"WALL ELEMENTS",
+len(project.walls)
+),
+
+(
+col3,
+"OPENINGS",
+len(project.openings)
+),
+
+(
+col4,
+"FLOOR AREA",
+f"{sum(r.area for r in project.rooms):.1f} m²"
+)
+
+]
+
+
+
+for col,title,value in metrics:
+
+
+    col.markdown(
+
+f"""
+
+<div class="card">
+
+<h3>{title}</h3>
+
+<div class="metric">
+
+{value}
+
+</div>
+
+</div>
+
+""",
+
+unsafe_allow_html=True
+
+)
+
+
+
+# ============================================================
+# MAIN DASHBOARD GRID
+# ============================================================
+
+
+left,right = st.columns(
+[2,1]
+)
+
+
+
+# ============================================================
+# BIM MODEL PREVIEW PANEL
+# ============================================================
+
+
+with left:
+
+
+    st.subheader(
+        "🏗️ Parametric BIM Model"
+    )
+
+
+    tabs = st.tabs(
+
+    [
+
+    "📐 Floor Plan",
+
+    "🧱 BIM Objects",
+
+    "📊 Schedules"
+
+    ]
+
+    )
+
+
+
+    with tabs[0]:
+
+
+        st.info(
+            "Floor plan renderer connected to geometry engine"
+        )
+
+
+        if PLOTLY:
+
+
+            fig=go.Figure()
+
+
+            for wall in project.walls:
+
+
+                fig.add_shape(
+
+                type="line",
+
+                x0=wall.x1,
+
+                y0=wall.y1,
+
+                x1=wall.x2,
+
+                y1=wall.y2,
+
+                line=dict(
+                    width=5
+                )
+
+                )
+
+
+            for room in project.rooms:
+
+
+                fig.add_annotation(
+
+                x=
+                room.x+
+                room.width/2,
+
+
+                y=
+                room.y+
+                room.depth/2,
+
+
+                text=
+                room.name,
+
+
+                showarrow=False
+
+                )
+
+
+            fig.update_layout(
+
+            height=650,
+
+            title=
+            "AI Generated Architectural Plan",
+
+            xaxis_title=
+            "Meters",
+
+            yaxis_title=
+            "Meters",
+
+            )
+
+
+            st.plotly_chart(
+
+                fig,
+
+                use_container_width=True
+
+            )
+
+
+
+    with tabs[1]:
+
+
+        st.subheader(
+            "BIM Object Tree"
+        )
+
+
+        st.json(
+
+        {
+
+        "Rooms":
+        [
+            asdict(r)
+            for r in project.rooms
+        ],
+
+
+        "Walls":
+        [
+            asdict(w)
+            for w in project.walls
+        ],
+
+
+        "Openings":
+        [
+            asdict(o)
+            for o in project.openings
+        ]
+
+        }
+
+        )
+
+
+
+    with tabs[2]:
+
+
+        st.subheader(
+            "Quantity Schedules"
+        )
+
+
+        for room in project.rooms:
+
+
+            st.write(
+
+            f"""
+**{room.name}**
+
+Dimensions:
+{room.width:.1f}m × {room.depth:.1f}m
+
+Area:
+{room.area:.1f}m²
+
+"""
+
+            )
+
+
+
+# ============================================================
+# AI ASSISTANT PANEL
+# ============================================================
+
+
+with right:
+
+
+    st.subheader(
+        "🤖 BIM Intelligence"
+    )
+
+
+    st.markdown(
+
+"""
+<div class="card">
+
+<h3>
+AI Recommendations
+</h3>
+
+
+<ul>
+
+<li>Increase north glazing for daylight</li>
+
+<li>Reduce corridor circulation waste</li>
+
+<li>Consider rainwater harvesting</li>
+
+<li>Optimize structural grid spacing</li>
+
+</ul>
+
+
+</div>
+
+""",
+
+unsafe_allow_html=True
+
+)
+
+
+
+    st.subheader(
+        "📈 Project Status"
+    )
+
+
+    status=[
+
+    ("Geometry","🟢 Complete"),
+
+    ("Architecture","🟢 Generated"),
+
+    ("Structure","🟡 Pending"),
+
+    ("Cost","🟢 Calculated"),
+
+    ("IFC Export","⚪ Ready")
+
+    ]
+
+
+    for item,state in status:
+
+
+        st.write(
+            f"**{item}:** {state}"
+        )
+
+
+
+# ============================================================
+# COST INTELLIGENCE
+# ============================================================
+
+
+st.divider()
+
+
+st.subheader(
+    "💰 AI Cost Intelligence"
+)
+
+
+
+cost_col1,cost_col2,cost_col3 = st.columns(3)
+
+
+
+if project.cost:
+
+
+    cost_items=list(
+        project.cost.items()
+    )
+
+
+    for i,(name,value) in enumerate(cost_items):
+
+
+        [
+        cost_col1,
+        cost_col2,
+        cost_col3
+        ][i%3].metric(
+
+            name,
+
+            value
+
+        )
