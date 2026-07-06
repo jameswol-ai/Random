@@ -1,15 +1,24 @@
 # ============================================================
-# RANDOM V51 AI CORE
-# AI ARCHITECTURE OPERATING SYSTEM
+# RANDOM V52.2 AI ARCHITECTURE STUDIO
 #
-# Single File Streamlit Edition
-# Stable Foundation Build
+# Hybrid Architecture + BIM Intelligence Engine
+# Streamlit Edition
 # ============================================================
 
 import streamlit as st
-import json
 import uuid
 from datetime import datetime
+
+
+# ============================================================
+# OPTIONAL VISUALIZATION
+# ============================================================
+
+try:
+    import plotly.graph_objects as go
+    PLOTLY = True
+except:
+    PLOTLY = False
 
 
 # ============================================================
@@ -17,183 +26,323 @@ from datetime import datetime
 # ============================================================
 
 st.set_page_config(
-    page_title="RANDOM AI | Architecture Core",
-    page_icon="🏗️",
-    layout="wide"
+    page_title="RANDOM AI Studio",
+    page_icon="🏛️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 
 # ============================================================
-# GLOBAL STYLE
+# VISUAL DESIGN SYSTEM
 # ============================================================
 
 st.markdown(
-    """
-    <style>
-    .main {
-        background-color: #0b1020;
-    }
+"""
+<style>
 
-    .card {
-        background: #151b32;
-        padding: 20px;
-        border-radius: 16px;
-        margin-bottom: 15px;
-        border: 1px solid #27304d;
-    }
+body {
+background:#070b18;
+}
 
-    .title {
-        font-size: 42px;
-        font-weight: 800;
-        color: white;
-    }
-
-    .subtitle {
-        color: #9aa7c7;
-        font-size: 18px;
-    }
-
-    .agent {
-        padding: 12px;
-        border-radius: 12px;
-        background: #10162b;
-        margin: 8px 0;
-    }
-
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# SESSION MEMORY
-# ============================================================
-
-if "project" not in st.session_state:
-
-    st.session_state.project = {
-        "id": str(uuid.uuid4()),
-        "name": "Untitled Project",
-        "created": str(datetime.now()),
-        "requirements": [],
-        "decisions": [],
-        "agents": []
-    }
-
-
-if "memory" not in st.session_state:
-    st.session_state.memory = []
-
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-
-# ============================================================
-# AI AGENTS
-# ============================================================
-
-AGENTS = {
-
-    "Architect Agent": {
-        "role": "Spatial design intelligence",
-        "status": "Ready"
-    },
-
-    "BIM Agent": {
-        "role": "Building information modelling",
-        "status": "Ready"
-    },
-
-    "Structural Agent": {
-        "role": "Structural reasoning",
-        "status": "Ready"
-    },
-
-    "Sustainability Agent": {
-        "role": "Environmental analysis",
-        "status": "Ready"
-    },
-
-    "Cost Agent": {
-        "role": "Cost and feasibility analysis",
-        "status": "Ready"
-    }
+.main {
+background:#070b18;
 }
 
 
-# ============================================================
-# RANDOM AI ENGINE
-# ============================================================
+/* Header */
 
-def random_ai_command(command):
+.hero {
 
-    timestamp = datetime.now().strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+background:
+linear-gradient(
+135deg,
+#111a33,
+#0b1020
+);
 
-    result = {
-        "time": timestamp,
-        "command": command,
-        "analysis": []
-    }
+padding:35px;
+border-radius:25px;
 
+border:
+1px solid #27304d;
 
-    if "house" in command.lower():
+margin-bottom:25px;
 
-        result["analysis"] = [
-
-            "Architect Agent: Creating spatial concept",
-            "BIM Agent: Defining building elements",
-            "Structural Agent: Selecting structural strategy",
-            "Sustainability Agent: Evaluating passive design",
-            "Cost Agent: Reviewing feasibility"
-
-        ]
-
-    else:
-
-        result["analysis"] = [
-
-            "Architect Agent: Analysing design intent",
-            "BIM Agent: Mapping building data",
-            "Structural Agent: Checking possibilities",
-            "Sustainability Agent: Reviewing performance",
-            "Cost Agent: Estimating implications"
-
-        ]
+}
 
 
-    st.session_state.memory.append(result)
+.logo {
 
-    st.session_state.project["decisions"].append(
-        result
-    )
+font-size:55px;
+font-weight:900;
 
-    return result
+background:
+linear-gradient(
+90deg,
+#ffffff,
+#8fa7ff
+);
+
+-webkit-background-clip:text;
+color:transparent;
+
+}
+
+
+.tagline {
+
+color:#aab4d6;
+font-size:20px;
+
+}
 
 
 
-# ============================================================
-# HEADER
-# ============================================================
+/* Cards */
 
-st.markdown(
-    """
-    <div class="title">
-    🧠 RANDOM AI
-    </div>
+.card {
 
-    <div class="subtitle">
-    Architecture Intelligence Operating System
-    </div>
-    """,
-    unsafe_allow_html=True
+background:#11182d;
+
+padding:20px;
+
+border-radius:20px;
+
+border:
+1px solid #27304d;
+
+height:130px;
+
+}
+
+
+.card h3 {
+
+color:#ffffff;
+
+}
+
+
+.value {
+
+font-size:35px;
+
+font-weight:800;
+
+color:#8fa7ff;
+
+}
+
+
+
+/* Buttons */
+
+.stButton button {
+
+width:100%;
+
+height:45px;
+
+border-radius:15px;
+
+background:
+linear-gradient(
+90deg,
+#344cff,
+#6677ff
+);
+
+color:white;
+
+font-weight:700;
+
+border:none;
+
+}
+
+
+.stButton button:hover {
+
+transform:scale(1.02);
+
+}
+
+
+
+/* Tabs */
+
+.stTabs [data-baseweb="tab"] {
+
+font-size:16px;
+
+font-weight:700;
+
+}
+
+
+
+</style>
+
+""",
+unsafe_allow_html=True
 )
 
 
-st.write("")
+
+# ============================================================
+# SESSION MODEL
+# ============================================================
+
+if "building" not in st.session_state:
+
+    st.session_state.building = {
+
+        "id":str(uuid.uuid4()),
+
+        "date":str(datetime.now()),
+
+        "rooms":[],
+
+        "grid":[],
+
+        "structure":{},
+
+        "cost":{}
+
+    }
+
+
+
+# ============================================================
+# ENGINES
+# ============================================================
+
+def create_spaces(bedrooms,bathrooms):
+
+    spaces=[
+
+        ("Living Room",35),
+
+        ("Kitchen",18),
+
+        ("Dining",18),
+
+        ("Entrance Hall",8),
+
+        ("Corridor",12),
+
+        ("Balcony",10),
+
+        ("Laundry",8)
+
+    ]
+
+
+    for i in range(bedrooms):
+
+        spaces.append(
+            (
+            f"Bedroom {i+1}",
+            16
+            )
+        )
+
+
+    for i in range(bathrooms):
+
+        spaces.append(
+            (
+            f"Bathroom {i+1}",
+            6
+            )
+        )
+
+
+    return [
+
+        {
+        "name":x[0],
+        "area":x[1]
+        }
+
+        for x in spaces
+
+    ]
+
+
+
+def create_grid(spacing):
+
+    points=[]
+
+    for x in range(0,6):
+
+        for y in range(0,6):
+
+            points.append(
+
+                {
+                "grid_x":x*spacing,
+                "grid_y":y*spacing
+                }
+
+            )
+
+    return points
+
+
+
+def cost_engine(area):
+
+    return {
+
+    "Floor Area":f"{area} m²",
+
+    "Concrete":
+    f"{round(area*0.25,2)} m³",
+
+    "Steel":
+    f"{round(area*0.035,2)} tonnes",
+
+    "Flooring":
+    f"{area} m²",
+
+    "Estimated Cost":
+    f"${area*550:,.0f}"
+
+    }
+
+
+
+
+# ============================================================
+# HERO
+# ============================================================
+
+st.markdown(
+"""
+
+<div class="hero">
+
+<div class="logo">
+🏛️ RANDOM AI
+</div>
+
+<div class="tagline">
+
+Architecture Intelligence Studio  
+<br>
+AI Design • BIM • Cost • Documentation
+
+</div>
+
+</div>
+
+""",
+unsafe_allow_html=True
+)
+
 
 
 # ============================================================
@@ -202,27 +351,94 @@ st.write("")
 
 with st.sidebar:
 
-    st.header("🏗️ Project")
-
-    project_name = st.text_input(
-        "Project Name",
-        st.session_state.project["name"]
+    st.image(
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Architecture_icon.svg/512px-Architecture_icon.svg.png",
+        width=120
     )
 
-    st.session_state.project["name"] = project_name
+
+    st.header("🏠 Design Controls")
 
 
-    st.divider()
-
-    st.header("AI Core")
-
-    st.write(
-        "Version: RANDOM V51"
+    bedrooms=st.slider(
+        "Bedrooms",
+        1,10,4
     )
 
-    st.write(
-        "Mode: Architecture Intelligence"
+
+    bathrooms=st.slider(
+        "Bathrooms",
+        1,8,3
     )
+
+
+    floors=st.slider(
+        "Floors",
+        1,5,2
+    )
+
+
+    grid=st.selectbox(
+
+        "Structural Grid",
+
+        [
+        1,
+        1.5,
+        3
+        ]
+
+    )
+
+
+    if st.button(
+        "🚀 GENERATE BUILDING"
+    ):
+
+
+        rooms=create_spaces(
+            bedrooms,
+            bathrooms
+        )
+
+
+        area=sum(
+            r["area"]
+            for r in rooms
+        )
+
+
+        st.session_state.building["rooms"]=rooms
+
+        st.session_state.building["grid"]=create_grid(grid)
+
+
+        st.session_state.building["structure"]={
+
+            "Columns":
+            "300x300 mm RC",
+
+            "Beams":
+            "250x450 mm RC",
+
+            "Foundation":
+            "Pad Foundation",
+
+            "Roof":
+            "30° Pitch Roof",
+
+            "Ceiling":
+            "Gypsum Ceiling"
+
+        }
+
+
+        st.session_state.building["cost"]=cost_engine(area)
+
+
+        st.success(
+            "Building Generated"
+        )
 
 
 
@@ -230,165 +446,169 @@ with st.sidebar:
 # DASHBOARD
 # ============================================================
 
-col1, col2, col3 = st.columns(3)
-
-
-with col1:
-
-    st.markdown(
-        f"""
-        <div class="card">
-
-        <h3>📁 Project</h3>
-
-        {st.session_state.project["name"]}
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with col2:
-
-    st.markdown(
-        f"""
-        <div class="card">
-
-        <h3>🧠 Memory</h3>
-
-        {len(st.session_state.memory)}
-        decisions stored
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-with col3:
-
-    st.markdown(
-        """
-        <div class="card">
-
-        <h3>🤖 Agents</h3>
-
-        5 active
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-
-# ============================================================
-# AGENT PANEL
-# ============================================================
-
-st.subheader("🤖 AI Agent Network")
-
-
-for agent, data in AGENTS.items():
-
-    st.markdown(
-        f"""
-        <div class="agent">
-
-        <b>{agent}</b><br>
-
-        {data["role"]}
-
-        <br>
-
-        Status: {data["status"]}
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-
-# ============================================================
-# COMMAND CENTER
-# ============================================================
-
-st.subheader("💬 RANDOM AI Command Center")
-
-
-command = st.chat_input(
-    "Describe a building, design problem, or analysis task..."
+rooms=len(
+    st.session_state.building["rooms"]
 )
 
 
-if command:
+gridpoints=len(
+    st.session_state.building["grid"]
+)
 
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": command
-        }
+
+
+a,b,c,d=st.columns(4)
+
+
+for col,title,value in [
+
+(a,"ROOMS",rooms),
+
+(b,"GRID POINTS",gridpoints),
+
+(c,"BIM OBJECTS",rooms*4),
+
+(d,"STATUS","READY")
+
+]:
+
+
+    col.markdown(
+
+    f"""
+
+    <div class="card">
+
+    <h3>{title}</h3>
+
+    <div class="value">
+    {value}
+    </div>
+
+    </div>
+
+    """,
+
+    unsafe_allow_html=True
+
     )
-
-
-    response = random_ai_command(command)
-
-
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": response
-        }
-    )
-
-
-
-for msg in st.session_state.messages:
-
-    if msg["role"] == "user":
-
-        st.chat_message("user").write(
-            msg["content"]
-        )
-
-    else:
-
-        with st.chat_message("assistant"):
-
-            st.write(
-                "RANDOM AI analysis:"
-            )
-
-            for item in msg["content"]["analysis"]:
-
-                st.write(
-                    "• " + item
-                )
 
 
 
 # ============================================================
-# MEMORY VIEW
+# TABS
 # ============================================================
 
-st.divider()
+tab1,tab2,tab3,tab4=st.tabs(
 
-st.subheader("📚 Design Reasoning Memory")
+[
+"🏠 Floor Plan",
+"📐 Grid",
+"🏗 BIM",
+"💰 Cost"
+]
+
+)
 
 
-if st.session_state.memory:
+
+with tab1:
+
+    st.subheader(
+        "Generated Spaces"
+    )
+
 
     st.json(
-        st.session_state.memory
+        st.session_state.building["rooms"]
     )
 
-else:
 
-    st.info(
-        "No design decisions recorded yet."
+
+    if PLOTLY:
+
+        fig=go.Figure()
+
+
+        for i,r in enumerate(
+            st.session_state.building["rooms"]
+        ):
+
+            fig.add_shape(
+
+                type="rect",
+
+                x0=i*5,
+
+                y0=0,
+
+                x1=i*5+4,
+
+                y1=4
+
+            )
+
+
+            fig.add_annotation(
+
+                x=i*5+2,
+
+                y=2,
+
+                text=r["name"]
+
+            )
+
+
+        fig.update_layout(
+            height=500,
+            showlegend=False
+        )
+
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+
+
+with tab2:
+
+    st.subheader(
+        "Structural Grid System"
     )
+
+    st.json(
+        st.session_state.building["grid"]
+    )
+
+
+
+with tab3:
+
+    st.subheader(
+        "BIM Intelligence"
+    )
+
+
+    st.json(
+        st.session_state.building["structure"]
+    )
+
+
+
+with tab4:
+
+    st.subheader(
+        "Cost Intelligence"
+    )
+
+
+    st.json(
+        st.session_state.building["cost"]
+    )
+
 
 
 # ============================================================
@@ -396,5 +616,5 @@ else:
 # ============================================================
 
 st.caption(
-    "RANDOM V51 AI CORE | Architecture Intelligence Platform"
+"RANDOM V52.2 | AI Architecture Operating System"
 )
