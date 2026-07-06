@@ -1,8 +1,8 @@
-# =============================
-# ARC STUDIO V16 (ROBUST BUILD)
-# BIM + AI + EVOLUTION ENGINE
-# Dependency-safe Streamlit Architecture
-# =============================
+# ============================================================
+# RANDOM V1 REBORN
+# AI ARCHITECTURE INTELLIGENCE STUDIO
+# Single File Streamlit Foundation
+# ============================================================
 
 import streamlit as st
 import json
@@ -11,253 +11,629 @@ import random
 from pathlib import Path
 from datetime import datetime
 
-# =========================================================
-# SAFE IMPORT LAYER (CRITICAL FIX)
-# =========================================================
+# ============================================================
+# OPTIONAL DEPENDENCIES
+# ============================================================
 
-# Plotly (required for 2D/3D)
 try:
     import plotly.graph_objects as go
-except:
+except Exception:
     go = None
 
-# Pandas (optional fallback-safe)
-try:
-    import pandas as pd
-except:
-    pd = None
-
-# NetworkX (optional MEP graph)
-try:
-    import networkx as nx
-except:
-    nx = None
-
-# Matplotlib (optional)
-try:
-    import matplotlib.pyplot as plt
-except:
-    plt = None
-
-# =========================================================
-# STREAMLIT CONFIG
-# =========================================================
+# ============================================================
+# CONFIG
+# ============================================================
 
 st.set_page_config(
-    page_title="Arc Studio V16 - Stable BIM Engine",
+    page_title="Random AI Architecture Studio",
     page_icon="🏗️",
     layout="wide"
 )
 
-MEMORY_FILE = Path("arc_memory.json")
+MEMORY_FILE = Path("random_memory.json")
 
-# =========================================================
-# MEMORY SYSTEM (SAFE)
-# =========================================================
 
-DEFAULT_STATE = {
+# ============================================================
+# BEAUTIFUL UI STYLE
+# ============================================================
+
+st.markdown(
+    """
+<style>
+
+.stApp {
+    background:
+    linear-gradient(
+        135deg,
+        #0b1020,
+        #111827,
+        #1f2937
+    );
+    color:white;
+}
+
+h1,h2,h3 {
+    color:#ffffff;
+}
+
+.hero {
+    padding:35px;
+    border-radius:25px;
+    background:
+    linear-gradient(
+        135deg,
+        rgba(59,130,246,0.35),
+        rgba(139,92,246,0.35)
+    );
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.card {
+    background:
+    rgba(255,255,255,0.08);
+    padding:20px;
+    border-radius:20px;
+    border:1px solid rgba(255,255,255,0.15);
+    margin-bottom:15px;
+}
+
+.metric {
+    font-size:32px;
+    font-weight:bold;
+}
+
+.agent {
+    padding:15px;
+    border-radius:15px;
+    background:
+    rgba(16,185,129,0.15);
+}
+
+</style>
+""",
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# MEMORY ENGINE
+# ============================================================
+
+DEFAULT_MEMORY = {
     "projects": [],
     "designs": [],
     "logs": []
 }
 
+
 def load_memory():
+
     if MEMORY_FILE.exists():
+
         try:
-            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+            return json.loads(
+                MEMORY_FILE.read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        except Exception:
+            pass
+
+    return DEFAULT_MEMORY.copy()
+
+
 
 def save_memory():
-    try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(st.session_state.memory, f, indent=2)
-    except:
-        pass
 
-def log(msg):
-    st.session_state.memory["logs"].append({
-        "time": datetime.now().isoformat(),
-        "msg": msg
-    })
+    MEMORY_FILE.write_text(
+        json.dumps(
+            st.session_state.memory,
+            indent=2
+        ),
+        encoding="utf-8"
+    )
+
+
+
+def log_event(message):
+
+    st.session_state.memory["logs"].append(
+        {
+            "time":
+            datetime.now().isoformat(),
+
+            "message":
+            message
+        }
+    )
+
     save_memory()
+
+
 
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
 
-mem = st.session_state.memory
+if "design" not in st.session_state:
+    st.session_state.design = None
 
-# =========================================================
-# CORE DESIGN ENGINE
-# =========================================================
+
+# ============================================================
+# AI DESIGN ENGINE
+# ============================================================
 
 def generate_design():
+
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": random.choice(["Residential", "Commercial", "Industrial"]),
-        "floors": random.randint(1, 8),
-        "rooms": ["Living", "Kitchen", "Bath"],
-        "area": random.randint(80, 1200)
+
+        "id":
+        str(uuid.uuid4())[:8].upper(),
+
+        "building_type":
+        random.choice(
+            [
+                "Smart Residence",
+                "Office Tower",
+                "Research Center",
+                "Eco Campus"
+            ]
+        ),
+
+        "floors":
+        random.randint(2,15),
+
+        "area":
+        random.randint(200,5000),
+
+        "rooms":
+        [
+            "Lobby",
+            "Living Space",
+            "Workspace",
+            "Kitchen",
+            "Services"
+        ],
+
+        "created":
+        datetime.now().strftime(
+            "%Y-%m-%d %H:%M"
+        )
+
     }
 
-# =========================================================
-# BIM ENGINE
-# =========================================================
 
-def build_bim(design):
-    floors = design["floors"]
+# ============================================================
+# BIM FOUNDATION
+# ============================================================
 
-    bim = {
-        "id": design["id"],
-        "architecture": {"floors": floors},
-        "structure": {
-            "columns": random.randint(20, 70),
-            "beams": random.randint(40, 140)
+def create_bim(design):
+
+    return {
+
+        "building":
+            design["building_type"],
+
+        "geometry":
+        {
+            "floors":
+            design["floors"],
+
+            "gross_area":
+            design["area"]
         },
-        "hvac": {
-            "cooling_load_kw": random.randint(60, 350)
+
+        "structure":
+        {
+            "columns":
+            design["floors"] * 12,
+
+            "beams":
+            design["floors"] * 25
         },
-        "cost_model": {}
+
+        "mep":
+        {
+            "hvac_load":
+            design["area"] * 0.08,
+
+            "power_load":
+            design["area"] * 0.05
+        },
+
+        "materials":
+        [
+            "Concrete",
+            "Steel",
+            "Glass"
+        ]
+
     }
 
-    bim["cost_model"] = {
-        "structure_cost": bim["structure"]["columns"] * 1200,
-        "mep_cost": floors * 15000,
-        "hvac_cost": bim["hvac"]["cooling_load_kw"] * 300,
-    }
 
-    bim["cost_model"]["total"] = sum(bim["cost_model"].values())
+# ============================================================
+# VISUALIZATION
+# ============================================================
 
-    return bim
+def draw_plan(design):
 
-# =========================================================
-# 2D PLAN (SAFE PLOTLY CHECK)
-# =========================================================
-
-def draw_2d(design):
     if go is None:
-        st.warning("Plotly not installed — 2D view disabled")
+
+        st.warning(
+            "Plotly unavailable"
+        )
+
         return
+
 
     fig = go.Figure()
-    x, y = 0, 0
+
+
+    x = 0
 
     for room in design["rooms"]:
-        w, h = random.randint(2, 5), random.randint(2, 5)
 
         fig.add_shape(
+
             type="rect",
-            x0=x, y0=y,
-            x1=x + w, y1=y + h
+
+            x0=x,
+            y0=0,
+
+            x1=x+5,
+            y1=5
+
         )
+
 
         fig.add_annotation(
-            x=x + w/2,
-            y=y + h/2,
+
+            x=x+2.5,
+
+            y=2.5,
+
             text=room,
+
             showarrow=False
+
         )
 
-        x += w + 1
+        x += 6
 
-    st.plotly_chart(fig, use_container_width=True)
 
-# =========================================================
-# 3D MODEL (SAFE)
-# =========================================================
-
-def draw_3d(design):
-    if go is None:
-        st.warning("Plotly not installed — 3D view disabled")
-        return
-
-    floors = design["floors"]
-    x, y, z = [], [], []
-
-    for f in range(floors):
-        x += [0, 10, 10, 0, 0]
-        y += [0, 0, 10, 10, 0]
-        z += [f]*5
-
-    fig = go.Figure(
-        data=[go.Scatter3d(x=x, y=y, z=z, mode="lines")]
+    fig.update_layout(
+        height=400,
+        template="plotly_dark"
     )
 
-    st.plotly_chart(fig, use_container_width=True)
 
-# =========================================================
-# OPTIONAL MEP GRAPH
-# =========================================================
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
-def draw_mep():
-    if nx is None or plt is None:
-        st.warning("NetworkX not installed — MEP graph disabled")
+
+
+def draw_3d(design):
+
+    if go is None:
+
         return
 
-    G = nx.Graph()
-    G.add_edges_from([
-        ("Water", "Drainage"),
-        ("Power", "HVAC"),
-        ("Fire", "Water")
-    ])
 
-    plt.figure()
-    nx.draw(G, with_labels=True)
-    st.pyplot(plt)
+    floors = design["floors"]
 
-# =========================================================
+
+    fig = go.Figure()
+
+
+    for floor in range(floors):
+
+        fig.add_trace(
+
+            go.Mesh3d(
+
+                x=[0,10,10,0],
+
+                y=[0,0,10,10],
+
+                z=[
+                    floor,
+                    floor,
+                    floor,
+                    floor
+                ],
+
+                opacity=0.25
+
+            )
+
+        )
+
+
+    fig.update_layout(
+        height=500,
+        template="plotly_dark"
+    )
+
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+
+# ============================================================
 # AI COPILOT
-# =========================================================
+# ============================================================
 
-def ai(cmd, bim):
-    cmd = cmd.lower()
+def ai_assistant(question,bim):
 
-    if "cost" in cmd:
-        return f"Total cost: {bim['cost_model']['total']:,}"
-    if "hvac" in cmd:
-        return f"Cooling load: {bim['hvac']['cooling_load_kw']} kW"
-    if "optimize" in cmd:
-        return "Reduce floors or HVAC load for efficiency gain"
-    return "Try: cost, hvac, optimize"
+    q = question.lower()
 
-# =========================================================
-# UI
-# =========================================================
 
-st.sidebar.title("🏗 Arc Studio V16")
+    if "cost" in q:
 
-if st.sidebar.button("Generate Design"):
-    st.session_state.active_design = generate_design()
-    log("Design generated")
+        return (
+            "Preliminary cost analysis: "
+            "optimize structure and materials."
+        )
 
-design = st.session_state.active_design
+
+    if "energy" in q:
+
+        return (
+            "Energy strategy: improve "
+            "orientation, glazing and insulation."
+        )
+
+
+    if "structure" in q:
+
+        return (
+            f"Structural system contains "
+            f"{bim['structure']['columns']} columns."
+        )
+
+
+    return (
+        "AI analysis complete. "
+        "Try asking about cost, energy, "
+        "or structure."
+    )
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+st.markdown(
+"""
+<div class="hero">
+
+<h1>🏗️ RANDOM</h1>
+
+<h2>AI Architecture Intelligence Studio</h2>
+
+<p>
+Generative Design • BIM • AI Agents • Future Digital Twin
+</p>
+
+</div>
+""",
+unsafe_allow_html=True
+)
+
+
+# ============================================================
+# SIDEBAR
+# ============================================================
+
+st.sidebar.title(
+    "🧠 Random Control"
+)
+
+
+if st.sidebar.button(
+    "✨ Generate New Building"
+):
+
+    st.session_state.design = generate_design()
+
+    st.session_state.memory["designs"].append(
+        st.session_state.design
+    )
+
+    log_event(
+        "New AI design generated"
+    )
+
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+
+design = st.session_state.design
+
+
+c1,c2,c3 = st.columns(3)
+
+
+with c1:
+
+    st.markdown(
+    f"""
+    <div class="card">
+
+    <div class="metric">
+    {len(st.session_state.memory["designs"])}
+    </div>
+
+    AI Designs
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+with c2:
+
+    st.markdown(
+    """
+    <div class="card">
+
+    <div class="metric">
+    ONLINE
+    </div>
+
+    AI Core
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+with c3:
+
+    st.markdown(
+    """
+    <div class="card">
+
+    <div class="metric">
+    V1
+    </div>
+
+    Reborn Engine
+
+    </div>
+    """,
+    unsafe_allow_html=True
+    )
+
+
+
+# ============================================================
+# MAIN WORKSPACE
+# ============================================================
+
 
 if design:
-    bim = build_bim(design)
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "BIM", "2D", "3D", "MEP"
-    ])
 
-    with tab1:
+    bim = create_bim(design)
+
+
+    st.subheader(
+        "🏢 Active AI Generated Project"
+    )
+
+
+    st.json(design)
+
+
+
+    tabs = st.tabs(
+        [
+            "BIM",
+            "2D Plan",
+            "3D Model",
+            "AI Agents"
+        ]
+    )
+
+
+    with tabs[0]:
+
         st.json(bim)
 
-    with tab2:
-        draw_2d(design)
 
-    with tab3:
+
+    with tabs[1]:
+
+        draw_plan(design)
+
+
+
+    with tabs[2]:
+
         draw_3d(design)
 
-    with tab4:
-        draw_mep()
 
-    st.markdown("---")
-    st.subheader("🧠 Arc AI Copilot")
 
-    cmd = st.text_input("Ask Arc")
-    if cmd:
-        st.success(ai(cmd, bim))
+    with tabs[3]:
+
+        agents = [
+
+            "🏛 Architect AI",
+
+            "📐 Structural AI",
+
+            "🌬 MEP AI",
+
+            "🌱 Sustainability AI",
+
+            "💰 Cost AI"
+
+        ]
+
+
+        for agent in agents:
+
+            st.markdown(
+            f"""
+            <div class="agent">
+
+            {agent}
+
+            <br>
+            Status: Active
+
+            </div>
+            """,
+            unsafe_allow_html=True
+            )
+
+
+
+    st.divider()
+
+
+    st.subheader(
+        "🤖 Random AI Copilot"
+    )
+
+
+    question = st.text_input(
+        "Ask Random"
+    )
+
+
+    if question:
+
+        st.success(
+            ai_assistant(
+                question,
+                bim
+            )
+        )
+
+
+else:
+
+    st.info(
+        "Create your first AI building concept using the sidebar."
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.caption(
+    "Random V1 Reborn | AI Architecture Intelligence Foundation"
+)
