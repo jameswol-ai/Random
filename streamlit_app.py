@@ -1,24 +1,15 @@
 # ============================================================
-# RANDOM V51.1 AI DESIGN STUDIO + BIM CORE
-# FIXED SINGLE FILE STREAMLIT EDITION
+# RANDOM V51 AI CORE
+# AI ARCHITECTURE OPERATING SYSTEM
+#
+# Single File Streamlit Edition
+# Stable Foundation Build
 # ============================================================
 
 import streamlit as st
 import json
 import uuid
-import random
-from pathlib import Path
 from datetime import datetime
-
-
-# ============================================================
-# OPTIONAL LIBRARIES
-# ============================================================
-
-try:
-    import plotly.graph_objects as go
-except Exception:
-    go = None
 
 
 # ============================================================
@@ -26,543 +17,183 @@ except Exception:
 # ============================================================
 
 st.set_page_config(
-    page_title="RANDOM V51 BIM CORE",
+    page_title="RANDOM AI | Architecture Core",
     page_icon="🏗️",
     layout="wide"
 )
 
 
-MEMORY_FILE = Path(
-    "random_memory.json"
-)
-
-
 # ============================================================
-# SESSION INITIALIZATION
-# ============================================================
-
-if "memory" not in st.session_state:
-    st.session_state.memory = {
-        "projects": [],
-        "history": []
-    }
-
-
-if "project" not in st.session_state:
-    st.session_state.project = None
-
-
-
-# ============================================================
-# MEMORY FUNCTIONS
-# ============================================================
-
-def load_memory():
-
-    if MEMORY_FILE.exists():
-
-        try:
-            return json.loads(
-                MEMORY_FILE.read_text()
-            )
-
-        except Exception:
-            pass
-
-    return {
-        "projects": [],
-        "history": []
-    }
-
-
-
-def save_memory():
-
-    try:
-
-        MEMORY_FILE.write_text(
-            json.dumps(
-                st.session_state.memory,
-                indent=2
-            )
-        )
-
-    except Exception:
-        pass
-
-
-
-if not st.session_state.memory["projects"]:
-
-    st.session_state.memory = load_memory()
-
-
-
-# ============================================================
-# STYLE
+# GLOBAL STYLE
 # ============================================================
 
 st.markdown(
-"""
-<style>
+    """
+    <style>
+    .main {
+        background-color: #0b1020;
+    }
 
-.stApp {
+    .card {
+        background: #151b32;
+        padding: 20px;
+        border-radius: 16px;
+        margin-bottom: 15px;
+        border: 1px solid #27304d;
+    }
 
-background:
-linear-gradient(
-135deg,
-#020617,
-#111827,
-#1e293b
-);
+    .title {
+        font-size: 42px;
+        font-weight: 800;
+        color: white;
+    }
 
-}
+    .subtitle {
+        color: #9aa7c7;
+        font-size: 18px;
+    }
 
+    .agent {
+        padding: 12px;
+        border-radius: 12px;
+        background: #10162b;
+        margin: 8px 0;
+    }
 
-.hero {
-
-padding:40px;
-border-radius:25px;
-
-background:
-linear-gradient(
-135deg,
-rgba(37,99,235,.5),
-rgba(124,58,237,.5)
-);
-
-text-align:center;
-
-}
-
-
-.agent {
-
-padding:15px;
-margin:8px;
-border-radius:15px;
-
-background:
-rgba(16,185,129,.2);
-
-}
-
-</style>
-""",
-unsafe_allow_html=True
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 
-
 # ============================================================
-# BIM GENERATORS
+# SESSION MEMORY
 # ============================================================
 
-def create_object(kind):
+if "project" not in st.session_state:
 
-    return {
-
-        "id":
-        str(uuid.uuid4())[:8],
-
-        "type":
-        kind,
-
-        "material":
-        random.choice(
-            [
-                "Concrete",
-                "Steel",
-                "Glass",
-                "Timber"
-            ]
-        )
-
+    st.session_state.project = {
+        "id": str(uuid.uuid4()),
+        "name": "Untitled Project",
+        "created": str(datetime.now()),
+        "requirements": [],
+        "decisions": [],
+        "agents": []
     }
 
 
-
-def create_space(name, floor):
-
-    return {
-
-        "name": name,
-
-        "floor": floor,
-
-        "area":
-        random.randint(
-            20,
-            120
-        ),
-
-        "objects":
-
-        [
-            create_object("Wall"),
-            create_object("Door"),
-            create_object("Window")
-        ]
-
-    }
+if "memory" not in st.session_state:
+    st.session_state.memory = []
 
 
-
-def create_floor(level):
-
-    names = [
-
-        "Lobby",
-        "Office",
-        "Meeting",
-        "Services",
-        "Core"
-
-    ]
-
-    return {
-
-        "level": level,
-
-        "spaces":
-
-        [
-            create_space(
-                n,
-                level
-            )
-
-            for n in names
-
-        ]
-
-    }
-
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 
 # ============================================================
 # AI AGENTS
 # ============================================================
 
-def architect_ai(prompt):
+AGENTS = {
 
-    return {
+    "Architect Agent": {
+        "role": "Spatial design intelligence",
+        "status": "Ready"
+    },
 
-        "building":
+    "BIM Agent": {
+        "role": "Building information modelling",
+        "status": "Ready"
+    },
 
-        random.choice(
+    "Structural Agent": {
+        "role": "Structural reasoning",
+        "status": "Ready"
+    },
 
-            [
-                "Smart Tower",
-                "Eco Campus",
-                "Mixed Use Hub",
-                "Innovation Centre"
-            ]
+    "Sustainability Agent": {
+        "role": "Environmental analysis",
+        "status": "Ready"
+    },
 
-        ),
-
-        "concept":
-        "Adaptive intelligent architecture"
-
+    "Cost Agent": {
+        "role": "Cost and feasibility analysis",
+        "status": "Ready"
     }
-
-
-
-def structure_ai():
-
-    return {
-
-        "system":
-
-        random.choice(
-
-            [
-                "Concrete Frame",
-                "Steel Frame",
-                "Composite Structure"
-            ]
-
-        ),
-
-        "grid":
-
-        random.choice(
-            [
-                5,
-                6,
-                7.5
-            ]
-        )
-
-    }
-
-
-
-def sustainability_ai():
-
-    return {
-
-        "score":
-        random.randint(
-            80,
-            98
-        ),
-
-        "strategy":
-        random.choice(
-            [
-                "Solar",
-                "Passive Cooling",
-                "Green Roof"
-            ]
-        )
-
-    }
-
+}
 
 
 # ============================================================
-# PROJECT ENGINE
+# RANDOM AI ENGINE
 # ============================================================
 
-def generate_project(prompt):
+def random_ai_command(command):
 
-    floors=random.randint(
-        3,
-        12
+    timestamp = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
     )
 
-
-    return {
-
-        "id":
-        str(uuid.uuid4())[:8],
-
-        "prompt":
-        prompt,
-
-        "created":
-        datetime.now().isoformat(),
-
-        "architecture":
-        architect_ai(prompt),
-
-        "floors":
-
-        [
-            create_floor(i)
-            for i in range(floors)
-        ],
-
-        "structure":
-        structure_ai(),
-
-        "sustainability":
-        sustainability_ai()
-
+    result = {
+        "time": timestamp,
+        "command": command,
+        "analysis": []
     }
 
 
+    if "house" in command.lower():
 
-# ============================================================
-# VISUALS
-# ============================================================
+        result["analysis"] = [
 
-def floor_plan(project):
+            "Architect Agent: Creating spatial concept",
+            "BIM Agent: Defining building elements",
+            "Structural Agent: Selecting structural strategy",
+            "Sustainability Agent: Evaluating passive design",
+            "Cost Agent: Reviewing feasibility"
 
-    if go is None:
-        st.info("Plotly not installed")
-        return
+        ]
 
+    else:
 
-    fig=go.Figure()
+        result["analysis"] = [
 
-    x=0
+            "Architect Agent: Analysing design intent",
+            "BIM Agent: Mapping building data",
+            "Structural Agent: Checking possibilities",
+            "Sustainability Agent: Reviewing performance",
+            "Cost Agent: Estimating implications"
 
-
-    for room in project["floors"][0]["spaces"]:
-
-        fig.add_shape(
-
-            type="rect",
-
-            x0=x,
-
-            y0=0,
-
-            x1=x+8,
-
-            y1=6
-
-        )
+        ]
 
 
-        fig.add_annotation(
+    st.session_state.memory.append(result)
 
-            x=x+4,
-
-            y=3,
-
-            text=room["name"],
-
-            showarrow=False
-
-        )
-
-
-        x+=10
-
-
-    fig.update_layout(
-        template="plotly_dark",
-        height=450
+    st.session_state.project["decisions"].append(
+        result
     )
 
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+    return result
 
 
 
 # ============================================================
-# UI
+# HEADER
 # ============================================================
-
 
 st.markdown(
+    """
+    <div class="title">
+    🧠 RANDOM AI
+    </div>
 
-"""
-<div class="hero">
-
-<h1>🏗️ RANDOM V51.1 BIM CORE</h1>
-
-<h3>AI Architecture Intelligence Engine</h3>
-
-</div>
-""",
-
-unsafe_allow_html=True
-
+    <div class="subtitle">
+    Architecture Intelligence Operating System
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 
-
-prompt=st.text_area(
-"Describe your building"
-)
-
-
-
-if st.button(
-"🚀 Generate BIM"
-):
-
-    if prompt.strip():
-
-        new_project=generate_project(prompt)
-
-        st.session_state.project=new_project
-
-        st.session_state.memory["projects"].append(
-            new_project
-        )
-
-        st.session_state.memory["history"].append(
-            datetime.now().isoformat()
-        )
-
-        save_memory()
-
-        st.success(
-            "BIM project created"
-        )
-
-
-# ============================================================
-# DISPLAY
-# ============================================================
-
-project=st.session_state.project
-
-
-if project:
-
-
-    c1,c2,c3=st.columns(3)
-
-
-    c1.metric(
-        "Building",
-        project["architecture"]["building"]
-    )
-
-
-    c2.metric(
-        "Floors",
-        len(project["floors"])
-    )
-
-
-    c3.metric(
-        "Energy",
-        f"{project['sustainability']['score']}%"
-    )
-
-
-    tab1,tab2,tab3=st.tabs(
-        [
-            "🏢 Explorer",
-            "📐 Plan",
-            "🧠 AI"
-        ]
-    )
-
-
-    with tab1:
-
-        for floor in project["floors"]:
-
-            with st.expander(
-                f"Floor {floor['level']}"
-            ):
-
-                for room in floor["spaces"]:
-
-                    st.write(
-                        room["name"],
-                        room["area"],
-                        "m²"
-                    )
-
-
-    with tab2:
-
-        floor_plan(project)
-
-
-    with tab3:
-
-        st.write(
-            project["architecture"]
-        )
-
-        st.write(
-            project["structure"]
-        )
-
-        st.write(
-            project["sustainability"]
-        )
-
-
-else:
-
-    st.info(
-        "Enter a project description to activate RANDOM AI."
-    )
-
+st.write("")
 
 
 # ============================================================
@@ -571,18 +202,199 @@ else:
 
 with st.sidebar:
 
-    st.header(
-        "🧠 RANDOM MEMORY"
+    st.header("🏗️ Project")
+
+    project_name = st.text_input(
+        "Project Name",
+        st.session_state.project["name"]
     )
 
-    st.metric(
-        "Projects",
-        len(
-            st.session_state.memory["projects"]
+    st.session_state.project["name"] = project_name
+
+
+    st.divider()
+
+    st.header("AI Core")
+
+    st.write(
+        "Version: RANDOM V51"
+    )
+
+    st.write(
+        "Mode: Architecture Intelligence"
+    )
+
+
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    st.markdown(
+        f"""
+        <div class="card">
+
+        <h3>📁 Project</h3>
+
+        {st.session_state.project["name"]}
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col2:
+
+    st.markdown(
+        f"""
+        <div class="card">
+
+        <h3>🧠 Memory</h3>
+
+        {len(st.session_state.memory)}
+        decisions stored
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+with col3:
+
+    st.markdown(
+        """
+        <div class="card">
+
+        <h3>🤖 Agents</h3>
+
+        5 active
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+
+# ============================================================
+# AGENT PANEL
+# ============================================================
+
+st.subheader("🤖 AI Agent Network")
+
+
+for agent, data in AGENTS.items():
+
+    st.markdown(
+        f"""
+        <div class="agent">
+
+        <b>{agent}</b><br>
+
+        {data["role"]}
+
+        <br>
+
+        Status: {data["status"]}
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+
+# ============================================================
+# COMMAND CENTER
+# ============================================================
+
+st.subheader("💬 RANDOM AI Command Center")
+
+
+command = st.chat_input(
+    "Describe a building, design problem, or analysis task..."
+)
+
+
+if command:
+
+    st.session_state.messages.append(
+        {
+            "role": "user",
+            "content": command
+        }
+    )
+
+
+    response = random_ai_command(command)
+
+
+    st.session_state.messages.append(
+        {
+            "role": "assistant",
+            "content": response
+        }
+    )
+
+
+
+for msg in st.session_state.messages:
+
+    if msg["role"] == "user":
+
+        st.chat_message("user").write(
+            msg["content"]
         )
+
+    else:
+
+        with st.chat_message("assistant"):
+
+            st.write(
+                "RANDOM AI analysis:"
+            )
+
+            for item in msg["content"]["analysis"]:
+
+                st.write(
+                    "• " + item
+                )
+
+
+
+# ============================================================
+# MEMORY VIEW
+# ============================================================
+
+st.divider()
+
+st.subheader("📚 Design Reasoning Memory")
+
+
+if st.session_state.memory:
+
+    st.json(
+        st.session_state.memory
     )
 
+else:
+
+    st.info(
+        "No design decisions recorded yet."
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
 
 st.caption(
-"RANDOM V51.1 | Fixed BIM Core"
+    "RANDOM V51 AI CORE | Architecture Intelligence Platform"
 )
