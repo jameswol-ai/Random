@@ -1,7 +1,7 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE — V37
-# Architectural + Structural + Cost + 2D + 3D BIM-Lite OS
-# Deployment-Grade Streamlit Single File
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
+# V38 STABLE — HARDENED BIM + EVOLUTION ENGINE
+# No KeyError / No JSON crash / Safe simulation core
 # =========================================================
 
 import streamlit as st
@@ -10,14 +10,13 @@ import uuid
 import random
 from pathlib import Path
 from datetime import datetime
-import numpy as np
 
 # =========================================================
 # CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="ARC V37 OS",
+    page_title="ARC V38 Stable OS",
     page_icon="🏗️",
     layout="wide"
 )
@@ -25,231 +24,257 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# SAFE MEMORY (CRASH-PROOF JSON LOADER)
+# SAFE MEMORY LAYER (CRASH PROOF)
 # =========================================================
 
 DEFAULT_STATE = {
     "projects": [],
     "designs": [],
-    "boq": [],
-    "logs": [],
-    "evolution": []
+    "evolution": [],
+    "logs": []
 }
 
-def safe_load():
+def load_memory():
     if not MEMORY_FILE.exists():
         return DEFAULT_STATE.copy()
+
     try:
-        with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return {**DEFAULT_STATE, **data}
-    except:
+        data = json.loads(MEMORY_FILE.read_text())
+
+        # 🧠 auto-heal missing keys
+        for k in DEFAULT_STATE:
+            if k not in data:
+                data[k] = []
+
+        return data
+
+    except Exception:
         return DEFAULT_STATE.copy()
 
-def safe_save(mem):
+def save_memory(mem):
     try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(mem, f, indent=2)
+        MEMORY_FILE.write_text(json.dumps(mem, indent=2))
     except:
         pass
 
 def log(mem, msg):
+    if "logs" not in mem:
+        mem["logs"] = []
+
     mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    safe_save(mem)
+    save_memory(mem)
 
 # init
 if "mem" not in st.session_state:
-    st.session_state.mem = safe_load()
+    st.session_state.mem = load_memory()
 
 mem = st.session_state.mem
 
 # =========================================================
-# DOMAIN ENGINE
+# ARCHITECTURE DOMAIN ENGINE
 # =========================================================
 
-ARCH_TYPES = {
+ARCH = {
     "Residential": ["Villa", "Apartment", "Townhouse"],
-    "Commercial": ["Office", "Mall", "Hotel", "Clinic"],
-    "Industrial": ["Warehouse", "Factory", "Plant"]
+    "Commercial": ["Office", "Hotel", "Clinic"],
+    "Industrial": ["Warehouse", "Factory"]
 }
 
 def domain(t):
-    for k,v in ARCH_TYPES.items():
+    for k, v in ARCH.items():
         if t in v:
             return k
     return "Unknown"
 
 # =========================================================
-# EAST AFRICA COST ENGINE (BASE RATES)
-# =========================================================
-# editable baseline (UGX per unit)
-RATES = {
-    "foundation_m3": 280000,
-    "slab_m2": 120000,
-    "wall_m2": 95000,
-    "roof_m2": 140000,
-    "column_unit": 180000,
-    "beam_unit": 220000,
-    "door_unit": 350000,
-    "window_unit": 280000
-}
-
-# =========================================================
-# ARCHITECTURAL GENERATION
+# SAFE DESIGN GENERATION
 # =========================================================
 
-def generate_design(btype, floors, rooms):
+def generate_design(btype, bedrooms):
     return {
-        "id": str(uuid.uuid4())[:8],
+        "id": str(uuid.uuid4())[:8].upper(),
         "type": btype,
         "domain": domain(btype),
-        "floors": floors,
-        "rooms": rooms,
+        "bedrooms": bedrooms,
+        "area_sqm": 80 + bedrooms * 18,
         "structure": {
-            "columns": random.randint(12, 40),
-            "beams": random.randint(20, 80)
-        }
+            "columns": random.randint(14, 36),
+            "beams": random.randint(28, 72)
+        },
+        "cost": 0  # ALWAYS INITIALIZED
     }
 
 # =========================================================
-# SPACE GENERATION (2D BIM)
+# SAFE MUTATION (NO STRUCTURE BREAKS)
 # =========================================================
 
-def generate_spaces(design):
-    base = [
-        {"name": "Living Room", "type": "social", "area": 35},
-        {"name": "Kitchen", "type": "service", "area": 18},
-        {"name": "Bathroom", "type": "wet", "area": 8}
+def mutate(d):
+    d = json.loads(json.dumps(d))
+
+    d["structure"]["columns"] = max(
+        10,
+        d["structure"]["columns"] + random.randint(-2, 3)
+    )
+
+    d["structure"]["beams"] = max(
+        16,
+        d["structure"]["beams"] + random.randint(-4, 5)
+    )
+
+    # safe cost recalculation ALWAYS
+    area = max(1, d["area_sqm"])
+    d["cost"] = int(area * random.randint(1200, 2600))
+
+    return d
+
+# =========================================================
+# FITNESS ENGINE (SAFE DIVISION ONLY)
+# =========================================================
+
+def fitness(d):
+    cols = max(1, d["structure"]["columns"])
+    beams = max(1, d["structure"]["beams"])
+
+    ratio = beams / cols
+
+    structural = max(0, 100 - abs(ratio - 2.1) * 20)
+
+    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
+    cost_eff = max(0, 100 - abs(cost_per_sqm - 1650) * 0.03)
+
+    complexity = min(100, d["bedrooms"] * 12)
+
+    return {
+        "structural": structural,
+        "cost": cost_eff,
+        "complexity": complexity
+    }
+
+def score(f):
+    return int(sum(f.values()) / len(f))
+
+# =========================================================
+# EVOLUTION ENGINE (STABLE)
+# =========================================================
+
+def evolve(btype, bedrooms, gens, pop):
+    population = [generate_design(btype, bedrooms) for _ in range(pop)]
+    history = []
+
+    for _ in range(gens):
+        scored = []
+
+        for d in population:
+            f = fitness(d)
+            d["fitness"] = f
+            d["score"] = score(f)
+            scored.append(d)
+
+        scored.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored[0]["score"])
+
+        survivors = scored[:max(2, pop // 2)]
+
+        new_pop = []
+        for s in survivors:
+            new_pop.append(s)
+            new_pop.append(mutate(s))
+
+        population = new_pop[:pop]
+
+    return scored[0], history
+
+# =========================================================
+# FLOOR PLAN (SAFE)
+# =========================================================
+
+def floor_plan(d):
+    rooms = [
+        {"name": "Living", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
+        {"name": "Kitchen", "w": 4.5, "h": 4.0, "color": "#065f46"}
     ]
 
-    for i in range(design["rooms"]):
-        base.append({
+    for i in range(d["bedrooms"]):
+        rooms.append({
             "name": f"Bedroom {i+1}",
-            "type": "private",
-            "area": 22 if i == 0 else 16
+            "w": 4.5 if i == 0 else 4.0,
+            "h": 4.0,
+            "color": "#4c1d95"
         })
 
-    # doors & windows
-    for s in base:
-        s["doors"] = random.randint(1, 2)
-        s["windows"] = random.randint(1, 4)
-
-    return base
+    return rooms
 
 # =========================================================
-# 3D VOXEL ENGINE (SIMPLIFIED BIM KERNEL)
+# RENDER
 # =========================================================
 
-WORLD = (20, 10, 20)
-
-def voxel_world(design):
-    w = np.zeros(WORLD)
-
-    for _ in range(design["structure"]["columns"]):
-        x, z = random.randint(0,19), random.randint(0,19)
-        for y in range(random.randint(2,6)):
-            w[x,y,z] = 1
-
-    for _ in range(design["structure"]["beams"]):
-        x,z = random.randint(0,19), random.randint(0,19)
-        y = random.randint(2,5)
-        for i in range(3):
-            w[min(19,x+i), y, z] = 2
-
-    return w
-
-def voxel_metrics(w):
-    return {
-        "solid": int(np.sum(w == 1)),
-        "beams": int(np.sum(w == 2)),
-        "density": float(np.sum(w > 0) / w.size)
-    }
-
-# =========================================================
-# BOQ ENGINE (FOUNDATION → ROOF)
-# =========================================================
-
-def boq(design, spaces):
-    floors = design["floors"]
-    area = sum(s["area"] for s in spaces)
-
-    foundation = area * 0.6
-    slab = area * floors
-    walls = area * 2.8
-    roof = area * 1.0
-
-    return [
-        ("Foundation Concrete (m3)", foundation, foundation * RATES["foundation_m3"]),
-        ("Floor Slab (m2)", slab, slab * RATES["slab_m2"]),
-        ("Walling (m2)", walls, walls * RATES["wall_m2"]),
-        ("Roofing (m2)", roof, roof * RATES["roof_m2"]),
-        ("Columns (units)", design["structure"]["columns"], design["structure"]["column_unit"]),
-        ("Beams (units)", design["structure"]["beams"], design["structure"]["beam_unit"]),
-        ("Doors (units)", sum(s["doors"] for s in spaces), RATES["door_unit"]),
-        ("Windows (units)", sum(s["windows"] for s in spaces), RATES["window_unit"])
-    ]
-
-# =========================================================
-# COST SUMMARIZER
-# =========================================================
-
-def total_cost(items):
-    return int(sum(v * c for _, v, c in items))
+def render(plan):
+    html = '<div style="display:flex;flex-wrap:wrap;gap:12px;">'
+    for r in plan:
+        html += f"""
+        <div style="padding:12px;background:{r['color']};
+        color:white;border-radius:10px;min-width:160px">
+        <b>{r['name']}</b><br>{r['w']}m × {r['h']}m
+        </div>
+        """
+    html += "</div>"
+    st.markdown(html, unsafe_allow_html=True)
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🏗️ ARC V37 OS")
+st.sidebar.title("🏗️ ARC V38 SAFE")
 
-mode = st.sidebar.radio("Mode", ["Design Lab", "Dashboard", "Memory"])
+page = st.sidebar.radio("Mode", ["Dashboard", "Design Lab", "Memory"])
 
-btype = st.sidebar.selectbox("Building Type", sum(ARCH_TYPES.values(), []))
-floors = st.sidebar.slider("Floors", 1, 5, 2)
-rooms = st.sidebar.slider("Bedrooms", 1, 8, 3)
+btype = st.sidebar.selectbox("Type", sum(ARCH.values(), []))
+beds = st.sidebar.slider("Bedrooms", 1, 8, 3)
+gens = st.sidebar.slider("Generations", 2, 15, 5)
+pop = st.sidebar.slider("Population", 4, 20, 8)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
-if mode == "Dashboard":
-    st.title("🏗️ ARCH SYSTEM CORE")
+if page == "Dashboard":
+    st.title("🏗️ SYSTEM CORE")
 
     c1,c2,c3 = st.columns(3)
     c1.metric("Designs", len(mem["designs"]))
-    c2.metric("BOQs", len(mem["boq"]))
+    c2.metric("Evolution", len(mem["evolution"]))
     c3.metric("Logs", len(mem["logs"]))
 
-    st.line_chart([d.get("structure", {}).get("columns", 0) for d in mem["designs"]])
+    if mem["logs"]:
+        st.subheader("Recent Logs")
+        for l in mem["logs"][-6:]:
+            st.caption(f"{l['time']} → {l['msg']}")
 
 # =========================================================
 # DESIGN LAB
 # =========================================================
 
-elif mode == "Design Lab":
-    st.title("🧠 ARCHITECT + ENGINEER AI")
+elif page == "Design Lab":
+    st.title("🧠 ENGINE CORE")
 
-    if st.button("Generate Full BIM Model"):
-        design = generate_design(btype, floors, rooms)
-        spaces = generate_spaces(design)
-        world = voxel_world(design)
-        metrics = voxel_metrics(world)
-        boq_items = boq(design, spaces)
+    if st.button("Run Engine"):
+        best, hist = evolve(btype, beds, gens, pop)
 
-        design["spaces"] = spaces
-        design["boq"] = boq_items
-        design["total_cost"] = total_cost(boq_items)
-        design["voxel"] = metrics
+        best["plan"] = floor_plan(best)
 
-        mem["designs"].append(design)
-        mem["boq"].append(boq_items)
+        mem["designs"].append(best)
+        mem["evolution"].append({
+            "id": str(uuid.uuid4())[:6],
+            "best": best["id"],
+            "score": best["score"]
+        })
 
-        log(mem, f"Generated {design['id']}")
+        log(mem, f"Generated {best['id']}")
 
-        st.session_state.active = design
+        st.session_state.active = best
 
     if "active" in st.session_state:
         d = st.session_state.active
@@ -257,28 +282,11 @@ elif mode == "Design Lab":
         st.subheader(f"Project {d['id']}")
 
         a,b,c = st.columns(3)
-        a.metric("Cost (UGX)", d["total_cost"])
-        b.metric("Columns", d["structure"]["columns"])
-        c.metric("Density", round(d["voxel"]["density"],3))
+        a.metric("Score", d["score"])
+        b.metric("Area", d["area_sqm"])
+        c.metric("Cost", d["cost"])
 
-        tab1, tab2, tab3 = st.tabs(["Spaces", "BOQ", "3D Voxel"])
-
-        with tab1:
-            for s in d["spaces"]:
-                st.write(s)
-
-        with tab2:
-            st.table([
-                {"Item": i, "Qty": q, "Cost": c}
-                for i,q,c in d["boq"]
-            ])
-
-        with tab3:
-            layer = st.slider("Voxel Layer", 0, WORLD[1]-1, 0)
-            grid = d["voxel"]
-
-            st.write("Slice View (simplified)")
-            st.write(grid)
+        render(d["plan"])
 
 # =========================================================
 # MEMORY
@@ -290,5 +298,5 @@ else:
 
     if st.button("Reset"):
         st.session_state.mem = DEFAULT_STATE.copy()
-        safe_save(st.session_state.mem)
+        save_memory(st.session_state.mem)
         st.rerun()
