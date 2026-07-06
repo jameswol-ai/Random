@@ -451,3 +451,589 @@ def mutate_design(design):
 
 
     return d
+
+# ============================================================
+# FITNESS ANALYSIS ENGINE
+# ============================================================
+
+
+def calculate_fitness(design):
+
+    structural_ratio = (
+
+        design["structure"]["beams"]
+
+        /
+
+        max(
+            1,
+            design["structure"]["columns"]
+        )
+
+    )
+
+
+    structural_score = max(
+
+        0,
+
+        100 -
+
+        int(
+            abs(
+                structural_ratio - 2.1
+            )
+            *
+            22
+        )
+
+    )
+
+
+
+    cost_per_sqm = (
+
+        design["cost"]
+
+        /
+
+        max(
+            1,
+            design["area_sqm"]
+        )
+
+    )
+
+
+
+    cost_score = max(
+
+        0,
+
+        100 -
+
+        int(
+            abs(
+                cost_per_sqm - 1650
+            )
+            *
+            0.04
+        )
+
+    )
+
+
+
+    spatial_score = min(
+
+        100,
+
+        len(
+            design["rooms"]
+        )
+        *
+        9
+
+    )
+
+
+
+    return {
+
+
+        "structural_integrity":
+
+        structural_score,
+
+
+        "cost_efficiency":
+
+        cost_score,
+
+
+        "spatial_complexity":
+
+        spatial_score
+
+    }
+
+
+
+
+def calculate_score(fitness):
+
+    return int(
+
+        sum(
+            fitness.values()
+        )
+
+        /
+
+        len(fitness)
+
+    )
+
+
+
+
+
+# ============================================================
+# EVOLUTIONARY DESIGN LOOP
+# ============================================================
+
+
+def run_evolutionary_loop(
+
+        building_type,
+
+        bedrooms,
+
+        generations,
+
+        population_size
+
+):
+
+
+    population=[
+
+        generate_base_design(
+            building_type,
+            bedrooms
+        )
+
+        for _ in range(population_size)
+
+    ]
+
+
+    history=[]
+
+
+
+    for generation in range(generations):
+
+
+        scored=[]
+
+
+
+        for design in population:
+
+
+            fitness=calculate_fitness(
+                design
+            )
+
+
+            design["fitness"]=fitness
+
+
+            design["score"]=calculate_score(
+                fitness
+            )
+
+
+            scored.append(design)
+
+
+
+        scored.sort(
+
+            key=lambda x:
+            x["score"],
+
+            reverse=True
+
+        )
+
+
+
+        history.append(
+
+            scored[0]["score"]
+
+        )
+
+
+
+        survivors=scored[
+
+            :
+
+            max(
+                2,
+                population_size//2
+            )
+
+        ]
+
+
+
+        next_generation=[]
+
+
+
+        for parent in survivors:
+
+
+            next_generation.append(
+                parent
+            )
+
+
+            next_generation.append(
+
+                mutate_design(
+                    parent
+                )
+
+            )
+
+
+
+        population=next_generation[
+
+            :
+
+            population_size
+
+        ]
+
+
+
+    return scored[0], history
+
+
+
+
+
+# ============================================================
+# PARAMETRIC FLOOR PLAN SYNTHESIS
+# ============================================================
+
+
+def generate_floor_plan(design):
+
+
+    rooms=[
+
+
+        {
+
+        "name":
+        "Grand Living Lounge",
+
+        "w":
+        6.5,
+
+        "h":
+        5.0,
+
+        "color":
+        "#1e3a8a"
+
+        },
+
+
+        {
+
+        "name":
+        "Culinary Kitchen",
+
+        "w":
+        4.5,
+
+        "h":
+        4.0,
+
+        "color":
+        "#064e3b"
+
+        },
+
+
+        {
+
+        "name":
+        "Central Powder Room",
+
+        "w":
+        3.0,
+
+        "h":
+        2.5,
+
+        "color":
+        "#78350f"
+
+        }
+
+    ]
+
+
+
+    for i in range(
+
+        design["bedrooms"]
+
+    ):
+
+
+        rooms.append(
+
+            {
+
+
+            "name":
+
+            (
+
+            "Master Suite"
+
+            if i == 0
+
+            else
+
+            f"Bedroom {i+1}"
+
+            ),
+
+
+            "w":
+
+            4.5,
+
+
+            "h":
+
+            4.0,
+
+
+            "color":
+
+            "#4c1d95"
+
+
+            }
+
+        )
+
+
+
+    return rooms
+
+
+
+
+
+# ============================================================
+# BLUEPRINT HTML RENDERER
+# ============================================================
+
+
+def render_native_blueprint(plan):
+
+
+    st.markdown(
+        "### 🗺️ Generative Spatial Layout"
+    )
+
+
+    canvas="<div class='arc-blueprint-canvas'>"
+
+
+
+    for room in plan:
+
+
+        canvas += f"""
+
+        <div class="arc-room-module"
+        style="background:{room['color']}">
+
+        <div style="
+        font-size:1.15rem;
+        font-weight:700;
+        ">
+
+        {room['name']}
+
+        </div>
+
+
+        <div class="room-meta">
+
+        📐 {room['w']}m × {room['h']}m
+
+        </div>
+
+
+        </div>
+
+        """
+
+
+
+    canvas += "</div>"
+
+
+
+    st.markdown(
+
+        canvas,
+
+        unsafe_allow_html=True
+
+    )
+
+
+
+
+
+# ============================================================
+# STRUCTURAL DIAGNOSTICS
+# ============================================================
+
+
+def run_structural_review(design):
+
+
+    alerts=[]
+
+
+
+    if design["structure"]["columns"] < 16:
+
+        alerts.append(
+
+            "🔴 Column density low. Review structural grid."
+
+        )
+
+
+
+    if (
+
+        design["cost"]
+
+        /
+
+        design["area_sqm"]
+
+        >
+
+        2300
+
+    ):
+
+        alerts.append(
+
+            "🟡 Cost efficiency threshold exceeded."
+
+        )
+
+
+
+    if (
+
+        design["structure"]["beams"]
+
+        /
+
+        design["structure"]["columns"]
+
+        <
+
+        1.9
+
+    ):
+
+        alerts.append(
+
+            "🔵 Beam-column ratio requires review."
+
+        )
+
+
+
+    if not alerts:
+
+        alerts.append(
+
+            "🟢 Design structurally stable."
+
+        )
+
+
+
+    return alerts
+
+
+
+
+
+# ============================================================
+# MATERIAL INTELLIGENCE
+# ============================================================
+
+
+def calculate_material_takeoffs(design):
+
+
+    return [
+
+
+        {
+
+        "Material":
+
+        "High Performance Concrete",
+
+        "Quantity":
+
+        f"{design['structure']['columns']*2.6:.1f} m³"
+
+        },
+
+
+        {
+
+        "Material":
+
+        "Steel Reinforcement",
+
+        "Quantity":
+
+        f"{design['structure']['beams']*0.48:.2f} MT"
+
+        },
+
+
+        {
+
+        "Material":
+
+        "CMU Blocks",
+
+        "Quantity":
+
+        f"{int(design['area_sqm']*42):,} units"
+
+        },
+
+
+        {
+
+        "Material":
+
+        "Dead Load Estimate",
+
+        "Quantity":
+
+        f"{int(design['structure']['columns']*13.2):,} kN"
+
+        }
+
+    ]
