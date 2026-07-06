@@ -1037,3 +1037,605 @@ def calculate_material_takeoffs(design):
         }
 
     ]
+
+# ============================================================
+# STREAMLIT WORKSPACE
+# ============================================================
+
+
+st.sidebar.title(
+    "📐 RANDOM AI Architecture Studio"
+)
+
+
+
+page = st.sidebar.radio(
+
+    "Workspace",
+
+    [
+
+        "📊 Dashboard",
+
+        "🧬 Evolution Lab",
+
+        "🏛️ Blueprint Viewer",
+
+        "🧱 Structural Intelligence",
+
+        "💰 Cost & Materials",
+
+        "🧠 Memory Core",
+
+        "📦 Export"
+
+    ]
+
+)
+
+
+
+ARCH_FLAT = sum(
+    ARCH_DOMAINS.values(),
+    []
+)
+
+
+
+building_type = st.sidebar.selectbox(
+
+    "Architectural Typology",
+
+    ARCH_FLAT
+
+)
+
+
+
+bedrooms = st.sidebar.slider(
+
+    "Spatial Modules",
+
+    1,
+
+    8,
+
+    3
+
+)
+
+
+
+generations = st.sidebar.slider(
+
+    "Evolution Generations",
+
+    2,
+
+    20,
+
+    6
+
+)
+
+
+
+population = st.sidebar.slider(
+
+    "Population Size",
+
+    4,
+
+    30,
+
+    10
+
+)
+
+
+
+
+# ============================================================
+# DASHBOARD
+# ============================================================
+
+
+if page == "📊 Dashboard":
+
+
+    st.title(
+        "📐 RANDOM AI Studio Dashboard"
+    )
+
+
+    c1,c2,c3 = st.columns(3)
+
+
+    c1.metric(
+
+        "Stored Projects",
+
+        len(
+            mem["projects"]
+        )
+
+    )
+
+
+    c2.metric(
+
+        "Generated Designs",
+
+        len(
+            mem["designs"]
+        )
+
+    )
+
+
+    c3.metric(
+
+        "Evolution Cycles",
+
+        len(
+            mem["evolution"]
+        )
+
+    )
+
+
+
+    st.divider()
+
+
+    st.subheader(
+        "System Telemetry"
+    )
+
+
+    if mem["logs"]:
+
+
+        for log in reversed(
+
+            mem["logs"][-10:]
+
+        ):
+
+            st.caption(
+
+                f"{log['time']} | {log['msg']}"
+
+            )
+
+
+    else:
+
+        st.info(
+            "No system events recorded."
+        )
+
+
+
+
+
+# ============================================================
+# EVOLUTION LAB
+# ============================================================
+
+
+elif page == "🧬 Evolution Lab":
+
+
+    st.title(
+        "🧬 Generative Architecture Evolution"
+    )
+
+
+
+    if st.button(
+
+        "🚀 Start Evolution Pipeline",
+
+        type="primary"
+
+    ):
+
+
+        with st.spinner(
+
+            "Evolving architectural DNA..."
+
+        ):
+
+
+            best,history = run_evolutionary_loop(
+
+                building_type,
+
+                bedrooms,
+
+                generations,
+
+                population
+
+            )
+
+
+
+            best["plan"] = generate_floor_plan(
+
+                best
+
+            )
+
+
+            mem["designs"].append(
+
+                best
+
+            )
+
+
+
+            mem["evolution"].append(
+
+                {
+
+                "id":
+                str(uuid.uuid4())[:6],
+
+
+                "design":
+                best["id"],
+
+
+                "score":
+                best["score"],
+
+
+                "time":
+                datetime.now().isoformat()
+
+                }
+
+            )
+
+
+
+            st.session_state.active_design = best
+
+
+            st.session_state.active_history = history
+
+
+
+            log_event(
+
+                f"Generated design {best['id']}"
+
+            )
+
+
+
+            save_memory()
+
+
+
+
+    if st.session_state.active_design:
+
+
+        design = st.session_state.active_design
+
+
+
+        st.subheader(
+
+            f"⚡ Design DNA {design['id']}"
+
+        )
+
+
+
+        a,b,c = st.columns(3)
+
+
+
+        a.metric(
+
+            "Fitness Score",
+
+            design["score"]
+
+        )
+
+
+        b.metric(
+
+            "Floor Area",
+
+            f"{design['area_sqm']} m²"
+
+        )
+
+
+        c.metric(
+
+            "Estimated Cost",
+
+            f"${design['cost']:,}"
+
+        )
+
+
+
+        st.line_chart(
+
+            st.session_state.active_history
+
+        )
+
+
+
+
+
+# ============================================================
+# BLUEPRINT VIEWER
+# ============================================================
+
+
+elif page == "🏛️ Blueprint Viewer":
+
+
+    st.title(
+        "🏛️ Parametric Spatial Blueprint"
+    )
+
+
+
+    if st.session_state.active_design:
+
+
+        render_native_blueprint(
+
+            st.session_state.active_design["plan"]
+
+        )
+
+
+    else:
+
+        st.info(
+
+            "Generate a design first."
+
+        )
+
+
+
+
+
+# ============================================================
+# STRUCTURAL INTELLIGENCE
+# ============================================================
+
+
+elif page == "🧱 Structural Intelligence":
+
+
+    st.title(
+
+        "🧱 Structural Diagnostics"
+
+    )
+
+
+    if st.session_state.active_design:
+
+
+        design = st.session_state.active_design
+
+
+        for alert in run_structural_review(design):
+
+            st.write(alert)
+
+
+
+        st.json(
+
+            design["fitness"]
+
+        )
+
+
+    else:
+
+        st.info(
+
+            "No active design."
+
+        )
+
+
+
+
+
+# ============================================================
+# COST & MATERIALS
+# ============================================================
+
+
+elif page == "💰 Cost & Materials":
+
+
+    st.title(
+
+        "💰 Material Intelligence"
+
+    )
+
+
+
+    if st.session_state.active_design:
+
+
+        design = st.session_state.active_design
+
+
+
+        st.metric(
+
+            "Estimated Construction Cost",
+
+            f"${design['cost']:,}"
+
+        )
+
+
+
+        st.table(
+
+            calculate_material_takeoffs(
+
+                design
+
+            )
+
+        )
+
+
+
+    else:
+
+        st.info(
+
+            "Generate a design first."
+
+        )
+
+
+
+
+
+# ============================================================
+# MEMORY CORE
+# ============================================================
+
+
+elif page == "🧠 Memory Core":
+
+
+    st.title(
+
+        "🧠 Architecture Memory Repository"
+
+    )
+
+
+    st.json(
+
+        mem
+
+    )
+
+
+
+    if st.button(
+
+        "Reset Memory"
+
+    ):
+
+
+        st.session_state.memory = DEFAULT_STATE.copy()
+
+
+        st.session_state.active_design = None
+
+
+        st.session_state.active_history = []
+
+
+
+        save_memory()
+
+
+        st.success(
+
+            "Memory cleared"
+
+        )
+
+
+        st.rerun()
+
+
+
+
+
+# ============================================================
+# EXPORT
+# ============================================================
+
+
+elif page == "📦 Export":
+
+
+    st.title(
+
+        "📦 Project Export Hub"
+
+    )
+
+
+    if st.session_state.active_design:
+
+
+        export=json.dumps(
+
+            st.session_state.active_design,
+
+            indent=4
+
+        )
+
+
+
+        st.download_button(
+
+            "Download Design JSON",
+
+            export,
+
+            "random_design.json",
+
+            "application/json"
+
+        )
+
+
+
+    else:
+
+        st.info(
+
+            "No design available."
+
+        )
+
+
+
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+
+st.caption(
+
+"RANDOM AI Architecture Intelligence Engine | Evolutionary Spatial Synthesis"
+
+        )
