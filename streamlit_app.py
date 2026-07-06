@@ -1,7 +1,7 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# Evolutionary Spatial Layout Synthesis & Diagnostics
-# Zero-Dependency Single-File Streamlit Implementation
+# RANDOM ARCHITECTURE INTELLIGENCE ENGINE v11
+# BIM + 3D + AI MULTI-AGENT + IFC EXPORT CORE
+# Single File Streamlit System
 # =========================================================
 
 import streamlit as st
@@ -12,73 +12,19 @@ from pathlib import Path
 from datetime import datetime
 
 # =========================================================
-# CONFIG & GLOBAL STUDIO STYLING
+# CONFIG
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine",
+    page_title="Random Studio Engine v11",
     page_icon="📐",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
 
-st.markdown(
-"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-
-html, body, [data-testid="stSidebarNav"] {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-}
-
-.arc-blueprint-canvas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    background: #090d16;
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px dashed #334155;
-    margin: 15px 0;
-}
-
-.arc-room-module {
-    flex: 1 1 calc(33.333% - 16px);
-    min-width: 220px;
-    padding: 20px;
-    border-radius: 8px;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-    transition: all 0.25s ease;
-}
-
-.arc-room-module:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-}
-
-.room-meta {
-    font-family: 'Space Grotesk', monospace;
-    font-size: 0.85rem;
-    opacity: 0.8;
-    margin-top: 8px;
-}
-</style>
-""",
-unsafe_allow_html=True
-)
-
 # =========================================================
-# SYSTEM MEMORY MANAGEMENT
+# MEMORY SYSTEM
 # =========================================================
 
 DEFAULT_STATE = {
@@ -92,22 +38,17 @@ DEFAULT_STATE = {
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return json.loads(MEMORY_FILE.read_text())
         except Exception:
             return DEFAULT_STATE.copy()
     return DEFAULT_STATE.copy()
 
 
 def save_memory():
-    try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(st.session_state.memory, f, indent=2)
-    except Exception:
-        pass
+    MEMORY_FILE.write_text(json.dumps(st.session_state.memory, indent=2))
 
 
-def log_event(msg):
+def log(msg):
     st.session_state.memory["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
@@ -115,256 +56,201 @@ def log_event(msg):
     save_memory()
 
 
-# Initialize session state
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
-if "active_design" not in st.session_state:
-    st.session_state.active_design = None
-
-if "active_history" not in st.session_state:
-    st.session_state.active_history = []
+if "active" not in st.session_state:
+    st.session_state.active = None
 
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURAL GENETICS ENGINE
+# ARCHITECTURE GENERATOR
 # =========================================================
 
-ARCH_DOMAINS = {
-    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
-    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
-    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
-}
+ARCH_TYPES = ["Villa", "Office", "Apartment", "Warehouse"]
 
 
-def get_domain(btype):
-    for domain, types in ARCH_DOMAINS.items():
-        if btype in types:
-            return domain
-    return "Unknown"
-
-
-def generate_base_design(btype, bedrooms):
-    core_rooms = (
-        ["Living Room", "Gourmet Kitchen", "Primary Bathroom"]
-        + ["Flex Space"] * random.randint(1, 3)
-    )
-
-    est_area = 65 + 44 + (3 * 3) + (bedrooms * 18)
-
+def generate_design():
     return {
         "id": str(uuid.uuid4())[:8].upper(),
-        "type": btype,
-        "domain": get_domain(btype),
-        "bedrooms": bedrooms,
-        "rooms": core_rooms,
-        "area_sqm": est_area,
+        "type": random.choice(ARCH_TYPES),
+        "area": random.randint(120, 800),
+        "bedrooms": random.randint(1, 6),
         "structure": {
-            "columns": random.randint(14, 36),
-            "beams": random.randint(28, 72)
+            "columns": random.randint(12, 40),
+            "beams": random.randint(20, 90)
         },
-        "cost": int(est_area * random.randint(1400, 2600))
+        "cost": random.randint(100000, 900000),
+        "rooms": ["Living", "Kitchen", "Bath"]
     }
 
 
-def mutate_design(design):
-    d = json.loads(json.dumps(design))
-
-    d["structure"]["columns"] = max(
-        10, d["structure"]["columns"] + random.randint(-2, 4)
-    )
-    d["structure"]["beams"] = max(
-        16, d["structure"]["beams"] + random.randint(-4, 6)
-    )
-
-    if random.random() > 0.5:
-        d["rooms"].append("Adaptive Modular Terracing")
-        d["area_sqm"] += 20
-
-    d["cost"] = int(
-        d["area_sqm"] * random.randint(1300, 2500)
-        + d["structure"]["columns"] * 600
-    )
-
-    return d
-
-
-def calculate_fitness(d):
-    structural_ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    struct_score = max(0, 100 - int(abs(structural_ratio - 2.1) * 22))
-
-    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
-    cost_score = max(0, 100 - int(abs(cost_per_sqm - 1650) * 0.04))
-
-    complexity_score = min(100, len(d["rooms"]) * 9)
-
-    return {
-        "structural_integrity": struct_score,
-        "cost_efficiency": cost_score,
-        "spatial_complexity": complexity_score
-    }
-
-
-def aggregate_score(fit):
-    return int(sum(fit.values()) / len(fit))
-
-
-def run_evolutionary_loop(btype, bedrooms, generations, pop_size):
-    population = [
-        generate_base_design(btype, bedrooms)
-        for _ in range(pop_size)
-    ]
-
-    history = []
-
-    for _ in range(generations):
-        scored_pop = []
-
-        for d in population:
-            fit = calculate_fitness(d)
-            d["fitness"] = fit
-            d["score"] = aggregate_score(fit)
-            scored_pop.append(d)
-
-        scored_pop.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored_pop[0]["score"])
-
-        survivors = scored_pop[:max(2, pop_size // 2)]
-
-        new_generation = []
-        for parent in survivors:
-            new_generation.append(parent)
-            new_generation.append(mutate_design(parent))
-
-        population = new_generation[:pop_size]
-
-    return scored_pop[0], history
-
-
-def generate_floor_plan(design):
+def floor_plan(design):
     rooms = [
-        {"name": "Grand Living Lounge", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
-        {"name": "Culinary Kitchen", "w": 4.5, "h": 4.0, "color": "#064e3b"},
-        {"name": "Central Powder Room", "w": 3.0, "h": 2.5, "color": "#78350f"},
+        {"name": "Living", "w": 6, "h": 5},
+        {"name": "Kitchen", "w": 4, "h": 4},
+        {"name": "Bath", "w": 3, "h": 2}
     ]
 
     for i in range(design["bedrooms"]):
         rooms.append({
-            "name": f"{'Master Suite' if i == 0 else 'Bedroom'} {i+1}",
-            "w": 4.5 if i == 0 else 4.0,
-            "h": 4.0,
-            "color": "#4c1d95"
+            "name": f"Bedroom {i+1}",
+            "w": 4,
+            "h": 4
         })
 
     return rooms
 
 # =========================================================
-# UI LAYOUT + VIEWPORTS (structure preserved, cleaned)
+# BIM GRAPH ENGINE
 # =========================================================
 
-st.sidebar.title("📐 Arc Studio")
-st.sidebar.caption("v10.2 • Generative Structural Design Loop")
-st.sidebar.markdown("---")
+def build_bim(design):
+    nodes = []
+    edges = []
 
-page = st.sidebar.radio(
-    "Studio Workspace",
-    ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"]
-)
+    for i in range(design["structure"]["columns"]):
+        nodes.append({
+            "id": f"C{i}",
+            "type": "column",
+            "x": random.uniform(0, 20),
+            "y": random.uniform(0, 20),
+            "z": 0
+        })
 
-st.sidebar.markdown("---")
+    for i in range(design["structure"]["beams"]):
+        a, b = random.sample(nodes, 2)
+        edges.append({
+            "id": f"B{i}",
+            "from": a["id"],
+            "to": b["id"]
+        })
 
-with st.sidebar.expander("🛠️ Configure Arc Engine", expanded=False):
-    st.subheader("Synthesis Directives")
-
-    all_typologies = []
-    for sub_list in ARCH_DOMAINS.values():
-        all_typologies.extend(sub_list)
-
-    input_type = st.selectbox("Design Typology Target", all_typologies)
-    input_bedrooms = st.slider("Target Spatial Modules", 1, 8, 3)
-    input_generations = st.slider("Genetic Epoch Cycles", 2, 20, 6)
-    input_pop = st.slider("Population Bounds", 4, 30, 10)
-
-# =========================================================
-# DASHBOARD VIEW
-# =========================================================
-
-if page == "Dashboard Control":
-    st.title("📐 Studio Control Dashboard")
-
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Tracked Space Profiles", len(mem["projects"]))
-    col2.metric("Evolved Blueprint Seeds", len(mem["designs"]))
-    col3.metric("Total Parametric Compute Loops", len(mem["evolution"]))
-
-    st.markdown("---")
-    st.subheader("Engine Logs")
-
-    if mem["logs"]:
-        for log in reversed(mem["logs"][-6:]):
-            st.caption(f"⏱️ `{log['time'][11:19]}` — {log['msg']}")
-    else:
-        st.info("No logs yet.")
+    return {"nodes": nodes, "edges": edges}
 
 # =========================================================
-# SYNTHESIS LAB VIEW
+# MULTI-AGENT SYSTEM
 # =========================================================
 
-elif page == "Design Synthesis Lab":
-    st.title("🌍 Algorithmic Design Lab")
+def structural_agent(d):
+    return {
+        "score": max(0, 100 - d["structure"]["columns"] * 2),
+        "status": "stable"
+    }
 
-    generate_now = st.button(
-        "Run Generative Architectural Evolution Pipeline",
-        use_container_width=True
-    )
 
-    if generate_now:
-        with st.spinner("Evolving architectural population..."):
-            best, trend = run_evolutionary_loop(
-                input_type,
-                input_bedrooms,
-                input_generations,
-                input_pop
-            )
+def cost_agent(d):
+    cps = d["cost"] / max(1, d["area"])
+    return {
+        "efficiency": max(0, 100 - abs(cps - 1000) * 0.01),
+        "status": "ok"
+    }
 
-            best["plan"] = generate_floor_plan(best)
 
-            mem["designs"].append(best)
-            mem["evolution"].append({
-                "id": str(uuid.uuid4())[:6].upper(),
-                "best_id": best["id"],
-                "peak_score": best["score"],
-                "timestamp": datetime.now().isoformat()
-            })
+def spatial_agent(d):
+    return {
+        "utilization": min(100, len(d["rooms"]) * 10),
+        "status": "balanced"
+    }
 
-            st.session_state.active_design = best
-            st.session_state.active_history = trend
 
-            log_event(f"Evolved Design {best['id']}")
+def ai_board(d):
+    return {
+        "structural": structural_agent(d),
+        "cost": cost_agent(d),
+        "spatial": spatial_agent(d)
+    }
 
-    if st.session_state.active_design:
-        design = st.session_state.active_design
+# =========================================================
+# IFC EXPORT (SIMPLIFIED)
+# =========================================================
 
-        st.subheader(f"Design {design['id']}")
+def export_ifc(design, bim):
+    return {
+        "IFCProject": {"id": design["id"]},
+        "IFCBuilding": {
+            "type": design["type"],
+            "area": design["area"]
+        },
+        "IFCStructure": {
+            "columns": len(bim["nodes"]),
+            "beams": len(bim["edges"])
+        },
+        "IFCMeta": {
+            "engine": "v11",
+            "time": datetime.now().isoformat()
+        }
+    }
 
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Score", f"{design['score']} / 100")
-        c2.metric("Area", f"{design['area_sqm']} m²")
-        c3.metric("Cost", f"${design['cost']:,}")
+# =========================================================
+# PIPELINE
+# =========================================================
+
+def run_pipeline():
+    d = generate_design()
+    plan = floor_plan(d)
+    bim = build_bim(d)
+    ai = ai_board(d)
+    ifc = export_ifc(d, bim)
+
+    d["plan"] = plan
+    d["bim"] = bim
+    d["ai"] = ai
+    d["ifc"] = ifc
+
+    return d
+
+# =========================================================
+# UI
+# =========================================================
+
+st.title("📐 Random Architecture Intelligence Engine v11")
+
+if st.button("Generate Architecture System", use_container_width=True):
+    result = run_pipeline()
+    st.session_state.active = result
+
+    mem["designs"].append(result)
+    log(f"Generated {result['id']}")
+
+if st.session_state.active:
+    d = st.session_state.active
+
+    st.subheader(f"Design {d['id']}")
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Area", d["area"])
+    c2.metric("Cost", d["cost"])
+    c3.metric("Columns", d["structure"]["columns"])
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Plan", "BIM", "AI Agents", "IFC Export"
+    ])
+
+    with tab1:
+        st.json(d["plan"])
+
+    with tab2:
+        st.json(d["bim"])
+
+    with tab3:
+        st.json(d["ai"])
+
+    with tab4:
+        st.json(d["ifc"])
 
 # =========================================================
 # MEMORY VIEW
 # =========================================================
 
-elif page == "Memory Repositories":
-    st.title("🧠 System Memory")
+st.sidebar.title("Memory")
 
-    st.json(mem)
+if st.sidebar.button("View Memory"):
+    st.sidebar.json(mem)
 
-    if st.button("Reset Memory", use_container_width=True):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        st.session_state.active_design = None
-        st.session_state.active_history = []
-        save_memory()
-        st.rerun()
+if st.sidebar.button("Reset"):
+    st.session_state.memory = DEFAULT_STATE.copy()
+    st.session_state.active = None
+    save_memory()
+    st.rerun()
