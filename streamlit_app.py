@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 
 # =========================================================
-# CONFIG & GLOBAL STUDIO STYLING
+# CONFIG
 # =========================================================
 
 st.set_page_config(
@@ -22,6 +22,10 @@ st.set_page_config(
 )
 
 MEMORY_FILE = Path("arc_memory.json")
+
+# =========================================================
+# STUDIO VISUAL SYSTEM
+# =========================================================
 
 st.markdown("""
 <style>
@@ -55,14 +59,14 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 8px;
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-    transition: all 0.25s ease;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+    transition: 0.25s ease;
 }
 
 .arc-room-module:hover {
     transform: translateY(-3px);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255,255,255,0.3);
+    box-shadow: 0 20px 25px rgba(0,0,0,0.5);
 }
 
 .room-meta {
@@ -75,7 +79,7 @@ h1, h2, h3, h4, h5, h6 {
 """, unsafe_allow_html=True)
 
 # =========================================================
-# SYSTEM MEMORY
+# MEMORY SYSTEM
 # =========================================================
 
 DEFAULT_STATE = {
@@ -88,26 +92,28 @@ DEFAULT_STATE = {
 def load_memory():
     if MEMORY_FILE.exists():
         try:
-            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
         except Exception:
             return DEFAULT_STATE.copy()
     return DEFAULT_STATE.copy()
 
 def save_memory():
     try:
-        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(st.session_state.memory, f, indent=2)
+        MEMORY_FILE.write_text(
+            json.dumps(st.session_state.memory, indent=2),
+            encoding="utf-8"
+        )
     except Exception:
         pass
 
-def log_event(msg):
+def log_event(msg: str):
     st.session_state.memory["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
     save_memory()
 
+# session init
 if "memory" not in st.session_state:
     st.session_state.memory = load_memory()
 
@@ -120,7 +126,7 @@ if "active_history" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCHITECTURAL ENGINE
+# ENGINE CORE
 # =========================================================
 
 ARCH_DOMAINS = {
@@ -130,27 +136,24 @@ ARCH_DOMAINS = {
 }
 
 def get_domain(btype):
-    for domain, types in ARCH_DOMAINS.items():
-        if btype in types:
+    for domain, items in ARCH_DOMAINS.items():
+        if btype in items:
             return domain
     return "Unknown"
 
 def generate_base_design(btype, bedrooms):
-    core_rooms = ["Living Room", "Kitchen", "Bathroom"] + ["Flex Space"] * random.randint(1, 3)
-    est_area = 65 + 44 + (bedrooms * 18)
-
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "type": btype,
         "domain": get_domain(btype),
         "bedrooms": bedrooms,
-        "rooms": core_rooms,
-        "area_sqm": est_area,
+        "rooms": ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3),
+        "area_sqm": 65 + 44 + bedrooms * 18,
         "structure": {
             "columns": random.randint(14, 36),
             "beams": random.randint(28, 72)
         },
-        "cost": int(est_area * random.randint(1400, 2600))
+        "cost": 0
     }
 
 def mutate_design(d):
@@ -168,17 +171,11 @@ def mutate_design(d):
 
 def calculate_fitness(d):
     ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    struct_score = max(0, 100 - int(abs(ratio - 2.1) * 22))
-
-    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
-    cost_score = max(0, 100 - int(abs(cost_per_sqm - 1650) * 0.04))
-
-    complexity = min(100, len(d["rooms"]) * 9)
 
     return {
-        "structural": struct_score,
-        "cost": cost_score,
-        "complexity": complexity
+        "structural": max(0, 100 - int(abs(ratio - 2.1) * 22)),
+        "cost": max(0, 100 - int(abs(d["cost"]/max(1,d["area_sqm"]) - 1650) * 0.04)),
+        "complexity": min(100, len(d["rooms"]) * 9)
     }
 
 def score(fit):
@@ -192,22 +189,21 @@ def run_evolution(btype, bedrooms, gens, pop):
         scored = []
 
         for d in population:
-            fit = calculate_fitness(d)
-            d["fitness"] = fit
-            d["score"] = score(fit)
+            d["fitness"] = calculate_fitness(d)
+            d["score"] = score(d["fitness"])
             scored.append(d)
 
         scored.sort(key=lambda x: x["score"], reverse=True)
         history.append(scored[0]["score"])
 
         survivors = scored[:max(2, pop // 2)]
-        new_pop = []
 
+        population = []
         for s in survivors:
-            new_pop.append(s)
-            new_pop.append(mutate_design(s))
+            population.append(s)
+            population.append(mutate_design(s))
 
-        population = new_pop[:pop]
+        population = population[:pop]
 
     return scored[0], history
 
@@ -239,9 +235,6 @@ def render_blueprint(plan):
         """
     html += "</div>"
     st.markdown(html, unsafe_allow_html=True)
-
-def log(msg):
-    log_event(msg)
 
 # =========================================================
 # UI
@@ -299,7 +292,7 @@ elif page == "Design Lab":
         st.session_state.active_design = best
         st.session_state.active_history = hist
 
-        log(f"Generated design {best['id']}")
+        log_event(f"Generated design {best['id']}")
 
     if st.session_state.active_design:
         d = st.session_state.active_design
