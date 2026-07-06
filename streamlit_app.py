@@ -715,3 +715,172 @@ if st.session_state.active_design:
 
         st.subheader("BIM Tree Explorer")
         st.json(build_bim_tree(bim))
+
+
+import re
+
+# =========================================================
+# 🧠 NATURAL LANGUAGE DESIGN PARSER
+# =========================================================
+
+def parse_design_prompt(prompt: str):
+    prompt = prompt.lower()
+
+    floors = int(re.search(r"(\d+)\s*floor", prompt).group(1)) if re.search(r"(\d+)\s*floor", prompt) else 2
+
+    if "hospital" in prompt:
+        btype = "Medical Clinic"
+    elif "office" in prompt:
+        btype = "Boutique Office"
+    elif "factory" in prompt or "industrial" in prompt:
+        btype = "Distribution Warehouse"
+    elif "hotel" in prompt:
+        btype = "Hotel Resort"
+    else:
+        btype = "Modern Apartment"
+
+    bedrooms = 1 if "commercial" in prompt else min(6, floors + 1)
+
+    return {
+        "floors": floors,
+        "type": btype,
+        "bedrooms": bedrooms
+    }
+
+
+# =========================================================
+# 🧠 AI ARCHITECT AGENT
+# =========================================================
+
+def architect_agent(spec):
+    return {
+        "design_logic": f"Spatial zoning optimized for {spec['type']}",
+        "layout_strategy": "Central circulation core with radial room distribution",
+        "risk_notes": "Check vertical load transfer continuity across floors"
+    }
+
+
+# =========================================================
+# 🧠 STRUCTURAL ENGINEER AGENT
+# =========================================================
+
+def structural_agent(spec):
+    return {
+        "frame_system": "Reinforced concrete moment frame",
+        "column_grid": f"{4 + spec['floors']}m spacing",
+        "recommendation": "Increase beam depth on upper floors for load balance"
+    }
+
+
+# =========================================================
+# 🧠 MEP ENGINEER AGENT
+# =========================================================
+
+def mep_agent(spec):
+    return {
+        "hvac_strategy": "Zoned variable air volume (VAV)",
+        "plumbing": "Vertical riser core with horizontal distribution",
+        "electrical": "Redundant looped distribution network"
+    }
+
+
+# =========================================================
+# 🧠 COST ENGINEER AGENT
+# =========================================================
+
+def cost_agent(spec):
+    base = spec["floors"] * 120 * 1800
+
+    return {
+        "estimated_cost": base,
+        "cost_driver": "MEP systems and structural reinforcement",
+        "optimization_tip": "Reduce glazing ratio to lower HVAC load"
+    }
+
+
+# =========================================================
+# 🧠 COPILOT ORCHESTRATOR (MULTI-AGENT SYSTEM)
+# =========================================================
+
+def copilot_engine(prompt):
+    spec = parse_design_prompt(prompt)
+
+    return {
+        "input_spec": spec,
+        "architect": architect_agent(spec),
+        "structural": structural_agent(spec),
+        "mep": mep_agent(spec),
+        "cost": cost_agent(spec)
+    }
+
+
+# =========================================================
+# 🧠 BIM AUTO-GENERATOR FROM PROMPT
+# =========================================================
+
+def generate_bim_from_prompt(prompt):
+    spec = parse_design_prompt(prompt)
+
+    design = {
+        "id": str(uuid.uuid4())[:8].upper(),
+        "type": spec["type"],
+        "architecture": {
+            "floors": spec["floors"]
+        },
+        "rooms": [],
+        "cost_model": {
+            "structure_cost": spec["floors"] * 50000,
+            "mep_cost": spec["floors"] * 30000,
+            "hvac_cost": spec["floors"] * 20000,
+            "total": spec["floors"] * 120000
+        }
+    }
+
+    return design
+
+
+# =========================================================
+# 🎛️ COPILOT UI PANEL
+# =========================================================
+
+st.markdown("---")
+st.subheader("🧠 AI Copilot Command Center")
+
+user_prompt = st.text_input(
+    "Describe your building (e.g. '3 floor hospital with emergency wing')"
+)
+
+if user_prompt:
+    result = copilot_engine(user_prompt)
+    bim = generate_bim_from_prompt(user_prompt)
+    bim = enrich_bim(bim)
+
+    tab1, tab2, tab3 = st.tabs([
+        "🧠 AI Design Reasoning",
+        "🏗 BIM Auto-Generation",
+        "💰 Cost Intelligence"
+    ])
+
+    # -------------------------
+    # 🧠 REASONING
+    # -------------------------
+    with tab1:
+        st.subheader("Multi-Agent Design Intelligence")
+
+        st.json(result)
+
+    # -------------------------
+    # 🏗 BIM OUTPUT
+    # -------------------------
+    with tab2:
+        st.subheader("Generated BIM Model")
+
+        st.json(bim)
+
+    # -------------------------
+    # 💰 COST
+    # -------------------------
+    with tab3:
+        st.subheader("Cost Breakdown")
+
+        st.json(result["cost"])
