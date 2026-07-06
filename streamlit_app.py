@@ -1,6 +1,6 @@
 # =========================================================
-# V37-OS — HARDENED STREAMLIT ARCHITECTURE ENGINE
-# Production-grade Single File System
+# ARCHITECTURE INTELLIGENCE OS V38
+# Architectural + Structural AI + BOQ + 2D + 3D SYSTEM
 # =========================================================
 
 import streamlit as st
@@ -16,7 +16,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Architecture OS V37",
+    page_title="Architecture Intelligence OS V38",
     page_icon="🏛️",
     layout="wide"
 )
@@ -24,232 +24,218 @@ st.set_page_config(
 MEMORY_FILE = Path("arc_memory.json")
 
 # =========================================================
-# 🧯 SAFETY LAYER (CRASH PROOF MEMORY)
+# SAFE MEMORY CORE
 # =========================================================
 
-DEFAULT_STATE = {
+DEFAULT = {
+    "projects": [],
     "designs": [],
-    "evolution": [],
     "logs": []
 }
 
-def safe_load():
+def load():
     if not MEMORY_FILE.exists():
-        return DEFAULT_STATE.copy()
+        return DEFAULT.copy()
     try:
         return json.loads(MEMORY_FILE.read_text())
-    except Exception:
-        return DEFAULT_STATE.copy()
+    except:
+        return DEFAULT.copy()
 
-def safe_save(state):
+def save(mem):
     try:
-        MEMORY_FILE.write_text(json.dumps(state, indent=2))
-    except Exception:
+        MEMORY_FILE.write_text(json.dumps(mem, indent=2))
+    except:
         pass
 
-def log(state, msg):
-    state["logs"].append({
+def log(mem, msg):
+    mem["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    safe_save(state)
+    save(mem)
 
-# init
-if "state" not in st.session_state:
-    st.session_state.state = safe_load()
+if "mem" not in st.session_state:
+    st.session_state.mem = load()
 
 if "active" not in st.session_state:
     st.session_state.active = None
 
-S = st.session_state.state
+mem = st.session_state.mem
 
 # =========================================================
-# 🧠 CORE ENGINE
+# ARCHITECTURAL TAXONOMY ENGINE
 # =========================================================
 
-ARCH = {
-    "Residential": ["Villa", "Apartment", "Townhouse"],
-    "Commercial": ["Office", "Hotel", "Clinic"],
-    "Industrial": ["Warehouse", "Factory"]
+ARCH_PROGRAM = {
+    "Residential": {
+        "spaces": ["Living Room", "Kitchen", "Master Bedroom", "Bathroom", "Dining"],
+        "struct_factor": 1.0,
+        "cost_factor": 1.0
+    },
+    "Commercial": {
+        "spaces": ["Lobby", "Office Floor", "Meeting Room", "Server Room", "Reception"],
+        "struct_factor": 1.3,
+        "cost_factor": 1.5
+    },
+    "Industrial": {
+        "spaces": ["Production Hall", "Storage Bay", "Loading Dock", "Control Room"],
+        "struct_factor": 1.8,
+        "cost_factor": 2.0
+    }
 }
 
-def domain(t):
-    return next((k for k,v in ARCH.items() if t in v), "Unknown")
+# =========================================================
+# STRUCTURAL ENGINE
+# =========================================================
 
-def create_design(btype, beds, seed=None):
-    if seed:
-        random.seed(seed)
+def structural_system(area, typology):
+    f = ARCH_PROGRAM[typology]["struct_factor"]
+
+    columns = int((area / 25) * f)
+    beams = int(columns * random.uniform(1.8, 2.6))
 
     return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "type": btype,
-        "domain": domain(btype),
-        "beds": beds,
-        "area": 100 + beds * 20,
-        "structure": {
-            "columns": random.randint(14, 40),
-            "beams": random.randint(25, 80)
-        },
-        "seed": seed or random.randint(1, 999999)
+        "columns": max(8, columns),
+        "beams": max(12, beams)
+    }
+
+def structural_score(struct):
+    ratio = struct["beams"] / max(1, struct["columns"])
+    return max(0, 100 - abs(ratio - 2.2) * 20)
+
+# =========================================================
+# ARCHITECTURAL AI (PROGRAM GENERATOR)
+# =========================================================
+
+def generate_program(typology, floors):
+    base = ARCH_PROGRAM[typology]["spaces"]
+    program = []
+
+    for f in range(floors):
+        for s in base:
+            program.append({
+                "name": f"{s} - L{f+1}",
+                "floor": f+1,
+                "area": random.randint(20, 80)
+            })
+
+    return program
+
+# =========================================================
+# COST + BOQ ENGINE
+# =========================================================
+
+def boq(struct, area, typology):
+    steel_rate = 3.2
+    concrete_rate = 2.6
+    block_rate = 42
+
+    return {
+        "Concrete (m³)": round(struct["columns"] * 2.5 * ARCH_PROGRAM[typology]["struct_factor"], 2),
+        "Steel (tons)": round(struct["beams"] * 0.48, 2),
+        "Blocks (units)": int(area * block_rate),
+        "Estimated Cost ($)": int(area * 1500 * ARCH_PROGRAM[typology]["cost_factor"])
     }
 
 # =========================================================
-# 🧬 EVOLUTION ENGINE
+# 3D VOXEL ENGINE
 # =========================================================
 
-def fitness(d):
-    r = d["structure"]["beams"] / max(1, d["structure"]["columns"])
-    return max(0, 100 - abs(r - 2.2) * 18)
+WORLD = (20, 12, 20)
 
-def mutate(d):
-    d = json.loads(json.dumps(d))
-    d["structure"]["columns"] = max(10, d["structure"]["columns"] + random.randint(-2, 3))
-    d["structure"]["beams"] = max(15, d["structure"]["beams"] + random.randint(-4, 5))
-    return d
-
-def evolve(btype, beds, gens, pop):
-    population = [create_design(btype, beds) for _ in range(pop)]
-    history = []
-
-    for _ in range(gens):
-        scored = []
-        for d in population:
-            d["score"] = fitness(d)
-            scored.append(d)
-
-        scored.sort(key=lambda x: x["score"], reverse=True)
-        history.append(scored[0]["score"])
-
-        survivors = scored[:max(2, pop // 2)]
-        population = survivors + [mutate(random.choice(survivors)) for _ in survivors]
-        population = population[:pop]
-
-    return scored[0], history
-
-# =========================================================
-# 🏗️ 2D ENGINE
-# =========================================================
-
-def floor(d):
-    return [
-        {"name": "Living Core", "w": 6, "h": 5, "color": "#1e3a8a"},
-        {"name": "Kitchen Node", "w": 4, "h": 4, "color": "#065f46"},
-    ] + [
-        {"name": f"Bedroom {i+1}", "w": 4, "h": 4, "color": "#4c1d95"}
-        for i in range(d["beds"])
-    ]
-
-def render_2d(plan):
-    html = "<div style='display:flex;flex-wrap:wrap;gap:10px;'>"
-    for r in plan:
-        html += f"""
-        <div style='background:{r["color"]};padding:12px;border-radius:10px;color:white;min-width:160px'>
-        <b>{r["name"]}</b><br>{r["w"]}×{r["h"]}
-        </div>
-        """
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
-
-# =========================================================
-# 🌐 3D ENGINE (VOXEL WORLD)
-# =========================================================
-
-WORLD = (20, 10, 20)
-
-def voxel(d):
+def voxel(struct):
     w = np.zeros(WORLD)
 
-    cx, cz = 10, 10
-
-    for _ in range(d["structure"]["columns"]):
-        x = (cx + random.randint(-6, 6)) % 20
-        z = (cz + random.randint(-6, 6)) % 20
-        h = random.randint(2, 6)
+    for _ in range(struct["columns"]):
+        x, z = random.randint(0, 19), random.randint(0, 19)
+        h = random.randint(2, 7)
         w[x, :h, z] = 1
 
-    for _ in range(d["structure"]["beams"]):
+    for _ in range(struct["beams"]):
         x, z = random.randint(0, 19), random.randint(0, 19)
-        y = random.randint(2, 5)
+        y = random.randint(2, 6)
         w[x, y, z] = 2
 
     return w
 
 def slice_view(w, y):
     grid = w[:, y, :]
+    out = ""
+
     for z in range(20):
         row = ""
         for x in range(20):
             v = grid[x, z]
             row += "⬛" if v == 0 else "🟦" if v == 1 else "🟨"
-        st.code(row)
+        out += row + "\n"
+
+    st.code(out)
 
 # =========================================================
-# 🧠 AI ARCHITECT BRAIN
+# DESIGN ENGINE
 # =========================================================
 
-def brain(d):
-    r = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+def generate_design(typology, floors, area):
+    struct = structural_system(area, typology)
 
-    out = []
-
-    if r < 1.8:
-        out.append("Increase structural beam density.")
-    if r > 3.0:
-        out.append("Over-engineering detected.")
-    if d["area"] > 350:
-        out.append("Optimize spatial circulation.")
-    if not out:
-        out.append("Design is balanced.")
-
-    return out
+    return {
+        "id": str(uuid.uuid4())[:8].upper(),
+        "typology": typology,
+        "floors": floors,
+        "area": area,
+        "structure": struct,
+        "program": generate_program(typology, floors),
+        "boq": boq(struct, area, typology),
+        "score": structural_score(struct)
+    }
 
 # =========================================================
 # UI
 # =========================================================
 
-st.sidebar.title("🏛️ V37-OS")
+st.sidebar.title("🏛️ ARCH AI V38")
 
-page = st.sidebar.radio("Mode", ["Dashboard", "Lab", "Memory", "AI Brain"])
+typology = st.sidebar.selectbox(
+    "Project Type",
+    ["Residential", "Commercial", "Industrial"]
+)
 
-btype = st.sidebar.selectbox("Type", sum(ARCH.values(), []))
-beds = st.sidebar.slider("Beds", 1, 8, 3)
-gens = st.sidebar.slider("Generations", 2, 15, 6)
-pop = st.sidebar.slider("Population", 4, 20, 10)
+floors = st.sidebar.slider("Floors", 1, 10, 3)
+area = st.sidebar.slider("Total Area (sqm)", 100, 2000, 500)
+
+page = st.sidebar.radio(
+    "Mode",
+    ["Dashboard", "Design Lab", "BOQ", "Memory"]
+)
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "Dashboard":
-    st.title("🏛️ Architecture OS V37 (Hardened)")
+    st.title("🏛️ Architectural Intelligence OS V38")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Designs", len(S["designs"]))
-    c2.metric("Evolution Runs", len(S["evolution"]))
-    c3.metric("Logs", len(S["logs"]))
+    c1.metric("Designs", len(mem["designs"]))
+    c2.metric("Projects", len(mem["projects"]))
+    c3.metric("Logs", len(mem["logs"]))
 
 # =========================================================
-# LAB
+# DESIGN LAB
 # =========================================================
 
-elif page == "Lab":
-    st.title("🧬 Evolution Lab")
+elif page == "Design Lab":
+    st.title("🧠 AI Architectural Generator")
 
-    if st.button("Run Simulation"):
-        best, hist = evolve(btype, beds, gens, pop)
+    if st.button("Generate Design"):
+        d = generate_design(typology, floors, area)
 
-        best["plan"] = floor(best)
-        best["world"] = voxel(best)
+        d["world"] = voxel(d["structure"])
 
-        S["designs"].append(best)
-        S["evolution"].append({
-            "id": str(uuid.uuid4())[:6],
-            "best": best["id"],
-            "score": best["score"]
-        })
+        mem["designs"].append(d)
+        st.session_state.active = d
 
-        st.session_state.active = best
-        log(S, f"Generated {best['id']}")
+        log(mem, f"Generated {d['id']}")
 
     if st.session_state.active:
         d = st.session_state.active
@@ -257,22 +243,35 @@ elif page == "Lab":
         st.subheader(f"Design {d['id']}")
 
         a, b, c = st.columns(3)
-        a.metric("Score", d["score"])
+        a.metric("Structural Score", round(d["score"], 2))
         b.metric("Area", d["area"])
-        c.metric("Seed", d["seed"])
+        c.metric("Floors", d["floors"])
 
-        tab1, tab2, tab3 = st.tabs(["2D", "AI Brain", "3D"])
+        tab1, tab2, tab3 = st.tabs(["Program", "Structure", "3D"])
 
         with tab1:
-            render_2d(d["plan"])
+            st.subheader("Space Program")
+            st.json(d["program"])
 
         with tab2:
-            for x in brain(d):
-                st.write("🧠", x)
+            st.subheader("Structural System")
+            st.json(d["structure"])
 
         with tab3:
-            y = st.slider("Slice", 0, 9, 0)
+            y = st.slider("Section Cut", 0, 11, 0)
             slice_view(d["world"], y)
+
+# =========================================================
+# BOQ MODULE
+# =========================================================
+
+elif page == "BOQ":
+    st.title("📊 Bill of Quantities (BOQ)")
+
+    if st.session_state.active:
+        st.json(st.session_state.active["boq"])
+    else:
+        st.info("Generate a design first.")
 
 # =========================================================
 # MEMORY
@@ -280,23 +279,10 @@ elif page == "Lab":
 
 elif page == "Memory":
     st.title("🧠 Memory Core")
-
-    st.json(S)
+    st.json(mem)
 
     if st.button("Reset"):
-        st.session_state.state = DEFAULT_STATE.copy()
-        safe_save(st.session_state.state)
+        st.session_state.mem = DEFAULT.copy()
+        st.session_state.active = None
+        save(mem)
         st.rerun()
-
-# =========================================================
-# AI BRAIN VIEW
-# =========================================================
-
-elif page == "AI Brain":
-    st.title("🧠 Architect Brain")
-
-    if st.session_state.active:
-        for x in brain(st.session_state.active):
-            st.write("🔹", x)
-    else:
-        st.info("Run a simulation first.")
