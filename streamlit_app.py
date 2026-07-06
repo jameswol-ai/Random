@@ -1,12 +1,13 @@
 # =========================================================
-# RANDOM V13
-# Architecture Intelligence OS - Modular Navigation Core
+# RANDOM V14
+# Self-Writing Architecture Intelligence OS
+# Kernel + Plugin Evolution System
 # =========================================================
 
 import streamlit as st
 import uuid
-import random
 import json
+import random
 from datetime import datetime
 from pathlib import Path
 
@@ -15,239 +16,254 @@ from pathlib import Path
 # =========================================================
 
 st.set_page_config(
-    page_title="Random AIOS",
-    page_icon="🏗️",
+    page_title="Random AIOS V14",
+    page_icon="🧠",
     layout="wide"
 )
 
 MEMORY_FILE = Path("arc_memory.json")
+KERNEL_FILE = Path("arc_kernel.json")
 
 # =========================================================
-# MEMORY CORE
+# CORE STATE
 # =========================================================
 
 DEFAULT_STATE = {
     "projects": [],
     "designs": [],
-    "logs": [],
     "plugins": [],
-    "evolution": []
+    "logs": [],
+    "evolution": [],
+    "self_writes": []
 }
 
-def load_memory():
-    if MEMORY_FILE.exists():
+DEFAULT_KERNEL = {
+    "modules": {
+        "Dashboard": True,
+        "Design Studio": True,
+        "AI Architect": True,
+        "Plugins": True
+    },
+    "generated_modules": []
+}
+
+# =========================================================
+# MEMORY SYSTEM
+# =========================================================
+
+def load_json(path, default):
+    if path.exists():
         try:
-            return json.loads(MEMORY_FILE.read_text(encoding="utf-8"))
+            return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
+            return default.copy()
+    return default.copy()
 
-def save_memory(mem):
-    MEMORY_FILE.write_text(json.dumps(mem, indent=2), encoding="utf-8")
+def save_json(path, data):
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-def log(mem, msg):
-    mem["logs"].append({
+memory = load_json(MEMORY_FILE, DEFAULT_STATE)
+kernel = load_json(KERNEL_FILE, DEFAULT_KERNEL)
+
+# =========================================================
+# LOGGING
+# =========================================================
+
+def log(msg):
+    memory["logs"].append({
         "time": datetime.now().isoformat(),
         "msg": msg
     })
-    save_memory(mem)
+    save_json(MEMORY_FILE, memory)
 
 # =========================================================
-# SESSION STATE
+# SELF-WRITING ENGINE (CORE IDEA)
 # =========================================================
 
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
+def ai_propose_module():
+    """AI generates a new system module idea"""
+    ideas = [
+        "Seismic Simulation Engine",
+        "Carbon Impact Analyzer",
+        "Structural Load Predictor",
+        "Urban Density Optimizer",
+        "Material Supply Chain AI",
+        "Auto-BIM Generator",
+        "Climate Adaptive Facade Designer"
+    ]
 
-mem = st.session_state.memory
+    name = random.choice(ideas)
+
+    return {
+        "id": str(uuid.uuid4())[:6],
+        "name": name,
+        "type": "auto_generated_module",
+        "created": datetime.now().isoformat(),
+        "status": "proposed"
+    }
+
+def register_module(module):
+    kernel["generated_modules"].append(module)
+    save_json(KERNEL_FILE, kernel)
+    log(f"Module registered: {module['name']}")
 
 # =========================================================
-# NAVIGATION MAP (YOUR ARCHITECTURE OS BRAIN)
+# EVOLUTION ENGINE (SYSTEM SELF-IMPROVEMENT)
 # =========================================================
 
-NAV = [
-    "🏠 Dashboard",
-    "📂 Projects",
-    "📐 Design Studio",
-    "🧠 AI Architect",
-    "🏗 Structural Analysis",
-    "💰 Cost Estimation",
-    "🌱 Sustainability",
-    "📋 Code Compliance",
-    "🏢 BIM Manager",
-    "📊 Analytics",
-    "🧠 Memory",
-    "🔌 Plugins",
-    "⚙ Settings"
-]
+def evolve_system():
+    new_module = ai_propose_module()
 
-page = st.sidebar.radio("Random AIOS", NAV)
+    # probabilistic acceptance (governance gate)
+    if random.random() > 0.35:
+        new_module["status"] = "accepted"
+        register_module(new_module)
+        return new_module, True
+    else:
+        new_module["status"] = "rejected"
+        return new_module, False
+
+# =========================================================
+# STREAMLIT UI
+# =========================================================
+
+st.sidebar.title("🧠 Random AIOS V14")
+page = st.sidebar.radio(
+    "System Core",
+    [
+        "🏠 Dashboard",
+        "🧪 Design Studio",
+        "🧠 AI Architect",
+        "🔌 Plugin Engine",
+        "🧬 Self-Writing Kernel",
+        "📜 System Memory"
+    ]
+)
 
 st.sidebar.markdown("---")
-st.sidebar.caption("Random V13 • Modular Architecture OS")
+st.sidebar.caption("V14 • Self-Writing Architecture Kernel")
 
 # =========================================================
 # DASHBOARD
 # =========================================================
 
 if page == "🏠 Dashboard":
-    st.title("🏗 Architecture Intelligence Dashboard")
+    st.title("🧠 Self-Writing Architecture OS")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Projects", len(mem["projects"]))
-    c2.metric("Designs", len(mem["designs"]))
-    c3.metric("Plugins", len(mem["plugins"]))
-    c4.metric("Logs", len(mem["logs"]))
+    c1, c2, c3 = st.columns(3)
 
-    st.subheader("System Activity Feed")
-    for l in mem["logs"][-8:][::-1]:
-        st.write(f"⏱ {l['time'][11:19]} → {l['msg']}")
+    c1.metric("Projects", len(memory["projects"]))
+    c2.metric("Plugins", len(memory["plugins"]))
+    c3.metric("Generated Modules", len(kernel["generated_modules"]))
 
-# =========================================================
-# PROJECTS
-# =========================================================
+    st.subheader("Recent System Activity")
 
-elif page == "📂 Projects":
-    st.title("📂 Project Registry")
-
-    name = st.text_input("Project Name")
-    if st.button("Create Project"):
-        p = {
-            "id": str(uuid.uuid4())[:8],
-            "name": name,
-            "created": datetime.now().isoformat()
-        }
-        mem["projects"].append(p)
-        log(mem, f"Project created: {name}")
-        st.success("Project added")
-
-    st.json(mem["projects"])
+    for log_entry in memory["logs"][-8:][::-1]:
+        st.write(f"⏱ {log_entry['time'][11:19]} → {log_entry['msg']}")
 
 # =========================================================
 # DESIGN STUDIO
 # =========================================================
 
-elif page == "📐 Design Studio":
-    st.title("📐 Generative Design Studio")
+elif page == "🧪 Design Studio":
+    st.title("🧪 Generative Architecture Studio")
 
     if st.button("Generate Design"):
         design = {
             "id": str(uuid.uuid4())[:8],
-            "area": random.randint(120, 600),
+            "area": random.randint(120, 700),
             "score": random.randint(60, 100),
             "structure": {
-                "columns": random.randint(10, 40),
-                "beams": random.randint(20, 80)
+                "columns": random.randint(10, 50),
+                "beams": random.randint(20, 90)
             }
         }
-        mem["designs"].append(design)
-        log(mem, f"Design generated {design['id']}")
-        st.session_state.last_design = design
 
-    if "last_design" in st.session_state:
-        st.json(st.session_state.last_design)
+        memory["designs"].append(design)
+        log(f"Design generated {design['id']}")
+
+        st.success("Design generated")
+        st.json(design)
 
 # =========================================================
-# AI ARCHITECT (CORE INTELLIGENCE LAYER)
+# AI ARCHITECT CORE
 # =========================================================
 
 elif page == "🧠 AI Architect":
-    st.title("🧠 AI Architecture Engine")
+    st.title("🧠 AI Architecture Brain")
 
-    st.info("Future layer: multi-agent reasoning, generative planning, structural cognition, BIM synthesis AI.")
+    st.info("This layer will eventually generate architecture logic, zoning plans, and structural reasoning.")
 
-# =========================================================
-# STRUCTURAL ANALYSIS
-# =========================================================
+    if st.button("Run Cognitive Simulation"):
+        thought = random.choice([
+            "Optimizing beam-to-column ratio",
+            "Simulating urban density flow",
+            "Evaluating thermal efficiency",
+            "Rebalancing structural load paths"
+        ])
 
-elif page == "🏗 Structural Analysis":
-    st.title("🏗 Structural Diagnostics")
-
-    st.info("Future: beam-column ratio solver, load simulation, Eurocode validation, seismic modelling.")
-
-# =========================================================
-# COST ESTIMATION
-# =========================================================
-
-elif page == "💰 Cost Estimation":
-    st.title("💰 Cost Engine")
-
-    st.info("Future: material pricing model, regional cost indexing, contractor simulation, budget optimizer.")
+        st.success(f"AI Thought: {thought}")
+        log(thought)
 
 # =========================================================
-# SUSTAINABILITY
+# PLUGIN ENGINE
 # =========================================================
 
-elif page == "🌱 Sustainability":
-    st.title("🌱 Green Architecture Layer")
-
-    st.info("Future: carbon scoring, energy efficiency AI, solar optimization, lifecycle analysis.")
-
-# =========================================================
-# CODE COMPLIANCE
-# =========================================================
-
-elif page == "📋 Code Compliance":
-    st.title("📋 Regulatory Engine")
-
-    st.info("Future: zoning laws, building codes, compliance validation AI, permit simulation system.")
-
-# =========================================================
-# BIM MANAGER
-# =========================================================
-
-elif page == "🏢 BIM Manager":
-    st.title("🏢 BIM Integration Layer")
-
-    st.info("Future: IFC export, Revit sync, 3D model generation, structural BIM graph builder.")
-
-# =========================================================
-# ANALYTICS
-# =========================================================
-
-elif page == "📊 Analytics":
-    st.title("📊 System Analytics")
-
-    st.write("Designs:", len(mem["designs"]))
-    st.write("Projects:", len(mem["projects"]))
-
-# =========================================================
-# MEMORY
-# =========================================================
-
-elif page == "🧠 Memory":
-    st.title("🧠 Memory Core")
-
-    st.json(mem)
-
-    if st.button("Reset Memory"):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        save_memory(st.session_state.memory)
-        st.rerun()
-
-# =========================================================
-# PLUGINS
-# =========================================================
-
-elif page == "🔌 Plugins":
+elif page == "🔌 Plugin Engine":
     st.title("🔌 Plugin Registry")
 
-    plugin = st.text_input("Register Plugin")
+    name = st.text_input("New Plugin Name")
 
-    if st.button("Add Plugin"):
-        mem["plugins"].append({
+    if st.button("Register Plugin"):
+        plugin = {
             "id": str(uuid.uuid4())[:6],
-            "name": plugin
-        })
-        log(mem, f"Plugin registered: {plugin}")
+            "name": name,
+            "created": datetime.now().isoformat()
+        }
 
-    st.json(mem["plugins"])
+        memory["plugins"].append(plugin)
+        log(f"Plugin registered: {name}")
+
+        st.success("Plugin added")
+
+    st.json(memory["plugins"])
 
 # =========================================================
-# SETTINGS
+# SELF-WRITING KERNEL
 # =========================================================
 
-elif page == "⚙ Settings":
-    st.title("⚙ System Settings")
+elif page == "🧬 Self-Writing Kernel":
+    st.title("🧬 Self-Writing System Kernel")
 
-    st.info("Future: AI personality tuning, engine scaling, cloud sync, multi-agent orchestration.")
+    st.write("System can now propose and evolve its own modules.")
+
+    if st.button("Evolve System"):
+        module, accepted = evolve_system()
+
+        if accepted:
+            st.success(f"Accepted Module: {module['name']}")
+        else:
+            st.warning(f"Rejected Module: {module['name']}")
+
+        st.json(module)
+
+    st.subheader("Generated Modules")
+    st.json(kernel["generated_modules"])
+
+# =========================================================
+# SYSTEM MEMORY
+# =========================================================
+
+elif page == "📜 System Memory":
+    st.title("📜 Memory Core")
+
+    st.json(memory)
+
+    if st.button("Reset System"):
+        memory = DEFAULT_STATE.copy()
+        kernel = DEFAULT_KERNEL.copy()
+
+        save_json(MEMORY_FILE, memory)
+        save_json(KERNEL_FILE, kernel)
+
+        st.rerun()
