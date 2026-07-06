@@ -909,3 +909,466 @@ for col,title,value in metrics:
     unsafe_allow_html=True
 
 )
+
+# ============================================================
+# BIM DOCUMENTATION TABS
+# ============================================================
+
+tabs = st.tabs(
+
+[
+"📐 Floor Plan",
+"🏠 Elevation",
+"✂️ Section",
+"🧱 BIM Objects",
+"📊 Schedules",
+"💰 Cost"
+
+]
+
+)
+
+
+
+# ============================================================
+# FLOOR PLAN
+# ============================================================
+
+with tabs[0]:
+
+
+    st.subheader(
+        "Architectural Floor Plan"
+    )
+
+
+    if PLOTLY:
+
+
+        fig = go.Figure()
+
+
+
+        # Draw walls
+
+        for wall in bim["walls"]:
+
+
+            if wall["id"] == "W001":
+
+                fig.add_shape(
+
+                type="line",
+
+                x0=0,
+
+                y0=0,
+
+                x1=6,
+
+                y1=0,
+
+                line=dict(width=8)
+
+                )
+
+
+            else:
+
+                fig.add_shape(
+
+                type="line",
+
+                x0=6,
+
+                y0=0,
+
+                x1=6,
+
+                y1=5,
+
+                line=dict(width=8)
+
+                )
+
+
+
+        # Draw grid
+
+        for point in bim["grid"]:
+
+
+            fig.add_annotation(
+
+            x=point["x"],
+
+            y=point["y"],
+
+            text=point["name"],
+
+            showarrow=False
+
+            )
+
+
+
+        fig.update_layout(
+
+            height=600,
+
+            title="RANDOM AI Generated Plan",
+
+            xaxis_title="m",
+
+            yaxis_title="m"
+
+        )
+
+
+        st.plotly_chart(
+
+            fig,
+
+            use_container_width=True
+
+        )
+
+
+    else:
+
+        st.info(
+            "Plotly visualization unavailable"
+        )
+
+
+
+# ============================================================
+# ELEVATION
+# ============================================================
+
+with tabs[1]:
+
+
+    st.subheader(
+
+        "Building Elevation"
+
+    )
+
+
+    st.json(
+
+    {
+
+    "Levels":
+
+    bim["levels"],
+
+
+    "Roof":
+
+    bim["roof"],
+
+
+    "Height":
+
+    "3000mm per floor"
+
+    }
+
+    )
+
+
+
+# ============================================================
+# SECTION
+# ============================================================
+
+with tabs[2]:
+
+
+    st.subheader(
+
+        "Building Section"
+
+    )
+
+
+    st.json(
+
+    {
+
+    "Foundation":
+
+    bim["foundation"],
+
+
+    "Slab":
+
+    "150mm Reinforced Concrete",
+
+
+    "Ceiling":
+
+    "3000mm",
+
+
+    "Roof":
+
+    bim["roof"]
+
+    }
+
+    )
+
+
+
+# ============================================================
+# BIM OBJECT TREE
+# ============================================================
+
+with tabs[3]:
+
+
+    st.subheader(
+
+        "BIM Database"
+
+    )
+
+
+    st.json(
+
+    {
+
+    "Spaces":
+
+    bim["spaces"],
+
+
+    "Walls":
+
+    bim["walls"],
+
+
+    "Doors":
+
+    bim["doors"],
+
+
+    "Windows":
+
+    bim["windows"],
+
+
+    "Columns":
+
+    bim["columns"],
+
+
+    "Beams":
+
+    bim["beams"],
+
+
+    "Grid":
+
+    bim["grid"]
+
+    }
+
+    )
+
+
+
+# ============================================================
+# SCHEDULES
+# ============================================================
+
+with tabs[4]:
+
+
+    st.subheader(
+
+        "Room Schedule"
+
+    )
+
+
+    for room in bim["spaces"]:
+
+        st.write(
+
+        f"""
+
+**{room['name']}**
+
+Area:
+{show_area(
+room['area'],
+bim['units']
+)}
+
+"""
+
+        )
+
+
+
+    st.divider()
+
+
+
+    st.subheader(
+
+        "Wall Schedule"
+
+    )
+
+
+    for wall in bim["walls"]:
+
+        st.write(
+
+        f"""
+
+**{wall['id']}**
+
+Length:
+{show_length(
+wall['length'],
+bim['units']
+)}
+
+Height:
+{show_length(
+wall['height'],
+bim['units']
+)}
+
+Thickness:
+{show_length(
+wall['thickness'],
+bim['units']
+)}
+
+"""
+
+        )
+
+
+
+    st.divider()
+
+
+
+    st.subheader(
+
+        "Door Schedule"
+
+    )
+
+
+    for door in bim["doors"]:
+
+        st.write(
+
+        f"""
+
+**{door['id']}**
+
+Type:
+{door['type']}
+
+Width:
+{show_length(
+door['width'],
+bim['units']
+)}
+
+Height:
+{show_length(
+door['height'],
+bim['units']
+)}
+
+"""
+
+        )
+
+
+
+    st.divider()
+
+
+
+    st.subheader(
+
+        "Window Schedule"
+
+    )
+
+
+    for window in bim["windows"]:
+
+        st.write(
+
+        f"""
+
+Window:
+{window['id']}
+
+Width:
+{show_length(
+window['width'],
+bim['units']
+)}
+
+Height:
+{show_length(
+window['height'],
+bim['units']
+)}
+
+"""
+
+        )
+
+
+
+# ============================================================
+# COST REPORT
+# ============================================================
+
+with tabs[5]:
+
+
+    st.subheader(
+
+        "AI Cost Intelligence"
+
+    )
+
+
+    cost = bim["cost"]
+
+
+    for item,value in cost.items():
+
+        st.write(
+
+        f"**{item}:** {value}"
+
+        )
+
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.caption(
+
+"RANDOM V55.1 AI BIM STUDIO | Parametric Architecture Intelligence"
+
+)
