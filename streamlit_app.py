@@ -1,355 +1,201 @@
 # =========================================================
-# RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# V30 — FINAL NEURAL ARCHITECTURE OS (MERGED BUILD)
-# Evolutionary + BIM + AI Studio + Blueprint Visualization
+# V31 — 3D WORLD KERNEL
+# Procedural Spatial Simulation Engine (Voxel + Agent Layer)
 # =========================================================
 
 import streamlit as st
-import json
-import uuid
+import numpy as np
 import random
 import math
+from dataclasses import dataclass
 from pathlib import Path
-from datetime import datetime
+
+st.set_page_config(page_title="V31 World Kernel", layout="wide")
 
 # =========================================================
-# CONFIG
+# WORLD CONFIG
 # =========================================================
 
-st.set_page_config(
-    page_title="Random Neural Architecture OS V30",
-    page_icon="🏗",
-    layout="wide"
-)
+WORLD_SIZE = 30  # 30x30x30 voxel world
 
-MEMORY_FILE = Path("arc_memory.json")
-
-# =========================================================
-# STYLE LAYER (Merged Arc Studio + V30)
-# =========================================================
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
-
-html, body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-h1, h2, h3 {
-    font-family: 'Space Grotesk', sans-serif;
-    letter-spacing: -0.03em;
-}
-
-.card {
-    background: #0b1220;
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 16px;
-    border-radius: 12px;
-    margin: 10px 0;
-}
-
-/* Blueprint Canvas */
-.arc-blueprint-canvas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    background: #090d16;
-    padding: 24px;
-    border-radius: 12px;
-    border: 1px dashed #334155;
-    margin-top: 15px;
-}
-
-.arc-room-module {
-    flex: 1 1 calc(33.333% - 16px);
-    min-width: 220px;
-    padding: 20px;
-    border-radius: 10px;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.12);
-    transition: 0.25s;
-}
-
-.arc-room-module:hover {
-    transform: translateY(-3px);
-    border-color: rgba(255,255,255,0.3);
-}
-
-.room-meta {
-    font-size: 0.85rem;
-    opacity: 0.8;
-    margin-top: 8px;
-}
-</style>
-""", unsafe_allow_html=True)
+EMPTY = 0
+GROUND = 1
+BUILDING = 2
+WATER = 3
+AGENT = 9
 
 # =========================================================
-# MEMORY
+# STATE
 # =========================================================
 
-DEFAULT_STATE = {
-    "projects": [],
-    "designs": [],
-    "logs": [],
-    "evolution": [],
-    "plugins": []
-}
+if "world" not in st.session_state:
+    st.session_state.world = np.zeros((WORLD_SIZE, WORLD_SIZE, WORLD_SIZE), dtype=np.int8)
 
-def load_memory():
-    if MEMORY_FILE.exists():
-        try:
-            return json.load(open(MEMORY_FILE, "r", encoding="utf-8"))
-        except:
-            return DEFAULT_STATE.copy()
-    return DEFAULT_STATE.copy()
-
-def save_memory():
-    with open(MEMORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(st.session_state.memory, f, indent=2)
-
-def log(msg):
-    st.session_state.memory["logs"].append({
-        "time": datetime.now().isoformat(),
-        "msg": msg
-    })
-    save_memory()
-
-# Init
-if "memory" not in st.session_state:
-    st.session_state.memory = load_memory()
-
-if "active" not in st.session_state:
-    st.session_state.active = None
-
-mem = st.session_state.memory
+if "agent" not in st.session_state:
+    st.session_state.agent = [15, 15, 10]
 
 # =========================================================
-# CORE ENGINE
+# WORLD GENERATION
 # =========================================================
 
-def generate_design(goal):
-    return {
-        "id": str(uuid.uuid4())[:8],
-        "goal": goal,
-        "area": random.randint(120, 900),
-        "cost": random.randint(80_000, 950_000),
-        "structure": {
-            "columns": random.randint(12, 55),
-            "beams": random.randint(20, 110)
-        },
-        "rooms": ["Living", "Kitchen", "Bath"] + ["Room"] * random.randint(2, 6)
-    }
+def generate_terrain():
+    world = np.zeros((WORLD_SIZE, WORLD_SIZE, WORLD_SIZE), dtype=np.int8)
 
-def fitness(d):
-    return (
-        d["area"] * 0.2 +
-        d["structure"]["columns"] * 1.5 +
-        d["structure"]["beams"] * 1.2 -
-        d["cost"] * 0.0001
-    )
+    # terrain height map
+    for x in range(WORLD_SIZE):
+        for y in range(WORLD_SIZE):
+            height = int(
+                6 * math.sin(x * 0.25) +
+                6 * math.cos(y * 0.25) +
+                random.randint(0, 3)
+            )
+            height = max(1, min(WORLD_SIZE - 1, height + 12))
 
-def evolve(goal, generations=6):
-    pop = [generate_design(goal) for _ in range(8)]
-    history = []
+            for z in range(height):
+                world[x, y, z] = GROUND
 
-    for _ in range(generations):
-        pop.sort(key=fitness, reverse=True)
-        history.append(fitness(pop[0]))
+    # water layer
+    for x in range(WORLD_SIZE):
+        for y in range(WORLD_SIZE):
+            if random.random() < 0.08:
+                world[x, y, 5:7] = WATER
 
-        survivors = pop[:4]
-        new_pop = []
-
-        for s in survivors:
-            new_pop.append(s)
-            mutated = json.loads(json.dumps(s))
-            mutated["structure"]["columns"] += random.randint(-2, 3)
-            mutated["structure"]["beams"] += random.randint(-3, 4)
-            mutated["cost"] += random.randint(-5000, 5000)
-            new_pop.append(mutated)
-
-        pop = new_pop[:8]
-
-    return pop[0], history
+    return world
 
 # =========================================================
-# FLOOR + BLUEPRINT VISUAL ENGINE
+# BUILDINGS (PROCEDURAL CITIES)
 # =========================================================
 
-def floor_plan(d):
-    rooms = [
-        {"name": "Living Lounge", "w": 6, "h": 5, "color": "#1e3a8a"},
-        {"name": "Kitchen Core", "w": 4, "h": 4, "color": "#065f46"},
-        {"name": "Bath Node", "w": 3, "h": 2, "color": "#78350f"}
-    ]
+def spawn_buildings(world, count=40):
+    for _ in range(count):
+        x = random.randint(3, WORLD_SIZE - 3)
+        y = random.randint(3, WORLD_SIZE - 3)
+        h = random.randint(3, 10)
 
-    for i in range(len(d["rooms"])):
-        rooms.append({
-            "name": f"Room {i+1}",
-            "w": 4,
-            "h": 4,
-            "color": "#4c1d95"
-        })
+        for z in range(h):
+            if world[x, y, z] == GROUND:
+                world[x, y, z] = BUILDING
 
-    return rooms
-
-def render_blueprint(plan):
-    st.markdown("### 🗺️ Spatial Blueprint Simulation")
-
-    html = '<div class="arc-blueprint-canvas">'
-    for r in plan:
-        html += f"""
-        <div class="arc-room-module" style="background:{r['color']}">
-            <div style="font-weight:700">{r['name']}</div>
-            <div class="room-meta">{r['w']}m × {r['h']}m module</div>
-        </div>
-        """
-    html += "</div>"
-
-    st.markdown(html, unsafe_allow_html=True)
+    return world
 
 # =========================================================
-# EVOLUTION ENGINE
+# AGENT SYSTEM (WALKABLE ENTITY)
 # =========================================================
 
-def run(goal):
-    return evolve(goal)
+def move_agent(world, dx, dy, dz):
+    x, y, z = st.session_state.agent
+
+    nx, ny, nz = x + dx, y + dy, z + dz
+
+    if 0 <= nx < WORLD_SIZE and 0 <= ny < WORLD_SIZE and 0 <= nz < WORLD_SIZE:
+        if world[nx, ny, nz] != BUILDING:
+            st.session_state.agent = [nx, ny, max(0, nz)]
 
 # =========================================================
-# SIDEBAR NAV
+# SIMPLE "PHYSICS" (GRAVITY)
 # =========================================================
 
-st.sidebar.title("🏗 Neural Architecture OS V30")
+def apply_gravity(world):
+    x, y, z = st.session_state.agent
 
-page = st.sidebar.radio(
-    "Workspace",
-    [
-        "🏠 Dashboard",
-        "📂 Projects",
-        "📐 Design Studio",
-        "🧠 AI Architect",
-        "🏗 Structural Analysis",
-        "💰 Cost Estimation",
-        "🌱 Sustainability",
-        "📋 Code Compliance",
-        "🏢 BIM Manager",
-        "📊 Analytics",
-        "🧠 Memory",
-        "🔌 Plugins",
-        "⚙ Settings"
-    ]
-)
+    while z > 0 and world[x, y, z - 1] == EMPTY:
+        z -= 1
 
-goal = st.sidebar.text_input("Design Goal", "Neo Eco Tower")
-run_btn = st.sidebar.button("Generate Architecture")
+    st.session_state.agent[2] = z
 
 # =========================================================
-# GENERATION
+# 3D → 2D PROJECTION (KERNEL RENDER)
 # =========================================================
 
-if run_btn:
-    design, history = run(goal)
-    design["plan"] = floor_plan(design)
+def project(world):
+    view = []
 
-    mem["designs"].append(design)
-    st.session_state.active = design
+    ax, ay, az = st.session_state.agent
 
-    log(f"Generated design {design['id']}")
+    for x in range(WORLD_SIZE):
+        for y in range(WORLD_SIZE):
+            for z in range(WORLD_SIZE):
+                if world[x, y, z] != EMPTY:
+                    dx = x - ax
+                    dy = y - ay
+                    dz = z - az
+
+                    # simple pseudo perspective
+                    depth = max(1, dz + 15)
+                    px = int(200 + dx * (300 / depth))
+                    py = int(200 + dy * (300 / depth))
+
+                    view.append((px, py, world[x, y, z]))
+
+    return view
 
 # =========================================================
-# ACTIVE DESIGN
+# UI CONTROLS
 # =========================================================
 
-d = st.session_state.get("active", None)
+st.sidebar.title("🧠 V31 World Kernel")
+
+if st.sidebar.button("🌍 Generate World"):
+    st.session_state.world = generate_terrain()
+    st.session_state.world = spawn_buildings(st.session_state.world)
+
+if st.sidebar.button("⬆ Move Forward"):
+    move_agent(st.session_state.world, 0, 1, 0)
+
+if st.sidebar.button("⬇ Move Back"):
+    move_agent(st.session_state.world, 0, -1, 0)
+
+if st.sidebar.button("⬅ Left"):
+    move_agent(st.session_state.world, -1, 0, 0)
+
+if st.sidebar.button("➡ Right"):
+    move_agent(st.session_state.world, 1, 0, 0)
+
+if st.sidebar.button("⬆ Jump"):
+    move_agent(st.session_state.world, 0, 0, 3)
 
 # =========================================================
-# PAGES
+# ENGINE LOOP
 # =========================================================
 
-if page == "🏠 Dashboard":
-    st.title("🏠 System Dashboard")
+apply_gravity(st.session_state.world)
+render = project(st.session_state.world)
 
-    st.metric("Designs", len(mem["designs"]))
-    st.metric("Logs", len(mem["logs"]))
-    st.metric("Plugins Loaded", len(mem["plugins"]))
+# =========================================================
+# MAIN VIEW
+# =========================================================
 
-    st.markdown("---")
-    for l in mem["logs"][-6:]:
-        st.write(l)
+st.title("🌐 V31 — 3D WORLD KERNEL")
 
-elif page == "📂 Projects":
-    st.title("📂 Projects")
-    st.json(mem["projects"])
+x, y, z = st.session_state.agent
+st.markdown(f"### Agent Position: `{x}, {y}, {z}`")
 
-elif page == "📐 Design Studio":
-    st.title("📐 Design Studio")
+# fake 3D visualization
+canvas = ""
 
-    if d:
-        st.json(d)
-        render_blueprint(d["plan"])
+for px, py, t in render[:800]:
+    if t == BUILDING:
+        color = "🟥"
+    elif t == WATER:
+        color = "🟦"
     else:
-        st.info("Generate a design first.")
+        color = "🟩"
 
-elif page == "🧠 AI Architect":
-    st.title("🧠 AI Architect")
+    canvas += color
 
-    if d:
-        st.json({
-            "complexity": len(d["rooms"]) * 10,
-            "efficiency": 100 - (d["cost"] / 10000)
-        })
+st.markdown("### World Slice Render")
+st.text(canvas[:3000])
 
-elif page == "🏗 Structural Analysis":
-    st.title("🏗 Structural Analysis")
+# =========================================================
+# WORLD INTROSPECTION
+# =========================================================
 
-    if d:
-        st.json(d["structure"])
+st.markdown("### 🧠 Kernel Diagnostics")
 
-elif page == "💰 Cost Estimation":
-    st.title("💰 Cost Estimation")
-
-    if d:
-        st.metric("Cost", f"${d['cost']:,}")
-
-elif page == "🌱 Sustainability":
-    st.title("🌱 Sustainability")
-
-    if d:
-        score = max(0, 100 - d["structure"]["columns"])
-        st.metric("Score", f"{score}/100")
-
-elif page == "📋 Code Compliance":
-    st.success("Simulated BIM compliance PASSED")
-
-elif page == "🏢 BIM Manager":
-    st.title("🏢 BIM Manager")
-
-    if d:
-        st.json({"materials": ["Concrete", "Steel", "Glass"], "structure": d["structure"]})
-
-elif page == "📊 Analytics":
-    st.title("📊 Analytics")
-
-    if d:
-        st.line_chart([random.randint(60, 100) for _ in range(10)])
-
-elif page == "🧠 Memory":
-    st.title("🧠 Memory")
-    st.json(mem)
-
-elif page == "🔌 Plugins":
-    st.title("🔌 Plugins")
-
-    if "BIM_CORE_V30" not in mem["plugins"]:
-        mem["plugins"].append("BIM_CORE_V30")
-
-    st.json(mem["plugins"])
-
-elif page == "⚙ Settings":
-    st.title("⚙ Settings")
-
-    if st.button("Reset System"):
-        st.session_state.memory = DEFAULT_STATE.copy()
-        st.session_state.active = None
-        save_memory()
-        st.success("Reset complete")
+st.json({
+    "world_size": WORLD_SIZE,
+    "agent": st.session_state.agent,
+    "voxels": int(np.count_nonzero(st.session_state.world)),
+    "buildings": int(np.sum(st.session_state.world == BUILDING)),
+    "water": int(np.sum(st.session_state.world == WATER))
+})
