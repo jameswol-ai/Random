@@ -3,6 +3,23 @@ from engine.evolution import run_evolution
 from engine.planner import generate_floor_plan
 from ui.components import render_blueprint
 
+st.subheader("🏛️ Architecture Council Review")
+
+c = d.get("council", None)
+
+if c:
+    st.metric("Final Council Score", c["final_score"])
+    st.success(c["verdict"])
+
+    st.write("### Agent Reports")
+
+    for r in c["agent_reports"]:
+        st.markdown(f"""
+        **{r['agent']}**
+        - Score: {r['score']}
+        - Note: {r['notes']}
+        """)
+
 def render_design_lab(mem, log_event, state):
     st.title("🌍 Design Lab")
 
