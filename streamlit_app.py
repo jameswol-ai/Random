@@ -426,3 +426,486 @@ AI Architecture • Parametric BIM • Automated Documentation
 
 unsafe_allow_html=True
 )
+
+# ============================================================
+# SIDEBAR CONTROL PANEL
+# ============================================================
+
+with st.sidebar:
+
+    st.header("🏗️ BIM GENERATOR")
+
+
+    project_name = st.text_input(
+        "Project Name",
+        "AI Residence"
+    )
+
+
+    bedrooms = st.slider(
+        "Bedrooms",
+        1,
+        12,
+        4
+    )
+
+
+    bathrooms = st.slider(
+        "Bathrooms",
+        1,
+        10,
+        3
+    )
+
+
+    floors = st.slider(
+        "Number of Floors",
+        1,
+        5,
+        2
+    )
+
+
+    units = st.selectbox(
+        "Unit System",
+        [
+            "Metric",
+            "Imperial"
+        ]
+    )
+
+
+    grid_spacing = st.selectbox(
+        "Structural Grid Spacing",
+        [
+            1,
+            1.5,
+            3
+        ]
+    )
+
+
+    generate = st.button(
+        "🚀 GENERATE BIM HOUSE"
+    )
+
+
+
+# ============================================================
+# BUILDING GENERATION
+# ============================================================
+
+if generate:
+
+
+    spaces = create_spaces(
+        bedrooms,
+        bathrooms
+    )
+
+
+    area = sum(
+        x["area"]
+        for x in spaces
+    )
+
+
+    opening_data = create_openings()
+
+
+    st.session_state.bim.update(
+
+    {
+
+
+    "project":
+    project_name,
+
+
+    "units":
+    units,
+
+
+    "levels":
+
+    [
+
+        {
+        "level":"Ground Floor",
+        "height":"3000mm"
+        },
+
+        {
+        "level":"First Floor",
+        "height":"3000mm"
+        }
+
+    ][:floors],
+
+
+    "spaces":
+    spaces,
+
+
+    "walls":
+    create_walls(),
+
+
+    "doors":
+    opening_data["doors"],
+
+
+    "windows":
+    opening_data["windows"],
+
+
+    "grid":
+    create_grid(
+        grid_spacing
+    ),
+
+
+    "columns":
+    create_structure()["columns"],
+
+
+    "beams":
+    create_structure()["beams"],
+
+
+    "foundation":
+
+    {
+
+    "system":
+    "Reinforced Concrete Pad Foundation",
+
+    "depth":
+    "1200mm",
+
+    "material":
+    "Concrete C25"
+
+    },
+
+
+    "roof":
+
+    {
+
+    "type":
+    "Pitched Roof",
+
+    "pitch":
+    "30 degrees",
+
+    "covering":
+    "Metal Roofing"
+
+    },
+
+
+    "cost":
+
+    {
+
+    "Floor Area":
+    f"{area} m²",
+
+    "Concrete":
+    f"{area*0.25:.2f} m³",
+
+    "Steel":
+    f"{area*0.04:.2f} tonnes",
+
+    "Estimated Cost":
+    f"${area*650:,.0f}"
+
+    }
+
+    }
+
+
+    )
+
+
+    st.success(
+        "🏛️ RANDOM AI created BIM model"
+    )
+
+
+
+# ============================================================
+# DASHBOARD METRICS
+# ============================================================
+
+bim = st.session_state.bim
+
+
+a,b,c,d = st.columns(4)
+
+
+metrics = [
+
+    (
+    a,
+    "ROOMS",
+    len(bim["spaces"])
+    ),
+
+    (
+    b,
+    "WALLS",
+    len(bim["walls"])
+    ),
+
+    (
+    c,
+    "OPENINGS",
+    len(bim["doors"])
+    +
+    len(bim["windows"])
+    ),
+
+    (
+    d,
+    "GRID",
+    len(bim["grid"])
+    )
+
+]
+
+
+for col,title,value in metrics:
+
+    col.markdown(
+
+    f"""
+
+<div class="card">
+
+<h3>{title}</h3>
+
+<div class="metric">
+
+{value}
+
+</div>
+
+</div>
+
+""",
+
+    unsafe_allow_html=True
+
+    )
+
+
+
+# ============================================================
+# BIM VIEWER TABS
+# ============================================================
+
+tabs = st.tabs(
+
+[
+"📐 Floor Plan",
+"🏠 Elevation",
+"✂️ Section",
+"🧱 BIM Objects",
+"📊 Reports"
+
+]
+
+)
+
+
+
+# ============================================================
+# FLOOR PLAN VIEW
+# ============================================================
+
+with tabs[0]:
+
+
+    st.subheader(
+        "Architectural Floor Plan"
+    )
+
+
+    if PLOTLY:
+
+
+        fig = go.Figure()
+
+
+        # Walls
+
+        for wall in bim["walls"]:
+
+
+            fig.add_shape(
+
+                type="line",
+
+                x0=wall["start"][0],
+
+                y0=wall["start"][1],
+
+                x1=wall["end"][0],
+
+                y1=wall["end"][1],
+
+                line=dict(width=8)
+
+            )
+
+
+        # Grid
+
+        for point in bim["grid"]:
+
+
+            fig.add_annotation(
+
+                x=point["x"],
+
+                y=point["y"],
+
+                text=point["axis"],
+
+                showarrow=False
+
+            )
+
+
+        fig.update_layout(
+
+            height=600,
+
+            showlegend=False,
+
+            xaxis_title="Meters",
+
+            yaxis_title="Meters"
+
+        )
+
+
+        st.plotly_chart(
+
+            fig,
+
+            use_container_width=True
+
+        )
+
+
+    else:
+
+        st.info(
+            "Install plotly for drawing visualization"
+        )
+
+
+
+# ============================================================
+# ELEVATION
+# ============================================================
+
+with tabs[1]:
+
+    st.subheader(
+        "Front Elevation"
+    )
+
+
+    st.json(
+
+    {
+
+    "Levels":
+    len(bim["levels"]),
+
+    "Floor Height":
+    "3000mm",
+
+    "Roof":
+    bim["roof"]
+
+    }
+
+    )
+
+
+
+# ============================================================
+# SECTION
+# ============================================================
+
+with tabs[2]:
+
+    st.subheader(
+        "Building Section"
+    )
+
+
+    st.json(
+
+    {
+
+    "Foundation":
+    bim["foundation"],
+
+    "Slab":
+    "150mm RC",
+
+    "Ceiling":
+    "Gypsum System",
+
+    "Roof":
+    bim["roof"]
+
+    }
+
+    )
+
+
+
+# ============================================================
+# BIM OBJECT DATABASE
+# ============================================================
+
+with tabs[3]:
+
+
+    st.subheader(
+        "BIM Object Tree"
+    )
+
+
+    st.json(
+
+    {
+
+    "Spaces":
+    bim["spaces"],
+
+    "Walls":
+    bim["walls"],
+
+    "Doors":
+    bim["doors"],
+
+    "Windows":
+    bim["windows"],
+
+    "Columns":
+    bim["columns"],
+
+    "Beams":
+    bim["beams"]
+
+    }
+
+    )
