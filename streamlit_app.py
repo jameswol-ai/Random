@@ -5,12 +5,51 @@
 # =========================================================
 
 import streamlit as st
-import json
-import uuid
-import random
-from pathlib import Path
-from datetime import datetime
 
+from core.memory import load_memory, save_memory, log_event, DEFAULT_STATE
+from ui.dashboard import render_dashboard
+from ui.design_lab import render_design_lab
+from ui.memory_view import render_memory
+
+# INIT
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
+
+if "ui_state" not in st.session_state:
+    st.session_state.ui_state = {
+        "active": None,
+        "history": [],
+        "type": "Luxury Villa",
+        "bedrooms": 3,
+        "gens": 6,
+        "pop": 10
+    }
+
+mem = st.session_state.memory
+state = st.session_state.ui_state
+
+# SIDEBAR
+st.sidebar.title("📐 Arc Studio")
+
+page = st.sidebar.radio(
+    "Workspace",
+    ["Dashboard", "Design Lab", "Memory"]
+)
+
+state["type"] = st.sidebar.selectbox("Typology", ["Luxury Villa", "Modern Apartment", "Townhouse"])
+state["bedrooms"] = st.sidebar.slider("Bedrooms", 1, 8, 3)
+state["gens"] = st.sidebar.slider("Generations", 2, 20, 6)
+state["pop"] = st.sidebar.slider("Population", 4, 30, 10)
+
+# ROUTER
+if page == "Dashboard":
+    render_dashboard(mem)
+
+elif page == "Design Lab":
+    render_design_lab(mem, log_event, state)
+
+elif page == "Memory":
+    render_memory(mem)
 # =========================================================
 # PAGE CONFIG
 # =========================================================
