@@ -359,3 +359,5 @@ if st.button("Reset Memory"):
     st.session_state.active_history = []
     save_memory()
     st.rerun()
+
+
