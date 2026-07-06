@@ -1,13 +1,14 @@
 # =========================================================
 # RANDOM ARCHITECTURE INTELLIGENCE ENGINE
-# EVOLUTION + COUNCIL + STRUCTURAL SIMULATION OS
-# SINGLE FILE STREAMLIT MASTER BUILD
+# 2D + 3D EVOLUTIONARY SPATIAL SIMULATION OS
+# SINGLE FILE STREAMLIT IMPLEMENTATION
 # =========================================================
 
 import streamlit as st
 import json
 import uuid
 import random
+import numpy as np
 from pathlib import Path
 from datetime import datetime
 
@@ -16,7 +17,7 @@ from datetime import datetime
 # =========================================================
 
 st.set_page_config(
-    page_title="Random Studio Engine OS",
+    page_title="Random Studio Engine",
     page_icon="📐",
     layout="wide"
 )
@@ -104,12 +105,12 @@ if "history" not in st.session_state:
 mem = st.session_state.memory
 
 # =========================================================
-# ARCH SYSTEM
+# ARCHITECTURE ENGINE (2D)
 # =========================================================
 
 ARCH = {
     "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
-    "Commercial": ["Office", "Hotel", "Clinic"],
+    "Commercial": ["Office", "Hotel Resort", "Clinic"],
     "Industrial": ["Warehouse", "Factory"]
 }
 
@@ -119,7 +120,7 @@ def domain(t):
             return k
     return "Unknown"
 
-def base(btype, beds):
+def generate_base_design(btype, beds):
     return {
         "id": str(uuid.uuid4())[:8].upper(),
         "type": btype,
@@ -136,7 +137,6 @@ def mutate(d):
     d = json.loads(json.dumps(d))
     d["structure"]["columns"] += random.randint(-2, 3)
     d["structure"]["beams"] += random.randint(-4, 5)
-    d["area"] += random.randint(-5, 20)
     return d
 
 def fitness(d):
@@ -144,7 +144,7 @@ def fitness(d):
     return max(0, 100 - abs(r - 2.1) * 20)
 
 def run_evo(btype, beds, gens, pop):
-    popu = [base(btype, beds) for _ in range(pop)]
+    popu = [generate_base_design(btype, beds) for _ in range(pop)]
     hist = []
 
     for _ in range(gens):
@@ -165,67 +165,74 @@ def run_evo(btype, beds, gens, pop):
 def floor(d):
     return [
         {"name":"Living","w":6,"h":5,"color":"#1e3a8a"},
-        {"name":"Kitchen","w":4,"h":4,"color":"#065f46"}
+        {"name":"Kitchen","w":4,"h":4,"color":"#065f46"},
     ] + [
         {"name":f"Bedroom {i+1}","w":4,"h":4,"color":"#4c1d95"}
         for i in range(d["bedrooms"])
     ]
 
 # =========================================================
-# COUNCIL SYSTEM (NEW UPGRADE)
+# 🌍 3D VOXEL WORLD ENGINE
 # =========================================================
 
-class Council:
-    def evaluate(self, d):
-        structural = min(100, d["structure"]["columns"] * 3)
-        cost = 100 - random.randint(0, 30)
-        spatial = min(100, len(floor(d)) * 8)
+WORLD_SIZE = (20, 10, 20)
 
-        agents = [
-            {"agent":"Structural", "score":structural, "note":"Load balance assessed"},
-            {"agent":"Cost", "score":cost, "note":"Budget pressure analyzed"},
-            {"agent":"Spatial", "score":spatial, "note":"Room distribution evaluated"}
-        ]
+def voxelize(d):
+    world = np.zeros(WORLD_SIZE, dtype=int)
 
-        final = int(sum(a["score"] for a in agents)/len(agents))
+    cx, cz = 10, 10
 
-        verdict = "APPROVED" if final > 60 else "REVIEW REQUIRED"
+    for _ in range(d["structure"]["columns"]):
+        x = (cx + random.randint(-6, 6)) % WORLD_SIZE[0]
+        z = (cz + random.randint(-6, 6)) % WORLD_SIZE[2]
+        h = random.randint(2, 7)
+        for y in range(h):
+            world[x, y, z] = 1
 
-        return {
-            "agents": agents,
-            "final": final,
-            "verdict": verdict
-        }
+    for _ in range(d["structure"]["beams"]):
+        x = random.randint(0, 19)
+        z = random.randint(0, 19)
+        y = random.randint(2, 5)
+        for i in range(3):
+            world[min(19, x+i), y, z] = 2
 
-council = Council()
+    for _ in range(len(d["structure"])):
+        x = random.randint(2, 17)
+        z = random.randint(2, 17)
+        world[x, 0, z] = 3
+
+    return world
+
+def analyze_world(w):
+    return {
+        "solid": int(np.sum(w == 1)),
+        "beams": int(np.sum(w == 2)),
+        "anchors": int(np.sum(w == 3)),
+        "density": float(np.sum(w > 0) / w.size)
+    }
+
+def render_slice(world, y):
+    grid = world[:, y, :]
+    out = ""
+
+    for z in range(grid.shape[1]):
+        row = ""
+        for x in range(grid.shape[0]):
+            v = grid[x, z]
+            row += "⬛" if v == 0 else "🟦" if v == 1 else "🟨" if v == 2 else "🟩"
+        out += row + "\n"
+
+    st.code(out)
 
 # =========================================================
-# RENDER
-# =========================================================
-
-def render(plan):
-    html = '<div class="arc-blueprint-canvas">'
-    for r in plan:
-        html += f"""
-        <div class="arc-room-module" style="background:{r['color']}">
-            <b>{r['name']}</b><br>
-            {r['w']}m × {r['h']}m
-        </div>
-        """
-    html += "</div>"
-    st.markdown(html, unsafe_allow_html=True)
-
-# =========================================================
-# SIDEBAR
+# UI
 # =========================================================
 
 st.sidebar.title("📐 ARC OS")
 
 page = st.sidebar.radio("Mode", ["Dashboard", "Lab", "Memory"])
 
-ARCH_FLAT = sum(ARCH.values(), [])
-
-btype = st.sidebar.selectbox("Type", ARCH_FLAT)
+btype = st.sidebar.selectbox("Type", sum(ARCH.values(), []))
 beds = st.sidebar.slider("Beds", 1, 8, 3)
 gens = st.sidebar.slider("Generations", 2, 15, 5)
 pop = st.sidebar.slider("Population", 4, 20, 8)
@@ -235,25 +242,26 @@ pop = st.sidebar.slider("Population", 4, 20, 8)
 # =========================================================
 
 if page == "Dashboard":
-    st.title("📐 ARC CONTROL CORE")
+    st.title("📐 ARCH CONTROL CORE")
 
     c1,c2,c3 = st.columns(3)
     c1.metric("Designs", len(mem["designs"]))
-    c2.metric("Evolution Runs", len(mem["evolution"]))
+    c2.metric("Evolution", len(mem["evolution"]))
     c3.metric("Logs", len(mem["logs"]))
 
 # =========================================================
-# LAB
+# LAB (2D + 3D)
 # =========================================================
 
 elif page == "Lab":
-    st.title("🌍 GENERATIVE LAB + COUNCIL")
+    st.title("🌍 2D + 3D ARCHITECTURE ENGINE")
 
     if st.button("Run Engine"):
         best, hist = run_evo(btype, beds, gens, pop)
 
         best["plan"] = floor(best)
-        best["council"] = council.evaluate(best)
+        best["world"] = voxelize(best)
+        best["world_metrics"] = analyze_world(best["world"])
 
         mem["designs"].append(best)
         mem["evolution"].append({
@@ -275,26 +283,35 @@ elif page == "Lab":
         a,b,c = st.columns(3)
         a.metric("Score", d["score"])
         b.metric("Area", d["area"])
-        c.metric("Council", d["council"]["final"])
+        c.metric("Density", round(d["world_metrics"]["density"], 3))
 
-        tab1, tab2 = st.tabs(["Blueprint", "Council"])
+        tab1, tab2, tab3 = st.tabs([
+            "2D Blueprint",
+            "Diagnostics",
+            "3D World"
+        ])
 
         with tab1:
-            render(d["plan"])
+            html = '<div class="arc-blueprint-canvas">'
+            for r in d["plan"]:
+                html += f"<div class='arc-room-module' style='background:{r['color']}'>{r['name']}<br>{r['w']}×{r['h']}</div>"
+            html += "</div>"
+            st.markdown(html, unsafe_allow_html=True)
 
         with tab2:
-            st.subheader("Council Report")
-            for a in d["council"]["agents"]:
-                st.write(a)
+            st.json(d)
 
-            st.success(d["council"]["verdict"])
+        with tab3:
+            y = st.slider("Layer", 0, WORLD_SIZE[1]-1, 0)
+            render_slice(d["world"], y)
+            st.json(d["world_metrics"])
 
 # =========================================================
 # MEMORY
 # =========================================================
 
 elif page == "Memory":
-    st.title("🧠 SYSTEM MEMORY")
+    st.title("🧠 MEMORY CORE")
     st.json(mem)
 
     if st.button("Reset"):
