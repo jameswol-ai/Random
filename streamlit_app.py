@@ -1,5 +1,6 @@
 # ============================================================
 # RANDOM – AI Architectural Engineering & Construction Studio
+# Improved Specification Studio + South Sudanese Pounds (SSP)
 # ============================================================
 import streamlit as st
 import json, uuid, hashlib, math, random
@@ -180,7 +181,7 @@ def fmt_area(val, unit='Metric'):
     return f"{val:.1f} m²"
 
 # ============================================================
-# DEFAULT SPEC (extended)
+# DEFAULT SPEC (extended with gridline_ref)
 # ============================================================
 DEFAULT_ROOM = {"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,
                 "flooring":"wood","ceiling":"flat","bulbs":4,"sockets":6,"switches":2,
@@ -201,7 +202,7 @@ if "spec" not in st.session_state:
         "setback_right": 2.0,
         "overall_length": 20.0,
         "overall_width": 15.0,
-        "grid": {"spacing_x":6.0,"spacing_y":6.0,"column_size":0.4},
+        "grid": {"spacing_x":6.0,"spacing_y":6.0,"column_size":0.4,"gridline_ref":"Centerline"},
         "exterior_wall": "Cavity Brick (280mm)",
         "interior_wall": "Brick Partition (115mm)",
         "plaster_exterior": "Cement Plaster + Paint (20mm)",
@@ -226,23 +227,22 @@ if "spec" not in st.session_state:
         "wind_direction": "North",
         "mep_details":{"plumbing_fixtures_per_floor":4,"electrical_load_per_sqm":50},
         "east_africa_country": "Uganda",
-        "labour_rate_per_day": 15,  # USD
+        "labour_rate_per_day": 15,
     }
 
-# ---------- EAST AFRICAN MATERIAL COSTS (sample) ----------
+# ---------- EAST AFRICAN MATERIALS (includes SSP) ----------
 EA_MATERIALS = {
-    "Cement (50kg bag)": {"USD": 8, "UGX": 29000, "KES": 1100, "TZS": 20000, "RWF": 9000},
-    "Steel Rebar (ton)": {"USD": 800, "UGX": 2900000, "KES": 110000, "TZS": 2000000, "RWF": 900000},
-    "Concrete Blocks (1000 units)": {"USD": 250, "UGX": 900000, "KES": 34000, "TZS": 600000, "RWF": 270000},
-    "Timber (m³)": {"USD": 300, "UGX": 1100000, "KES": 41000, "TZS": 750000, "RWF": 330000},
-    "Roofing Sheets (per m²)": {"USD": 5, "UGX": 18000, "KES": 680, "TZS": 12000, "RWF": 5500},
+    "Cement (50kg bag)": {"USD": 8, "UGX": 29000, "KES": 1100, "TZS": 20000, "RWF": 9000, "SSP": 12000},
+    "Steel Rebar (ton)": {"USD": 800, "UGX": 2900000, "KES": 110000, "TZS": 2000000, "RWF": 900000, "SSP": 1200000},
+    "Concrete Blocks (1000 units)": {"USD": 250, "UGX": 900000, "KES": 34000, "TZS": 600000, "RWF": 270000, "SSP": 375000},
+    "Timber (m³)": {"USD": 300, "UGX": 1100000, "KES": 41000, "TZS": 750000, "RWF": 330000, "SSP": 450000},
+    "Roofing Sheets (per m²)": {"USD": 5, "UGX": 18000, "KES": 680, "TZS": 12000, "RWF": 5500, "SSP": 7500},
 }
-EA_CURRENCIES = ["USD", "UGX", "KES", "TZS", "RWF"]
-EA_COUNTRIES = {"Uganda":"UGX", "Kenya":"KES", "Tanzania":"TZS", "Rwanda":"RWF", "USD reference":"USD"}
+EA_COUNTRIES = {"Uganda":"UGX", "Kenya":"KES", "Tanzania":"TZS", "Rwanda":"RWF", "South Sudan":"SSP", "USD reference":"USD"}
 
 def get_ea_cost(material, country, quantity=1):
     curr = EA_COUNTRIES.get(country, "UGX")
-    base = EA_MATERIALS.get(material, {"USD":10,"UGX":36000,"KES":1300,"TZS":24000,"RWF":11000})
+    base = EA_MATERIALS.get(material, {"USD":10,"UGX":36000,"KES":1300,"TZS":24000,"RWF":11000,"SSP":15000})
     cost = base.get(curr, base["USD"])
     return cost * quantity
 
@@ -256,7 +256,7 @@ def save_spec(spec):
 def load_specs():
     return json.loads(SPEC_FILE.read_text())
 
-# ---------- RAM AI (enhanced) ----------
+# ---------- RAM AI ----------
 def ram_advisor(query: str, spec: dict) -> str:
     q = query.lower()
     if "floorplan" in q or "layout" in q:
@@ -317,102 +317,218 @@ spec = st.session_state.spec
 
 if page == "Specification Studio":
     st.title("⚡ RANDOM – Specification Studio")
-    # delete quick generate – no AI box here
+    st.markdown("Define every aspect of your building with detailed control over spaces, grids, doors, windows, and MEP.")
 
-    # Project identity
-    spec["building_name"] = st.text_input("Project Name", spec["building_name"])
-    spec["category"] = st.selectbox("Building Category", ["Residential","Commercial","Industrial"], index=0 if spec["category"]=="Residential" else 1 if spec["category"]=="Commercial" else 2)
-    spec["shape"] = st.selectbox("Building Shape", ["Rectangle","L-shape","T-shape","U-shape","Courtyard"], index=0)
-    if spec["shape"] != "Rectangle":
-        st.warning("Non‑rectangular shapes are approximated by overall bounding box dimensions.")
-    spec["floors"] = st.slider("Number of Floors", 1, 50, spec["floors"])
-    spec["floor_height"] = st.slider("Floor Height (m)", 2.4, 5.0, spec["floor_height"])
+    # ---------- PROJECT IDENTITY ----------
+    with st.expander("🏢 Project Identity & Shape", expanded=True):
+        spec["building_name"] = st.text_input("Project Name", spec["building_name"])
+        col1, col2, col3 = st.columns(3)
+        spec["category"] = col1.selectbox("Building Category", ["Residential","Commercial","Industrial"], index=0)
+        spec["shape"] = col2.selectbox("Building Shape", ["Rectangle","L-shape","T-shape","U-shape","Courtyard"], index=0)
+        spec["floors"] = col3.slider("Number of Floors", 1, 50, spec["floors"])
+        spec["floor_height"] = st.slider("Floor Height (m)", 2.4, 5.0, spec["floor_height"])
 
-    # Plot & setbacks
-    st.subheader("Plot & Setbacks")
-    c1,c2,c3,c4 = st.columns(4)
-    spec["plot_length"] = c1.number_input("Plot Length (m)", 10.0,500.0, spec["plot_length"])
-    spec["plot_width"] = c2.number_input("Plot Width (m)", 10.0,500.0, spec["plot_width"])
-    spec["setback_front"] = c3.number_input("Front Setback (m)", 0.0,50.0, spec["setback_front"])
-    spec["setback_back"] = c4.number_input("Rear Setback (m)", 0.0,50.0, spec["setback_back"])
-    spec["setback_left"] = st.number_input("Left Setback (m)", 0.0,50.0, spec["setback_left"])
-    spec["setback_right"] = st.number_input("Right Setback (m)", 0.0,50.0, spec["setback_right"])
+    # ---------- PLOT & SETBACKS ----------
+    with st.expander("📐 Plot & Setbacks", expanded=False):
+        col1, col2 = st.columns(2)
+        spec["plot_length"] = col1.number_input("Plot Length (m)", 10.0,500.0, spec["plot_length"])
+        spec["plot_width"] = col2.number_input("Plot Width (m)", 10.0,500.0, spec["plot_width"])
+        col1, col2, col3, col4 = st.columns(4)
+        spec["setback_front"] = col1.number_input("Front Setback (m)", 0.0,50.0, spec["setback_front"])
+        spec["setback_back"] = col2.number_input("Rear Setback (m)", 0.0,50.0, spec["setback_back"])
+        spec["setback_left"] = col3.number_input("Left Setback (m)", 0.0,50.0, spec["setback_left"])
+        spec["setback_right"] = col4.number_input("Right Setback (m)", 0.0,50.0, spec["setback_right"])
 
-    # Building footprint
-    st.subheader("Building Footprint")
-    c1,c2 = st.columns(2)
-    spec["overall_length"] = c1.number_input("Length (m)", 5.0, spec["plot_length"], spec["overall_length"])
-    spec["overall_width"] = c2.number_input("Width (m)", 5.0, spec["plot_width"], spec["overall_width"])
+    # ---------- BUILDING FOOTPRINT ----------
+    with st.expander("📏 Building Footprint", expanded=False):
+        col1, col2 = st.columns(2)
+        spec["overall_length"] = col1.number_input("Overall Length (m)", 5.0, spec["plot_length"], spec["overall_length"])
+        spec["overall_width"] = col2.number_input("Overall Width (m)", 5.0, spec["plot_width"], spec["overall_width"])
 
-    # Grid & walls
-    st.subheader("Grid & Walls")
-    c1,c2,c3 = st.columns(3)
-    spec["grid"]["spacing_x"] = c1.number_input("Col Spacing X (m)", 3.0,9.0, spec["grid"]["spacing_x"])
-    spec["grid"]["spacing_y"] = c2.number_input("Col Spacing Y (m)", 3.0,9.0, spec["grid"]["spacing_y"])
-    spec["grid"]["column_size"] = c3.number_input("Column Size (m)", 0.3,1.0, spec["grid"]["column_size"])
-    c1,c2 = st.columns(2)
-    spec["exterior_wall"] = c1.selectbox("Exterior Wall", list({"Cavity Brick (280mm)":280,"Solid Brick (230mm)":230,"Concrete Block (200mm)":200,"AAC Block (200mm)":200,"Timber Frame + Cladding":150,"Steel Frame + Cladding":150}.keys()))
-    spec["interior_wall"] = c2.selectbox("Interior Partition", list({"Brick Partition (115mm)":115,"Concrete Block (100mm)":100,"Timber Stud + Plasterboard":90,"Glass Partition":12}.keys()))
+    # ---------- GRID SYSTEM & WALLS ----------
+    with st.expander("🔲 Grid System & Walls", expanded=False):
+        st.markdown("**Grid System**")
+        col1, col2, col3 = st.columns(3)
+        spec["grid"]["spacing_x"] = col1.number_input("Column Spacing X (m)", 3.0, 9.0, spec["grid"]["spacing_x"])
+        spec["grid"]["spacing_y"] = col2.number_input("Column Spacing Y (m)", 3.0, 9.0, spec["grid"]["spacing_y"])
+        spec["grid"]["column_size"] = col3.number_input("Column Size (m)", 0.3, 1.0, spec["grid"]["column_size"])
+        spec["grid"]["gridline_ref"] = st.selectbox("Gridline Reference", ["Centerline", "Interior Face", "Exterior Face"],
+                                                    index=0 if spec["grid"].get("gridline_ref","Centerline")=="Centerline" else 1)
 
-    # Rooms (detailed)
-    st.subheader("Rooms & Spaces")
-    for i, room in enumerate(spec["rooms"]):
-        with st.expander(f"{room.get('name','Room')} ({room.get('type','living')})", expanded=(i==0)):
-            cols = st.columns([3,2,1,1,1,1,1])
-            room["name"] = cols[0].text_input("Name", room["name"], key=f"rname_{i}")
-            room["type"] = cols[1].selectbox("Type", list({"living":20,"kitchen":10,"dining":12,"master_bedroom":18,"bedroom":12,"bathroom":5,"storage":3,"balcony":4,"corridor":1.2}.keys()), key=f"rtype_{i}")
-            room["width"] = cols[2].number_input("W(m)", 1.0,20.0, room["width"], key=f"rw_{i}")
-            room["length"] = cols[3].number_input("L(m)", 1.0,20.0, room["length"], key=f"rl_{i}")
-            room["height"] = cols[4].number_input("H(m)", 2.4,5.0, room["height"], key=f"rh_{i}")
-            room["flooring"] = cols[5].selectbox("Floor", ["tiles","wood","concrete","marble","carpet"], key=f"rfloor_{i}")
-            room["ceiling"] = cols[6].selectbox("Ceil", ["flat","hanging","vaulted","exposed","coffered"], key=f"rceil_{i}")
-            room["bulbs"] = st.number_input("Bulbs", 0,20, room.get("bulbs",2), key=f"rbulbs_{i}")
-            room["sockets"] = st.number_input("Sockets", 0,20, room.get("sockets",2), key=f"rsock_{i}")
-            room["switches"] = st.number_input("Switches", 0,20, room.get("switches",1), key=f"rsw_{i}")
-            st.markdown("**Furniture**")
-            furn = room.get("furniture",[])
-            for j, item in enumerate(furn):
-                fc = st.columns([3,1,1,1,1])
-                item["item"] = fc[0].text_input("Item", item["item"], key=f"fitem_{i}_{j}")
-                item["w"] = fc[1].number_input("W",0.1,5.0, item["w"], key=f"fw_{i}_{j}")
-                item["d"] = fc[2].number_input("D",0.1,5.0, item["d"], key=f"fd_{i}_{j}")
-                item["h"] = fc[3].number_input("H",0.1,3.0, item["h"], key=f"fh_{i}_{j}")
-                if fc[4].button("❌", key=f"fdel_{i}_{j}"): furn.pop(j); st.rerun()
-            if st.button("➕ Furniture", key=f"fadd_{i}"):
-                furn.append({"item":"New","w":1.0,"d":0.5,"h":0.5}); st.rerun()
-            if st.button("🗑 Delete Room", key=f"rdel_{i}"):
-                spec["rooms"].pop(i); st.rerun()
-    if st.button("➕ Add Room"):
-        spec["rooms"].append({"name":"New Room","type":"living","width":4.0,"length":4.0,"height":3.0,"flooring":"wood","ceiling":"flat","bulbs":2,"sockets":2,"switches":1,"furniture":[]})
-        st.rerun()
+        st.markdown("**Walls**")
+        col1, col2 = st.columns(2)
+        spec["exterior_wall"] = col1.selectbox("Exterior Wall Type", 
+                                               ["Cavity Brick (280mm)","Solid Brick (230mm)","Concrete Block (200mm)",
+                                                "AAC Block (200mm)","Timber Frame + Cladding","Steel Frame + Cladding"],
+                                               index=0)
+        spec["plaster_exterior"] = col1.selectbox("Exterior Finish",
+                                                  ["Cement Plaster + Paint (20mm)","Gypsum Plaster + Paint (15mm)",
+                                                   "Tile Cladding (10mm)","Stone Cladding (30mm)","Exposed Brick (no plaster)"])
+        spec["interior_wall"] = col2.selectbox("Interior Partition Type",
+                                               ["Brick Partition (115mm)","Concrete Block (100mm)",
+                                                "Timber Stud + Plasterboard","Glass Partition"],
+                                               index=0)
+        spec["plaster_interior"] = col2.selectbox("Interior Finish",
+                                                  ["Gypsum Plaster + Paint (15mm)","Cement Plaster + Paint (20mm)",
+                                                   "Tile Cladding (10mm)","Exposed Brick (no plaster)"])
 
-    # Doors & windows (condensed for brevity, you can expand as before)
-    st.subheader("Doors & Windows")
-    # (simplified: just show existing – you can copy the detailed editor from previous answer)
-    st.info("Doors/Windows editor works here (see previous version).")
+    # ---------- ROOMS ----------
+    with st.expander("🛏️ Rooms & Spaces", expanded=True):
+        for i, room in enumerate(spec["rooms"]):
+            with st.container():
+                st.markdown(f"**{room.get('name','Room')} ({room.get('type','living')})**")
+                col1, col2, col3 = st.columns([2,2,1])
+                room["name"] = col1.text_input("Name", room["name"], key=f"rname_{i}")
+                room["type"] = col2.selectbox("Type", ["living","kitchen","dining","master_bedroom","bedroom",
+                                                       "bathroom","storage","balcony","corridor"],
+                                             key=f"rtype_{i}")
+                room["width"] = col3.number_input("Width (m)", 1.0, 20.0, room["width"], key=f"rw_{i}")
+                col4, col5, col6 = st.columns([1,1,1])
+                room["length"] = col4.number_input("Length (m)", 1.0, 20.0, room["length"], key=f"rl_{i}")
+                room["height"] = col5.number_input("Height (m)", 2.4, 5.0, room["height"], key=f"rh_{i}")
+                room["flooring"] = col6.selectbox("Flooring", ["tiles","wood","concrete","marble","carpet"], key=f"rfloor_{i}")
+                col7, col8 = st.columns(2)
+                room["ceiling"] = col7.selectbox("Ceiling", ["flat","hanging","vaulted","exposed","coffered"], key=f"rceil_{i}")
+                room["bulbs"] = col8.number_input("Bulbs", 0, 20, room.get("bulbs",2), key=f"rbulbs_{i}")
+                room["sockets"] = col8.number_input("Sockets", 0, 20, room.get("sockets",2), key=f"rsock_{i}")
+                room["switches"] = col8.number_input("Switches", 0, 20, room.get("switches",1), key=f"rsw_{i}")
 
-    # MEP & orientation
-    st.subheader("MEP, Sun & Wind")
-    spec["hvac"] = st.selectbox("HVAC System", ["Natural Ventilation","Split AC Units","Central Chilled Water","VRV/VRF System","Hybrid"])
-    spec["orientation"] = st.selectbox("Sun Orientation (Front)", ["North","South","East","West"])
-    spec["wind_direction"] = st.selectbox("Prevailing Wind Direction", ["North","South","East","West"])
+                st.markdown("**Furniture**")
+                furn = room.get("furniture",[])
+                for j, item in enumerate(furn):
+                    fcols = st.columns([3,1,1,1,1])
+                    item["item"] = fcols[0].text_input("Item", item["item"], key=f"fitem_{i}_{j}")
+                    item["w"] = fcols[1].number_input("W",0.1,5.0, item["w"], key=f"fw_{i}_{j}")
+                    item["d"] = fcols[2].number_input("D",0.1,5.0, item["d"], key=f"fd_{i}_{j}")
+                    item["h"] = fcols[3].number_input("H",0.1,3.0, item["h"], key=f"fh_{i}_{j}")
+                    if fcols[4].button("❌", key=f"fdel_{i}_{j}"):
+                        furn.pop(j); st.rerun()
+                if st.button("➕ Add Furniture", key=f"fadd_{i}"):
+                    furn.append({"item":"New","w":1.0,"d":0.5,"h":0.5}); st.rerun()
+                if st.button("🗑 Delete Room", key=f"rdel_{i}"):
+                    spec["rooms"].pop(i); st.rerun()
+                st.markdown("---")
+        if st.button("➕ Add New Room"):
+            spec["rooms"].append({"name":"New Room","type":"living","width":4.0,"length":4.0,"height":3.0,
+                                  "flooring":"wood","ceiling":"flat","bulbs":2,"sockets":2,"switches":1,"furniture":[]})
+            st.rerun()
 
-    if st.button("💾 Save Specification"):
+    # ---------- DOORS ----------
+    with st.expander("🚪 Doors", expanded=False):
+        for i, door in enumerate(spec["doors"]):
+            cols = st.columns([2,1,1,1,1,1])
+            door["type"] = cols[0].selectbox("Type", ["Main Entrance","Interior Door","Bathroom Door","Sliding Door"],
+                                            index=["Main Entrance","Interior Door","Bathroom Door","Sliding Door"].index(door.get("type","Interior Door")),
+                                            key=f"dtype_{i}")
+            door["width"] = cols[1].number_input("Width (m)", 0.6,2.0, door["width"], key=f"dw_{i}")
+            door["height"] = cols[2].number_input("Height (m)", 2.0,3.0, door["height"], key=f"dh_{i}")
+            door["wall"] = cols[3].selectbox("Wall", ["north","south","east","west"], key=f"dwall_{i}")
+            door["height_above_floor"] = cols[4].number_input("Sill (m)", 0.0,2.0, door.get("height_above_floor",0.0), key=f"dsill_{i}")
+            door["material"] = cols[5].selectbox("Material", ["Wood","Steel","Glass","Aluminium"], key=f"dmat_{i}")
+            if st.button("🗑", key=f"ddel_{i}"): spec["doors"].pop(i); st.rerun()
+            st.markdown("---")
+        if st.button("➕ Add Door"):
+            spec["doors"].append({"type":"Interior Door","width":0.9,"height":2.1,"wall":"south","height_above_floor":0.0,"material":"Wood"})
+            st.rerun()
+
+    # ---------- WINDOWS ----------
+    with st.expander("🪟 Windows", expanded=False):
+        for i, win in enumerate(spec["windows"]):
+            cols = st.columns([2,1,1,1,1,1])
+            win["type"] = cols[0].selectbox("Type", ["Sliding","Casement","Fixed","Louvre"], key=f"wtype_{i}")
+            win["width"] = cols[1].number_input("Width (m)", 0.6,3.0, win["width"], key=f"ww_{i}")
+            win["height"] = cols[2].number_input("Height (m)", 0.6,2.5, win["height"], key=f"wh_{i}")
+            win["wall"] = cols[3].selectbox("Wall", ["north","south","east","west"], key=f"wwall_{i}")
+            win["height_above_floor"] = cols[4].number_input("Sill (m)", 0.0,2.0, win.get("height_above_floor",0.9), key=f"wsill_{i}")
+            win["glazing"] = cols[5].selectbox("Glazing", ["Single","Double","Triple"], key=f"wglaz_{i}")
+            if st.button("🗑", key=f"wdel_{i}"): spec["windows"].pop(i); st.rerun()
+            st.markdown("---")
+        if st.button("➕ Add Window"):
+            spec["windows"].append({"type":"Sliding","width":1.2,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"})
+            st.rerun()
+
+    # ---------- MEP & ORIENTATION ----------
+    with st.expander("🌬️ MEP, Sun & Wind", expanded=False):
+        spec["hvac"] = st.selectbox("HVAC System", ["Natural Ventilation","Split AC Units","Central Chilled Water","VRV/VRF System","Hybrid"])
+        col1, col2 = st.columns(2)
+        spec["orientation"] = col1.selectbox("Sun Orientation (Front)", ["North","South","East","West"])
+        spec["wind_direction"] = col2.selectbox("Prevailing Wind Direction", ["North","South","East","West"])
+        spec["mep_details"]["plumbing_fixtures_per_floor"] = st.number_input("Plumbing Fixtures per Floor", 1,20, spec["mep_details"]["plumbing_fixtures_per_floor"])
+        spec["mep_details"]["electrical_load_per_sqm"] = st.number_input("Electrical Load (VA/m²)", 30,200, spec["mep_details"]["electrical_load_per_sqm"])
+
+    # ---------- SAVE & REPORT ----------
+    if st.button("📄 Generate Specification Report"):
         save_spec(spec)
-        st.success("Specification saved to library. Use other pages for AEC details, costs, and floorplans.")
+        # build report
+        total_area = spec["overall_length"] * spec["overall_width"] * spec["floors"]
+        report = f"""
+# Architectural Specification – {spec['building_name']}
+
+## General
+- Category: {spec['category']}
+- Shape: {spec['shape']}
+- Floors: {spec['floors']} × {fmt_length(spec['floor_height'], unit)} floor height
+- Total height: {fmt_length(spec['floors']*spec['floor_height'], unit)}
+- Plot: {fmt_length(spec['plot_length'], unit)} × {fmt_length(spec['plot_width'], unit)}
+- Footprint: {fmt_length(spec['overall_length'], unit)} × {fmt_length(spec['overall_width'], unit)}
+- Total floor area: {fmt_area(total_area, unit)}
+
+## Grid & Walls
+- Grid: {spec['grid']['spacing_x']}m × {spec['grid']['spacing_y']}m, column size {spec['grid']['column_size']}m
+- Reference: {spec['grid']['gridline_ref']}
+- Exterior: {spec['exterior_wall']} ({spec['plaster_exterior']})
+- Interior: {spec['interior_wall']} ({spec['plaster_interior']})
+
+## Rooms ({len(spec['rooms'])})
+"""
+        for r in spec['rooms']:
+            area = r['width']*r['length']
+            report += f"- {r['name']} ({r['type']}) {fmt_length(r['width'], unit)} × {fmt_length(r['length'], unit)} × {fmt_length(r['height'], unit)}, Area: {fmt_area(area, unit)}\n"
+            report += f"  Floor: {r.get('flooring','wood')}, Ceiling: {r.get('ceiling','flat')}\n"
+            report += f"  Bulbs: {r.get('bulbs',0)}, Sockets: {r.get('sockets',0)}, Switches: {r.get('switches',0)}\n"
+            if r.get('furniture'):
+                report += "  Furniture:\n"
+                for f in r['furniture']:
+                    report += f"    - {f['item']} ({fmt_length(f['w'], unit)} × {fmt_length(f['d'], unit)} × {fmt_length(f['h'], unit)})\n"
+            report += "\n"
+        report += f"""
+## Doors ({len(spec['doors'])})
+"""
+        for d in spec['doors']:
+            report += f"- {d['type']} {fmt_length(d['width'], unit)} × {fmt_length(d['height'], unit)}, Wall: {d.get('wall','south')}, Sill: {fmt_length(d.get('height_above_floor',0), unit)}, Material: {d.get('material','Wood')}\n"
+        report += f"""
+## Windows ({len(spec['windows'])})
+"""
+        for w in spec['windows']:
+            report += f"- {w['type']} {fmt_length(w['width'], unit)} × {fmt_length(w['height'], unit)}, Wall: {w.get('wall','north')}, Sill: {fmt_length(w.get('height_above_floor',0.9), unit)}, Glazing: {w.get('glazing','Double')}\n"
+        report += f"""
+## MEP & Environment
+- HVAC: {spec['hvac']}
+- Plumbing fixtures/floor: {spec['mep_details']['plumbing_fixtures_per_floor']}
+- Electrical load: {spec['mep_details']['electrical_load_per_sqm']} VA/m²
+- Sun orientation: {spec['orientation']}
+- Wind direction: {spec['wind_direction']}
+
+## East African Material Costs (approximate)
+"""
+        for mat in EA_MATERIALS:
+            cost_ssp = get_ea_cost(mat, "South Sudan", 1)
+            report += f"- {mat}: {cost_ssp:,.0f} SSP (South Sudan)\n"
+        report += "\n---\n*Generated by RANDOM Architectural Studio*\n"
+        st.text_area("Specification Report", report, height=500)
+        st.download_button("📥 Download JSON", json.dumps(spec, indent=2), file_name=f"{spec['building_name'] or 'spec'}.json")
         add_xp(uname,20); st.session_state.user_data=get_user(uname)
 
 elif page == "Architecture Spaces":
     st.title("🏛️ Architecture – Spaces & Layouts")
-    st.write("Define each space in detail. Use Specification Studio to add/remove rooms.")
     for room in spec["rooms"]:
         with st.expander(room["name"]):
             st.json(room)
 
 elif page == "Engineering":
     st.title("⚙️ Engineering – Foundations & Structure")
-    spec["soil_type"] = st.selectbox("Soil Type", ["Clay","Sand","Rock","Silt","Gravel"], index=0)
-    spec["foundation"] = st.selectbox("Foundation Type", ["Strip Foundation","Raft Foundation","Pile Foundation"], index=0)
+    spec["soil_type"] = st.selectbox("Soil Type", ["Clay","Sand","Rock","Silt","Gravel"])
+    spec["foundation"] = st.selectbox("Foundation Type", ["Strip Foundation","Raft Foundation","Pile Foundation"])
     spec["foundation_depth"] = st.number_input("Foundation Depth (m)", 0.5,20.0, spec["foundation_depth"])
     spec["column_type"] = st.text_input("Column Type", spec.get("column_type","RC Rectangular 300x300mm"))
     spec["beam_type"] = st.text_input("Beam Type", spec.get("beam_type","RC 230x300mm"))
@@ -420,20 +536,18 @@ elif page == "Engineering":
 
 elif page == "Construction":
     st.title("🚧 Construction – Materials, Labour & Schedule")
-    st.markdown("### Labour & Cost")
     spec["labour_rate_per_day"] = st.number_input("Labour Rate (USD/day)", 5.0,100.0, spec.get("labour_rate_per_day",15.0))
     area = spec["overall_length"] * spec["overall_width"] * spec["floors"]
     total_cost = area * 1500
     st.metric("Estimated Total Construction Cost (USD)", f"${total_cost:,.0f}")
-    st.markdown("### Schedule")
     months = spec["floors"] * 4
-    st.write(f"Rough schedule: **{months} months** (based on {spec['floors']} floors).")
-    st.info("Use the Materials & Cost page for detailed East African material pricing.")
+    st.write(f"Rough schedule: **{months} months**")
+    st.info("Visit Materials & Cost for detailed East African pricing with SSP.")
 
 elif page == "Ram Assistant":
     st.title("🤖 AI Assistant – Ram")
-    st.markdown("Ram can generate floorplans, check standards, estimate costs, and advise on materials.")
-    user_query = st.text_area("Ask Ram anything:")
+    st.markdown("Ram generates floorplans, checks standards, estimates costs, and more.")
+    user_query = st.text_area("Ask Ram:")
     if st.button("Ask"):
         answer = ram_advisor(user_query, spec)
         st.success(answer)
@@ -441,21 +555,20 @@ elif page == "Ram Assistant":
 
 elif page == "Roofing":
     st.title("🏠 Roofing Design")
-    spec["roof_type"] = st.selectbox("Roof Type", ["Flat","Pitched","Gable","Hip","Mansard","Gambrel","Butterfly"], index=0)
-    spec["roof_material"] = st.selectbox("Roof Material", ["Concrete Tiles","Clay Tiles","Metal Sheets","Thatch","Green Roof","Slate"], index=0)
+    spec["roof_type"] = st.selectbox("Roof Type", ["Flat","Pitched","Gable","Hip","Mansard","Gambrel","Butterfly"])
+    spec["roof_material"] = st.selectbox("Roof Material", ["Concrete Tiles","Clay Tiles","Metal Sheets","Thatch","Green Roof","Slate"])
     spec["roof_pitch"] = st.slider("Roof Pitch (degrees)", 0, 60, spec.get("roof_pitch",30))
-    st.metric("Recommended Overhang", "0.6 m")
     st.success("Roofing parameters updated.")
 
 elif page == "Materials & Cost":
-    st.title("💰 East African Material Costs & Currency Converter")
+    st.title("💰 East African Material Costs (including SSP)")
     country = st.selectbox("Country", list(EA_COUNTRIES.keys()))
     material = st.selectbox("Material", list(EA_MATERIALS.keys()))
     quantity = st.number_input("Quantity", 1.0, 10000.0, 1.0)
     cost = get_ea_cost(material, country, quantity)
     curr = EA_COUNTRIES[country]
     st.metric(f"Cost in {curr}", f"{cost:,.0f}")
-    st.table(pd.DataFrame(EA_MATERIALS).T)
+    st.dataframe(pd.DataFrame(EA_MATERIALS).T)
 
 elif page == "Diagnostics":
     st.title("🔍 Structural Diagnostics")
