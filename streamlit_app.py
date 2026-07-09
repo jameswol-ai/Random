@@ -1,14 +1,22 @@
 # ============================================================
-# RANDOM – Architectural Specification Studio
+# RANDOM – AI Architectural Specification Studio
+# Combined: Auth, XP, Full Spec Form, Diagnostics, Saved Specs
 # ============================================================
-import streamlit as st
-import json, uuid, math
+import streamlit as st, json, uuid, hashlib, math
 from pathlib import Path
 from datetime import datetime
+import pandas as pd
 
+# ---------- CONFIG ----------
 st.set_page_config(page_title="RANDOM Studio", page_icon="⚡", layout="wide")
+DATA_DIR = Path("data"); DATA_DIR.mkdir(exist_ok=True)
+USER_FILE = DATA_DIR / "users.json"
+XP_PER_LEVEL = 100
+SPEC_FILE = DATA_DIR / "specs.json"
+if not SPEC_FILE.exists():
+    SPEC_FILE.write_text("[]")
 
-# ── THEME ──
+# ---------- NEW LOGO & THEME ----------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -21,25 +29,135 @@ h1,h2,h3,h4,h5,h6{font-weight:600;color:#f0f4f8;letter-spacing:-0.5px}
 .xp-container{display:flex;align-items:center;gap:10px;margin-bottom:1.2rem}
 .xp-bar-bg{flex:1;height:10px;background:#1e293b;border-radius:6px;overflow:hidden}
 .xp-bar-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f97316);border-radius:6px;box-shadow:0 0 10px #f97316}
-</style>""",unsafe_allow_html=True)
+.footer{text-align:center;padding:1.5rem 0;color:#5f6b7a;font-size:0.8rem;border-top:1px solid #2a2f38}
+</style>""", unsafe_allow_html=True)
 
-# ── MEMORY ──
-DATA_DIR = Path("data"); DATA_DIR.mkdir(exist_ok=True)
-SPEC_FILE = DATA_DIR / "specs.json"
-if not SPEC_FILE.exists():
-    SPEC_FILE.write_text("[]")
+# ---------- AUTH ----------
+def hash_password(pw): return hashlib.sha256((pw+"rand_salt").encode()).hexdigest()
+def load_users():
+    if USER_FILE.exists():
+        try:
+            with open(USER_FILE) as f: return json.load(f)
+        except: return []
+    return []
+def save_users(users):
+    with open(USER_FILE,"w") as f: json.dump(users,f,indent=2)
+def get_user(uname):
+    for u in load_users():
+        if u["username"]==uname: return u
+    return None
+def create_user(uname,pw,role="user"):
+    users=load_users()
+    if get_user(uname): raise ValueError("Username exists")
+    user={"username":uname,"password_hash":hash_password(pw),"role":role,"level":1,"xp":0,"badges":[],"created":datetime.now().isoformat()}
+    users.append(user); save_users(users)
+    return user
+def authenticate(uname,pw):
+    u=get_user(uname)
+    if u and u["password_hash"]==hash_password(pw): return u
+    return None
+def update_user_data(uname,updates):
+    users=load_users()
+    for u in users:
+        if u["username"]==uname: u.update(updates); break
+    save_users(users)
+def xp_for_level(lvl): return lvl*XP_PER_LEVEL
+def add_xp(uname,amount):
+    u=get_user(uname)
+    if not u: return False
+    old=u["level"]; u["xp"]+=amount
+    while u["xp"]>=xp_for_level(u["level"]):
+        u["xp"]-=xp_for_level(u["level"]); u["level"]+=1
+        if u["level"]%5==0 and f"level_{u['level']}" not in u["badges"]:
+            u["badges"].append(f"level_{u['level']}")
+    update_user_data(uname,{"level":u["level"],"xp":u["xp"],"badges":u["badges"]})
+    return u["level"]>old
 
-def save_spec(spec):
-    data = json.loads(SPEC_FILE.read_text())
-    spec["id"] = str(uuid.uuid4())[:8].upper()
-    spec["created"] = datetime.now().isoformat()
-    data.append(spec)
-    SPEC_FILE.write_text(json.dumps(data, indent=2))
+# ---------- MEMORY ----------
+def get_memory_path(uname): return DATA_DIR/f"{uname}_memory.json"
+DEFAULT_MEMORY={"projects":[],"saved_designs":[],"logs":[]}
+def load_memory(uname):
+    path=get_memory_path(uname)
+    if path.exists():
+        try:
+            with open(path,encoding="utf-8") as f: data=json.load(f)
+            for k in DEFAULT_MEMORY:
+                if k not in data: data[k]=DEFAULT_MEMORY[k]
+            return data
+        except: return DEFAULT_MEMORY.copy()
+    return DEFAULT_MEMORY.copy()
+def save_memory(uname,mem):
+    with open(get_memory_path(uname),"w",encoding="utf-8") as f: json.dump(mem,f,indent=4)
 
-def load_specs():
-    return json.loads(SPEC_FILE.read_text())
+# ---------- SESSION INIT ----------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in=False; st.session_state.username=None
+    st.session_state.user_data=None; st.session_state.memory=DEFAULT_MEMORY.copy()
+    st.session_state.page="Specification Studio"; st.session_state.unit_system="Metric"
 
-# ── ARCHITECTURAL STANDARDS ──
+if not load_users():
+    create_user("admin","admin123",role="admin")
+
+# ---------- LOGIN ----------
+if not st.session_state.logged_in:
+    col1,col2,col3=st.columns([1,2,1])
+    with col2:
+        st.markdown("<div class='logo-text' style='text-align:center;margin-top:4rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;color:#94a3b8;'>AI Architectural Design Studio</p>",unsafe_allow_html=True)
+        with st.form("auth"):
+            uname=st.text_input("Username"); pw=st.text_input("Password",type="password")
+            colA,colB=st.columns(2)
+            with colA: login_btn=st.form_submit_button("Login")
+            with colB: reg_btn=st.form_submit_button("Register")
+            if login_btn:
+                user=authenticate(uname,pw)
+                if user:
+                    st.session_state.logged_in=True; st.session_state.username=uname
+                    st.session_state.user_data=user; st.session_state.memory=load_memory(uname)
+                    st.rerun()
+                else: st.error("Invalid credentials")
+            if reg_btn:
+                if not uname or not pw: st.error("Fill all fields")
+                else:
+                    try:
+                        create_user(uname,pw); st.success("Account created!")
+                    except ValueError as e: st.error(str(e))
+    st.stop()
+
+# ---------- SIDEBAR ----------
+uname=st.session_state.username; user_data=st.session_state.user_data; memory=st.session_state.memory
+with st.sidebar:
+    st.markdown("<div class='logo-text' style='font-size:1.8rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
+    st.markdown(f"**👤 {uname}**")
+    lvl=user_data["level"]; xp=user_data["xp"]; needed=xp_for_level(lvl)
+    progress=xp/needed if needed>0 else 1.0
+    st.markdown(f"""<div class="xp-container"><span style="font-size:12px;color:#94a3b8;">LVL {lvl}</span>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:{progress*100}%;"></div></div>
+    <span style="font-size:10px;color:#64748b;">{xp}/{needed} XP</span></div>""",unsafe_allow_html=True)
+    page = st.radio("Go to",["Specification Studio","Diagnostics","Saved Specs","Settings"])
+    st.session_state.page=page
+    st.divider()
+    if user_data.get("role")=="admin":
+        with st.expander("🛡️ Admin"):
+            for u in load_users():
+                if u["username"]!=uname:
+                    if st.button(f"🗑 {u['username']}",key=f"del_{u['username']}"):
+                        users=load_users(); users.remove(u); save_users(users); st.rerun()
+    st.markdown("### 📁 Recent Projects")
+    for proj in memory["projects"][-5:]:
+        st.markdown(f"• {proj['name']} *({proj['date']})*")
+    if st.button("➕ New Project"):
+        memory["projects"].append({"name":f"Project {len(memory['projects'])+1}","date":datetime.now().strftime("%b %d, %Y")})
+        save_memory(uname,memory); st.rerun()
+    if st.button("🚪 Logout"):
+        save_memory(uname,memory)
+        for k in ["logged_in","username","user_data","memory"]:
+            if k in st.session_state: del st.session_state[k]
+        st.rerun()
+
+# ============================================================
+# ARCHITECTURAL SPECIFICATION LOGIC
+# ============================================================
 ROOM_STANDARDS = {
     "living": {"min_area":20, "min_width":4.0, "min_height":2.4},
     "kitchen": {"min_area":10, "min_width":2.4, "min_height":2.4},
@@ -92,7 +210,44 @@ HVAC_SYSTEMS = [
 
 SUNLIGHT_ORIENTATIONS = ["North", "South", "East", "West"]
 
-# ── APP ──
+def save_spec(spec):
+    data = json.loads(SPEC_FILE.read_text())
+    spec["id"] = str(uuid.uuid4())[:8].upper()
+    spec["created"] = datetime.now().isoformat()
+    data.append(spec)
+    SPEC_FILE.write_text(json.dumps(data, indent=2))
+
+def load_specs():
+    return json.loads(SPEC_FILE.read_text())
+
+def structural_review(spec):
+    # Estimate column/beam counts from grid
+    cols_x = int(spec["overall_length"] / spec["grid"]["spacing_x"]) + 1
+    cols_y = int(spec["overall_width"] / spec["grid"]["spacing_y"]) + 1
+    total_cols = cols_x * cols_y * spec["floors"]
+    total_beams = (cols_x * (cols_y-1) + cols_y * (cols_x-1)) * spec["floors"]
+    area = spec["overall_length"] * spec["overall_width"] * spec["floors"]
+    cost = area * 1650  # rough cost estimate
+    alerts = []
+    if total_cols < 16:
+        alerts.append("🔴 Column density too low.")
+    if cost / area > 2300:
+        alerts.append("🟡 Cost efficiency threshold exceeded.")
+    if total_beams / total_cols < 1.9:
+        alerts.append("🔵 Beam-column ratio imbalance.")
+    if not alerts:
+        alerts = ["🟢 Design structurally stable."]
+    return alerts, total_cols, total_beams, area, cost
+
+def material_takeoffs(spec, total_cols, total_beams, area):
+    return [
+        {"item": "High-Performance Concrete", "qty": f"{total_cols * 2.6:.1f} m³"},
+        {"item": "Tensile Steel Rebar", "qty": f"{total_beams * 0.48:.2f} MT"},
+        {"item": "CMU Blocks", "qty": f"{int(area * 42):,} units"},
+        {"item": "Dead Load Base", "qty": f"{int(total_cols * 13.2):,} kN"}
+    ]
+
+# ---------- DEFAULT SPEC ----------
 if "spec" not in st.session_state:
     st.session_state.spec = {
         "building_name": "",
@@ -109,7 +264,7 @@ if "spec" not in st.session_state:
         "foundation_depth": 1.2,
         "flooring": "tiles",
         "ceiling": "flat",
-        "rooms": [],
+        "rooms": [{"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,"flooring":"wood","ceiling":"flat"}],
         "doors": [],
         "windows": [],
         "stairs": {"count": 1, "type": "U-shaped", "width": 1.2},
@@ -118,14 +273,14 @@ if "spec" not in st.session_state:
         "orientation": "South",
         "mep_details": {"plumbing_fixtures_per_floor": 4, "electrical_load_per_sqm": 50},
     }
-    # Add a default room
-    st.session_state.spec["rooms"].append({"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,"flooring":"wood","ceiling":"flat"})
 
-st.title("⚡ RANDOM – Architectural Spec Studio")
+# ============================================================
+# PAGE ROUTING
+# ============================================================
+page = st.session_state.page
 
-tab1, tab2, tab3 = st.tabs(["📐 Design Specs", "📋 Saved Specs", "⚙️ Settings"])
-
-with tab1:
+if page == "Specification Studio":
+    st.title("⚡ RANDOM – Architectural Spec Studio")
     with st.form("spec_form"):
         st.header("Building Information")
         col1, col2 = st.columns(2)
@@ -162,7 +317,6 @@ with tab1:
         spec["ceiling"] = st.selectbox("Global Ceiling Type", ["flat","hanging","vaulted","exposed","coffered"])
 
         st.subheader("Rooms & Spaces")
-        # Dynamic room list
         for i, room in enumerate(spec["rooms"]):
             cols = st.columns([3,2,1,1,1,1,1])
             room["name"] = cols[0].text_input("Room Name", room["name"], key=f"rname_{i}")
@@ -176,7 +330,6 @@ with tab1:
                                                 index=0 if room.get("flooring")=="wood" else 0, key=f"rfloor_{i}")
             room["ceiling"] = cols[6].selectbox("Ceil", ["flat","hanging","vaulted","exposed","coffered"],
                                                 index=0 if room.get("ceiling")=="flat" else 0, key=f"rceil_{i}")
-            # delete button
             if st.button("❌", key=f"rdel_{i}"):
                 spec["rooms"].pop(i)
                 st.rerun()
@@ -186,7 +339,6 @@ with tab1:
             st.rerun()
 
         st.subheader("Doors & Windows")
-        # Doors
         st.markdown("**Doors**")
         for i, door in enumerate(spec["doors"]):
             cols = st.columns([2,1,1,1,1])
@@ -238,9 +390,10 @@ with tab1:
 
         submitted = st.form_submit_button("⚡ Generate Full Specification")
         if submitted:
-            # Compute summary
+            # Save to library
+            save_spec(spec)
+            # Show report
             total_area = spec["overall_length"] * spec["overall_width"] * spec["floors"]
-            # Create spec report
             report = f"""
 # Architectural Specification – {spec['building_name'] or 'Unnamed Project'}
 
@@ -301,13 +454,28 @@ with tab1:
 *Generated by RANDOM Architectural Studio*
 """
             st.text_area("Specification Report", report, height=400)
-            # Save to memory
-            save_spec(spec)
             st.success("Specification saved to library.")
             st.download_button("📥 Download JSON", json.dumps(spec, indent=2), file_name=f"{spec['building_name'] or 'spec'}.json")
+            add_xp(uname, 20)
+            st.session_state.user_data = get_user(uname)
 
-with tab2:
-    st.header("Saved Specifications")
+elif page == "Diagnostics":
+    st.title("🔍 Structural Diagnostics & Material Takeoffs")
+    spec = st.session_state.spec
+    if not spec["building_name"]:
+        st.info("Please fill in the specification first.")
+    else:
+        alerts, cols, beams, area, cost = structural_review(spec)
+        st.subheader(f"Diagnostics for {spec['building_name']}")
+        st.markdown("### Structural Review")
+        for a in alerts:
+            st.write(a)
+        st.markdown("### Material Quantity Estimates")
+        df = pd.DataFrame(material_takeoffs(spec, cols, beams, area))
+        st.table(df)
+
+elif page == "Saved Specs":
+    st.title("📋 Saved Specifications")
     specs = load_specs()
     if not specs:
         st.info("No saved specifications.")
@@ -316,11 +484,11 @@ with tab2:
             with st.expander(f"{s.get('building_name','Unnamed')} – {s.get('id','')} (created {s.get('created','')[:10]})"):
                 st.json(s)
 
-with tab3:
-    st.header("Settings")
+elif page == "Settings":
+    st.title("⚙️ Settings")
     st.info("Units: Metric (SI) – all dimensions in metres.")
     if st.button("Delete All Saved Specs"):
         SPEC_FILE.write_text("[]")
         st.success("Cleared.")
 
-st.markdown("<div style='text-align:center;padding:1.5rem 0;color:#5f6b7a;font-size:0.8rem;border-top:1px solid #2a2f38;'>AI Powered · Data Driven · Secure · Scalable</div>", unsafe_allow_html=True)
+st.markdown('<div class="footer">AI Powered · Data Driven · Secure · Scalable</div>', unsafe_allow_html=True)
