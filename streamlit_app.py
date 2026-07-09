@@ -1,6 +1,6 @@
 # ============================================================
-# RANDOM – Project‑Centric AEC Studio (Complete)
-# Features: BOQ, IFC, Live Cost, Smart Ram, Themes
+# RANDOM – Project‑Centric AEC Studio (Final Fixed)
+# Features: AEC save per tab, fixed materials, smarter Ram
 # ============================================================
 import streamlit as st
 import json, uuid, hashlib, math, random, base64
@@ -73,7 +73,6 @@ def get_theme_css(theme_name):
     return f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;700&display=swap');
-
 .stApp {{ background: {t['bg_gradient']}; font-family: 'Inter', sans-serif; color: {t['text']}; }}
 h1,h2,h3,h4,h5,h6 {{ font-family: 'Outfit', sans-serif; font-weight: 700; color: {t['text']}; }}
 [data-testid="stSidebar"] {{ background: {t['sidebar_bg']}; border-right: 1px solid rgba(255,255,255,0.08); }}
@@ -371,9 +370,10 @@ def export_ifc(spec):
     lines.append("END-ISO-10303-21;")
     return "\n".join(lines)
 
-# ---------- SMART RAM ----------
+# ---------- SMART RAM (enhanced architectural AI) ----------
 def ram_advisor(query, spec, history):
     q = query.lower()
+    # Provide context-aware advice using spec data
     if "news" in q or "archdaily" in q or "designboom" in q:
         return "🌐 I’ve embedded live streams from ArchDaily & Designboom below. Stay inspired!"
     if "floorplan" in q or "layout" in q:
@@ -384,15 +384,22 @@ def ram_advisor(query, spec, history):
         return f"💰 Estimated construction cost: ${cost:,.0f} (based on {area:.0f} m² at $1500/m²)."
     if "boq" in q or "bill of quantities" in q:
         items = compute_boq(spec)
-        reply = "📋 Bill of Quantities:\n"
+        reply = "📋 Bill of Quantities for your project:\n"
         for item in items:
             reply += f"- {item['item']}: {item['qty']} {item['unit']}\n"
         return reply
     if "material" in q:
-        return f"🧱 Recommended: {spec['exterior_wall']} exterior, {spec['interior_wall']} interior."
+        return f"🧱 Recommended: {spec['exterior_wall']} for exterior, {spec['interior_wall']} for interior."
     if "schedule" in q:
         return f"⏳ Timeline for {spec['floors']} floors: {spec['floors']*4} – {spec['floors']*6} months."
-    return "✨ I'm your creative AI architect. Ask me about floorplans, BOQ, materials, news, or anything design‑related!"
+    if "room" in q and "size" in q:
+        rooms_info = "\n".join([f"- {r['name']}: {fmt_length(r['width'], unit)} x {fmt_length(r['length'], unit)}" for r in spec['rooms']])
+        return f"Current room sizes:\n{rooms_info}\n\nStandard minimums (East Africa): Living 20m², Bedroom 12m², Bathroom 5m²."
+    if "design" in q or "suggestion" in q:
+        return ("Based on your grid and shape, consider placing the living room at the front for natural light. "
+                "For better ventilation, orient windows towards the prevailing wind direction. "
+                "I can generate a floorplan layout if you ask.")
+    return "✨ I'm your architectural AI. Ask me about floorplans, BOQ, room sizes, materials, news, or design suggestions."
 
 def generate_floorplan_text(spec, seed=None):
     if seed is not None:
@@ -441,6 +448,7 @@ def save_active_project(spec_updates=None):
             if spec_updates: p["spec"].update(spec_updates)
             break
     save_projects(st.session_state.projects)
+    st.success("Project saved successfully!")
 
 # ============================================================
 # PAGE ROUTING
@@ -590,6 +598,10 @@ if page == "Dashboard":
                 spec["windows"].append({"type":"Sliding","width":1.2,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"})
                 st.rerun()
 
+        # Save Architecture tab
+        if st.button("💾 Save Architecture", key="save_arch"):
+            save_active_project()
+
     with tab2:
         col1, col2 = st.columns(2)
         spec["soil_type"] = col1.selectbox("Soil Type", ["Clay","Sand","Rock","Silt","Gravel"], index=0)
@@ -600,6 +612,8 @@ if page == "Dashboard":
         spec["roof_type"] = st.selectbox("Roof Type", ["Flat","Pitched","Gable","Hip","Mansard","Gambrel","Butterfly"])
         spec["roof_material"] = st.selectbox("Roof Material", ["Concrete Tiles","Clay Tiles","Metal Sheets","Thatch","Green Roof","Slate"])
         spec["roof_pitch"] = st.slider("Roof Pitch (degrees)", 0, 60, spec.get("roof_pitch",30))
+        if st.button("💾 Save Engineering", key="save_eng"):
+            save_active_project()
 
     with tab3:
         labour = st.number_input("Labour Rate (USD/day)", 5,100, spec.get("labour_rate_per_day",15))
@@ -609,14 +623,11 @@ if page == "Dashboard":
         st.metric("Est. Construction Cost (USD)", f"${est_cost:,.0f}")
         months = spec["floors"] * 5
         st.write(f"🕒 Schedule: **{months} months** (rough estimate)")
-        if st.button("💾 Save All Dashboard Changes"):
+        if st.button("💾 Save Construction", key="save_const"):
             save_active_project()
-            add_xp(uname,5)
-            st.session_state.user_data = get_user(uname)
-            st.success("Project saved successfully!")
 
 elif page == "Ram Assistant":
-    st.title("🤖 Creative AI – Ram (with memory)")
+    st.title("🤖 Creative AI – Ram (enhanced architectural advice)")
     for chat in st.session_state.chat_history[-5:]:
         st.markdown(f"**You:** {chat['user']}")
         st.markdown(f"**Ram:** {chat['ram']}")
@@ -638,15 +649,25 @@ elif page == "Materials & Cost":
     prices = load_prices()
     country = st.selectbox("Country", ["Uganda","Kenya","Tanzania","Rwanda","South Sudan","USD"])
     st.subheader("Update Prices")
-    with st.form("price_form"):
+    # Use a form with session state to ensure updates work
+    if "price_form_data" not in st.session_state:
+        st.session_state.price_form_data = {}
+    with st.form("price_update_form"):
         for mat in prices:
-            cols = st.columns([3,1])
+            col1, col2 = st.columns([3,1])
             base = prices[mat]
-            new_price = cols[1].number_input(mat, value=base.get(country,0), step=1.0, key=mat)
-            base[country] = new_price
+            # Use session state to preserve edited values across reruns
+            key = f"price_{mat}"
+            if key not in st.session_state.price_form_data:
+                st.session_state.price_form_data[key] = base.get(country, 0)
+            new_price = col2.number_input(mat, value=st.session_state.price_form_data[key], step=1.0, key=key)
         if st.form_submit_button("Update Prices"):
+            for mat in prices:
+                key = f"price_{mat}"
+                prices[mat][country] = st.session_state.price_form_data[key]
             save_prices(prices)
             st.success("Prices updated!")
+            st.rerun()
     st.subheader("Current Prices")
     df = pd.DataFrame(prices).T
     st.dataframe(df)
