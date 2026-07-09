@@ -93,7 +93,6 @@ METRIC_STANDARDS = {
     "commercial": {"ceil_height":3.0,"office":12,"meeting":15,"reception":12,"kitchen":15,"bathroom":6,"corridor_width":1.5},
     "industrial": {"ceil_height":4.0,"hall":50,"storage":30,"office":12,"bathroom":6,"corridor_width":2.0}
 }
-# Imperial equivalents (approx, displayed when unit system is Imperial)
 IMPERIAL_FACTOR = 10.7639   # m² → ft²
 
 # ---------- UNIT CONVERTER ----------
@@ -130,17 +129,13 @@ def create_floor(level, building_type, total_area, modules, floor_area, n_rooms,
     side = int(math.sqrt(floor_area))+1
     w = max(6, min(side, 20))
     d = max(6, min(side, 20))
-    # adjust to grid
     w = max(4, round(w/4)*4)
     d = max(4, round(d/4)*4)
 
-    # room types
     ess = {"residential":["living","kitchen","bathroom"],"commercial":["office","bathroom","corridor"],"industrial":["hall","bathroom","storage"]}
     rtypes = ess[domain] + random.choices(["bedroom","study","dining","meeting","reception","office"], k=max(0,n_rooms-len(ess[domain])))
-    # ensure correct count
     rtypes = rtypes[:n_rooms]
 
-    # compute widths based on min areas
     widths = []
     for rt in rtypes:
         min_a = std.get(rt,10) if rt in std else 10
@@ -162,12 +157,9 @@ def create_floor(level, building_type, total_area, modules, floor_area, n_rooms,
         if x0+rw>w: rw=w-x0
         if rw<1.5: break
         poly = [(x0,0),(x0+rw,0),(x0+rw,d),(x0,d)]
-        # openings
         openings=[]
-        # one door (main or interior)
         door_type = "main" if rt in ["living","office","meeting","reception"] else "interior"
         if rt=="bathroom": door_type="bathroom"
-        # place door on north wall for now (will be assigned adjacency later)
         openings.append({"type":"door","wall":"north","width":0.9,"door_type":door_type,"adjacent":None})
         if rt not in ("corridor","bathroom","storage"):
             win_w = min(rw*0.6, 2.0)
@@ -177,7 +169,6 @@ def create_floor(level, building_type, total_area, modules, floor_area, n_rooms,
         rooms.append(room)
         x0 += rw
 
-    # walls
     walls = _create_walls(w,d)
     int_walls=[]
     cur_x=0
@@ -223,10 +214,15 @@ def draw_opening(draw, poly, opening, scale, tx_func, adjacent_name=None):
     dx,dy = p2[0]-p1[0], p2[1]-p1[1]
     length = math.hypot(dx,dy)
     if length==0: return
-    frac = 0.5 - (wid/length)/2; if frac<0: frac=0
-    sx = p1[0]+dx*frac; sy = p1[1]+dy*frac
-    ex = sx+dx*(wid/length); ey = sy+dy*(wid/length)
-    s = tx_func(sx,sy); e = tx_func(ex,ey)
+    frac = 0.5 - (wid/length)/2
+    if frac < 0:
+        frac = 0
+    sx = p1[0]+dx*frac
+    sy = p1[1]+dy*frac
+    ex = sx+dx*(wid/length)
+    ey = sy+dy*(wid/length)
+    s = tx_func(sx,sy)
+    e = tx_func(ex,ey)
     if opening["type"]=="door":
         draw.line([s,e], fill=(255,255,255), width=6)
         mid = ((s[0]+e[0])//2,(s[1]+e[1])//2)
@@ -267,10 +263,8 @@ def generate_floor_plan(design, floor_idx=0, scale=35, show_adjacency=True):
                    "bedroom":(180,230,180),"bathroom":(210,190,230),"corridor":(235,240,235),
                    "office":(200,235,200),"meeting":(220,200,240),"reception":(190,220,190),
                    "hall":(210,210,190),"storage":(200,200,200),"study":(230,220,240)}
-    # Build adjacency map: for each room, list adjacent rooms via interior walls
+    # adjacency map for display
     adj_map = {i:[] for i in range(len(floor["rooms"]))}
-    # Simple: if two rooms share a common interior wall, they are adjacent.
-    # We'll approximate by checking if two rooms are side by side along x.
     for i in range(len(floor["rooms"])-1):
         if abs(floor["rooms"][i]["polygon"][1][0] - floor["rooms"][i+1]["polygon"][0][0])<0.1:
             adj_map[i].append(i+1)
@@ -350,61 +344,46 @@ def build_3d_stacked_figure(design):
 
 # ---------- ELEVATIONS & SECTIONS ----------
 def generate_elevation(design, direction='south', floor_idx=None):
-    """Draw a 2D elevation for given direction (north,south,east,west)."""
     if not design.get("floors"): return None
-    # Get overall dimensions
     all_x, all_y = [], []
     for floor in design["floors"]:
         for wall in floor["walls"]:
             all_x.extend([wall["start"][0],wall["end"][0]])
             all_y.extend([wall["start"][1],wall["end"][1]])
     min_x,max_x=min(all_x),max(all_x); min_y,max_y=min(all_y),max(all_y)
-    width = max_x-min_x; depth = max_y-min_y
+    width = max_x-min_x
     total_height = sum(f["height"] for f in design["floors"])
     scale = 30; margin=1
     img_w = int(width*scale)+60; img_h = int(total_height*scale)+60
     img = Image.new('RGB',(img_w,img_h),(255,255,255)); draw = ImageDraw.Draw(img)
-    def tx(x,y): # x is horizontal along direction, y is vertical height
+    def tx(x,y):
         return (int((x-min_x)*scale)+30, int(img_h - y*scale - 30))
-    # Draw each floor as a stacked block with openings
     cum_z = 0
     for floor in design["floors"]:
         h = floor["height"]
-        # outline
         draw.rectangle([tx(min_x, cum_z), tx(max_x, cum_z+h)], outline=(100,100,100))
-        # draw openings (windows/doors) on the relevant wall
         for room in floor["rooms"]:
             for op in room["openings"]:
                 if (direction in ('north','south') and op["wall"] in ('north','south')) or \
                    (direction in ('east','west') and op["wall"] in ('east','west')):
-                    # project opening onto elevation
                     poly = room["polygon"]
                     if direction in ('north','south'):
-                        # X range of opening
-                        if direction=='south':
-                            x1,x2 = poly[3][0],poly[2][0]  # south wall x range
-                        else:
-                            x1,x2 = poly[0][0],poly[1][0]
+                        x1,x2 = poly[3][0],poly[2][0] if direction=='south' else poly[0][0],poly[1][0]
                     else:
-                        if direction=='east':
-                            x1,x2 = poly[1][1],poly[2][1]  # east wall y range? This is messy, for simplicity we skip
-                        else:
-                            x1,x2 = poly[0][1],poly[3][1]
-                    # just draw a rectangle at that x and height
+                        # approximation using y coordinates – very simplified
+                        x1 = min(p[1] for p in poly)
+                        x2 = max(p[1] for p in poly)
                     op_w = op["width"]
-                    # approximate location (center)
                     ox = (x1+x2)/2 - op_w/2
-                    oy = cum_z + 1.0  # arbitrary sill height
+                    oy = cum_z + 1.0
                     draw.rectangle([tx(ox,oy), tx(ox+op_w, oy+1.2)], fill=(200,230,240), outline=(0,0,0))
         cum_z += h
     buf = io.BytesIO(); img.save(buf,format="PNG"); return buf.getvalue()
 
-# ---------- EXPORTS (placeholder) ----------
+# ---------- EXPORTS ----------
 def export_ifc(design):
-    # minimal IFC stub
     return "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',''),'RANDOM','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;"
 def design_to_glb(design):
-    # placeholder GLB
     v=[0,0,0,1,0,0,0,1,0]; i=[0,1,2]
     vbin=struct.pack(f'<{len(v)}f',*v); ibin=struct.pack(f'<{len(i)}H',*i)
     try:
@@ -422,7 +401,7 @@ def design_to_glb(design):
         gltf.binary_blob=vbin+ibin; return gltf.save_to_bytes()
     except: return None
 
-# ---------- ROOM EDITOR (with adjacency selection) ----------
+# ---------- ROOM EDITOR ----------
 def render_room_editor(design):
     if "floors" not in design: st.warning("No floors"); return
     floor_idx = st.selectbox("Floor", range(len(design["floors"])),
@@ -459,7 +438,6 @@ def render_room_editor(design):
             door_style = cols[0].selectbox("Style",["main","interior","bathroom"],
                                            index=["main","interior","bathroom"].index(op.get("door_type","interior")),
                                            key=f"opdoor_{i}")
-            # adjacency selection
             adj_options = [("None",None)] + [(f"{floor['rooms'][j]['name']}",j) for j in range(len(floor["rooms"])) if j!=room_idx]
             current_adj = op.get("adjacent")
             adj_idx = 0
@@ -618,7 +596,7 @@ elif page == "3D Viewer":
         design = st.session_state.generated_concepts[0]
         if design.get("floors"):
             fig = build_3d_stacked_figure(design)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_column_width=True)
 
 elif page == "Reports":
     if not st.session_state.generated_concepts: st.info("No design yet.")
