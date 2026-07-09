@@ -1,7 +1,7 @@
 # ============================================================
 # RANDOM – AI Architectural Design Studio
 # (Standards: Metric Handbook, Architectural Graphic Standards)
-# Merged: Evolution, Diagnostics, Material Takeoffs, 2D/3D, Elevations, Room Editor
+# Fully merged & error‑fixed – Evolution, Diagnostics, 2D/3D, Elevations, Room Editor
 # ============================================================
 import streamlit as st, json, uuid, random, hashlib, math
 from pathlib import Path
@@ -119,7 +119,7 @@ def get_domain(name):
 FLOORING_OPTS = ["tiles","wood","concrete","carpet","marble"]
 CEILING_OPTS = ["flat","hanging","vaulted","exposed","coffered"]
 
-# ---------- DESIGN GENERATOR (standards‑based) ----------
+# ---------- DESIGN GENERATOR ----------
 def create_floor(level, building_type, total_area, modules, floor_area, n_rooms, enforce):
     domain = get_domain(building_type)
     std = METRIC_STANDARDS[domain]
@@ -388,29 +388,56 @@ def build_3d_stacked_figure(design):
                       margin=dict(l=0,r=0,t=30,b=0),height=600,title="3D Stacked View")
     return fig
 
-# ---------- ELEVATIONS ----------
+# ---------- ELEVATIONS (ROBUST FIX) ----------
 def generate_elevation(design, direction='south'):
-    if not design.get("floors"): return None
+    if not design.get("floors"):
+        return None
+    # gather all wall coordinates
     all_x, all_y = [], []
     for floor in design["floors"]:
         for wall in floor["walls"]:
             all_x.extend([wall["start"][0], wall["end"][0]])
             all_y.extend([wall["start"][1], wall["end"][1]])
-    if not all_x: return None
+    if not all_x:
+        return None
     min_x, max_x = min(all_x), max(all_x)
     width = max_x - min_x
+    if width <= 0:
+        width = 1  # force a minimal width to avoid division by zero
     total_height = sum(f["height"] for f in design["floors"])
+    if total_height <= 0:
+        total_height = 3  # default height for a single floor
+
     scale = 30
-    img_w = int(width * scale) + 60
-    img_h = int(total_height * scale) + 60
-    if img_w < 1 or img_h < 1: return None
+    margin_px = 60
+    img_w = max(100, int(width * scale) + margin_px)
+    img_h = max(100, int(total_height * scale) + margin_px)
+
     img = Image.new('RGB', (img_w, img_h), (255, 255, 255))
     draw = ImageDraw.Draw(img)
 
     def tx(x, y):
-        return (int((x - min_x) * scale) + 30, int(img_h - y * scale - 30))
+        # Convert building coordinates to image pixels
+        px_x = int((x - min_x) * scale) + margin_px // 2
+        px_y = int(img_h - y * scale - margin_px // 2)
+        # Clamp to image bounds
+        px_x = max(0, min(px_x, img_w - 1))
+        px_y = max(0, min(px_y, img_h - 1))
+        return (px_x, px_y)
 
-    draw.rectangle([tx(min_x, 0), tx(max_x, total_height)], outline=(100, 100, 100), width=2)
+    # Ensure rectangle coordinates are valid (top-left then bottom-right)
+    top_left = tx(min_x, 0)
+    bottom_right = tx(max_x, total_height)
+    x1, y1 = top_left
+    x2, y2 = bottom_right
+    if x1 > x2:
+        x1, x2 = x2, x1
+    if y1 > y2:
+        y1, y2 = y2, y1
+    if x2 - x1 > 0 and y2 - y1 > 0:
+        draw.rectangle([(x1, y1), (x2, y2)], outline=(100, 100, 100), width=2)
+
+    # draw openings
     for floor in design["floors"]:
         for room in floor["rooms"]:
             for op in room["openings"]:
@@ -418,17 +445,30 @@ def generate_elevation(design, direction='south'):
                    (direction in ('east','west') and op["wall"] in ('east','west')):
                     poly = room["polygon"]
                     if direction in ('north','south'):
-                        x1,x2 = (poly[3][0],poly[2][0]) if direction=='south' else (poly[0][0],poly[1][0])
+                        x1_wall, x2_wall = (poly[3][0], poly[2][0]) if direction == 'south' else (poly[0][0], poly[1][0])
                     else:
-                        x1 = min(p[1] for p in poly); x2 = max(p[1] for p in poly)
+                        y_vals = [p[1] for p in poly]
+                        x1_wall, x2_wall = min(y_vals), max(y_vals)
                     op_w = op["width"]
-                    ox = (x1 + x2) / 2 - op_w / 2
+                    ox = (x1_wall + x2_wall) / 2 - op_w / 2
                     cum_z = (floor["level"] - 1) * floor["height"]
                     sill_y = cum_z + 1.0
                     ox = max(min_x, min(ox, max_x - op_w))
-                    draw.rectangle([tx(ox, sill_y), tx(ox + op_w, sill_y + 1.2)],
-                                   fill=(200, 230, 240), outline=(0, 0, 0))
-    buf = io.BytesIO(); img.save(buf, format="PNG"); return buf.getvalue()
+                    # Draw window/door opening as a small rectangle
+                    top_left_op = tx(ox, sill_y)
+                    bottom_right_op = tx(ox + op_w, sill_y + 1.2)
+                    xo1, yo1 = top_left_op
+                    xo2, yo2 = bottom_right_op
+                    if xo1 > xo2:
+                        xo1, xo2 = xo2, xo1
+                    if yo1 > yo2:
+                        yo1, yo2 = yo2, yo1
+                    if xo2 - xo1 > 0 and yo2 - yo1 > 0:
+                        draw.rectangle([(xo1, yo1), (xo2, yo2)], fill=(200, 230, 240), outline=(0, 0, 0))
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
 
 # ---------- EXPORTS ----------
 def export_ifc(design):
