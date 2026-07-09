@@ -1,36 +1,21 @@
 # ============================================================
-# RANDOM V4 EVOLUTION AI DESIGN STUDIO
-# Multi‑Objective BIM Intelligence Engine
-# Final Edition – No Dashboard/Comparison/Concepts
-# Full Room Editor (doors, windows, flooring, ceiling)
+# RANDOM Evolution Studio – AI-Powered Architectural Design
 # ============================================================
 
 import streamlit as st
-import json
-import uuid
-import random
-import hashlib
+import json, uuid, random, hashlib
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from PIL import Image, ImageDraw, ImageFont
-import io
-import numpy as np
-import math
-import base64
-import struct
+import io, numpy as np, math, base64, struct
 
 # ============================================================
 # CONFIGURATION
 # ============================================================
-st.set_page_config(
-    page_title="RANDOM V4 Evolution Studio",
-    page_icon="🏗️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="RANDOM Studio", page_icon="🏗️", layout="wide")
 
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
@@ -39,43 +24,71 @@ FONT = ImageFont.load_default()
 XP_PER_LEVEL = 100
 
 # ============================================================
-# DARK PROFESSIONAL THEME CSS
+# LUXURIOUS DARK THEME
 # ============================================================
-DARK_CSS = """
+st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-html, body, .stApp { background: #0f1117; font-family: 'Inter', sans-serif; color: #e2e8f0; }
-h1, h2, h3, h4, h5, .stTitle, .stHeader { font-weight: 600; color: #f1f5f9; }
-[data-testid="stSidebar"] { background: #16181d; border-right: 1px solid #1e293b; }
-.glass-card { background: rgba(30,41,59,0.6); backdrop-filter: blur(12px); border-radius: 16px; padding: 1.5rem; border: 1px solid #334155; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-bottom: 1.5rem; }
-.banner { background: linear-gradient(135deg, #1a2a3a, #0f172a); padding: 2rem 2.5rem; border-radius: 24px; color: white; margin-bottom: 2rem; border: 1px solid #334155; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-.metric-box { background: rgba(30,41,59,0.8); border-radius: 12px; padding: 0.8rem 1rem; border-left: 4px solid #22c55e; }
-.concept-item { background: rgba(30,41,59,0.4); border-radius: 10px; padding: 0.75rem 1rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
-.concept-score { background: rgba(34,197,94,0.15); padding: 0.25rem 1rem; border-radius: 20px; font-weight: 700; color: #4ade80; }
-.agent-box { background: rgba(30,41,59,0.5); border-radius: 14px; padding: 1rem; text-align: center; border: 1px solid #334155; }
-.agent-name { font-weight: 600; color: #94a3b8; font-size: 0.85rem; }
-.agent-score { font-size: 2rem; font-weight: 700; color: #f1f5f9; }
-.agent-sub { font-size: 0.7rem; color: #64748b; }
-.stButton > button { background: #22c55e; color: #0f172a; border: none; border-radius: 12px; padding: 0.6rem 1.8rem; font-weight: 600; transition: all 0.2s; }
-.stButton > button:hover { background: #16a34a; color: white; box-shadow: 0 8px 20px rgba(34,197,94,0.3); }
-.xp-container { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
-.xp-bar-bg { flex: 1; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; }
-.xp-bar-fill { height: 100%; background: #22c55e; border-radius: 4px; }
-.footer { text-align: center; padding: 1.5rem 0; color: #64748b; font-size: 0.8rem; border-top: 1px solid #1e293b; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+html, body, .stApp {
+    background: radial-gradient(circle at top, #0a0f14, #05080c);
+    font-family: 'Inter', sans-serif;
+    color: #e0e5eb;
+}
+h1, h2, h3, h4, h5, h6 { font-weight: 600; color: #f0f4f8; letter-spacing: -0.5px; }
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0f1319, #080b10);
+    border-right: 1px solid #2a2f38;
+    box-shadow: inset -4px 0 12px rgba(0,0,0,0.3);
+}
+.glass-card {
+    background: rgba(20, 25, 35, 0.7);
+    backdrop-filter: blur(16px);
+    border-radius: 24px;
+    padding: 1.8rem;
+    border: 1px solid rgba(74, 222, 128, 0.15);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    margin-bottom: 1.5rem;
+}
+.logo-text {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #22c55e, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+.stButton > button {
+    background: linear-gradient(135deg, #22c55e, #059669);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 0.7rem 2rem;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.25);
+}
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(34,197,94,0.4);
+}
+.xp-container { display: flex; align-items: center; gap: 10px; margin-bottom: 1.2rem; }
+.xp-bar-bg { flex: 1; height: 10px; background: #1e293b; border-radius: 6px; overflow: hidden; }
+.xp-bar-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); border-radius: 6px; box-shadow: 0 0 10px #4ade80; }
+.footer { text-align: center; padding: 1.5rem 0; color: #5f6b7a; font-size: 0.8rem; border-top: 1px solid #2a2f38; }
 </style>
-"""
-st.markdown(DARK_CSS, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # ============================================================
 # AUTH HELPERS
 # ============================================================
-def hash_password(password: str) -> str:
-    return hashlib.sha256((password + "random_salt_42").encode()).hexdigest()
+def hash_password(pw: str) -> str:
+    return hashlib.sha256((pw + "random_salt_42").encode()).hexdigest()
 
 def load_users() -> list:
     if USER_FILE.exists():
         try:
-            with open(USER_FILE, "r") as f:
+            with open(USER_FILE) as f:
                 return json.load(f)
         except:
             return []
@@ -146,18 +159,13 @@ def add_xp(username: str, amount: int) -> bool:
 def get_memory_path(username: str) -> Path:
     return DATA_DIR / f"{username}_random_memory.json"
 
-DEFAULT_MEMORY = {
-    "version": "V4 Evolution Studio",
-    "projects": [],
-    "saved_designs": [],
-    "logs": []
-}
+DEFAULT_MEMORY = {"projects": [], "saved_designs": [], "logs": []}
 
 def load_memory(username: str) -> dict:
     path = get_memory_path(username)
     if path.exists():
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
             for key in DEFAULT_MEMORY:
                 if key not in data:
@@ -181,559 +189,491 @@ ARCHITECTURE_TYPES = {
 }
 
 def get_domain(name):
-    for domain, items in ARCHITECTURE_TYPES.items():
+    for dom, items in ARCHITECTURE_TYPES.items():
         if name in items:
-            return domain
+            return dom
     return "General"
 
 MIN_ROOM_SIZES = {
-    "living": 16.0, "kitchen": 8.0, "dining": 10.0,
-    "bedroom": 10.0, "bathroom": 4.0, "study": 8.0,
-    "office": 10.0, "meeting": 12.0, "reception": 8.0,
-    "hall": 6.0, "corridor": 1.5 * 1.2,
-    "storage": 4.0
+    "living": 16, "kitchen": 8, "dining": 10,
+    "bedroom": 10, "bathroom": 4, "study": 8,
+    "office": 10, "meeting": 12, "reception": 8,
+    "hall": 6, "corridor": 1.5*1.2, "storage": 4
 }
-
-DOOR_WIDTHS = {
-    "main": 0.9,
-    "interior": 0.8,
-    "bathroom": 0.75
-}
-
+DOOR_WIDTHS = {"main": 0.9, "interior": 0.8, "bathroom": 0.75}
 WINDOW_RATIO = 0.15
 STRUCTURAL_GRID = 4.0
-
 ROOM_TYPES = {
     "Residential": ["living","kitchen","dining","bedroom","bathroom","corridor","study"],
     "Commercial": ["office","meeting","reception","kitchen","bathroom","corridor"],
     "Industrial": ["hall","storage","bathroom","office"]
 }
-
-FLOORING_OPTIONS = ["tiles", "wood", "concrete", "carpet", "marble"]
-CEILING_OPTIONS = ["flat", "hanging", "vaulted", "exposed", "coffered"]
+FLOORING_OPTS = ["tiles","wood","concrete","carpet","marble"]
+CEILING_OPTS = ["flat","hanging","vaulted","exposed","coffered"]
 
 # ============================================================
-# DESIGN GENERATOR (random generation – respects standards)
+# DESIGN GENERATOR
 # ============================================================
-def _assign_room_types(domain, count, building_type):
+def _assign_room_types(domain, count, building):
     if domain == "Residential":
-        essential = ["living", "kitchen", "bathroom"]
-        if "Villa" in building_type:
-            essential.append("dining")
-        types = essential[:count] if count <= len(essential) else essential + random.choices(
-            ["bedroom","study","corridor","bathroom"], k=count-len(essential))
+        ess = ["living","kitchen","bathroom"]
+        if "Villa" in building: ess.append("dining")
+        types = ess[:count] if count <= len(ess) else ess + random.choices(
+            ["bedroom","study","corridor","bathroom"], k=count-len(ess))
     elif domain == "Commercial":
-        essential = ["office", "bathroom", "corridor"]
-        if "Hotel" in building_type:
-            essential = ["reception","bathroom","corridor","bedroom"]
-        types = essential[:count] if count <= len(essential) else essential + random.choices(
-            ["meeting","kitchen","office"], k=max(0, count-len(essential)))
+        ess = ["office","bathroom","corridor"]
+        if "Hotel" in building: ess = ["reception","bathroom","corridor","bedroom"]
+        types = ess[:count] if count <= len(ess) else ess + random.choices(
+            ["meeting","kitchen","office"], k=max(0, count-len(ess)))
     else:
-        essential = ["hall", "bathroom", "storage"]
-        types = essential[:count] if count <= len(essential) else essential + random.choices(
-            ["office","hall"], k=max(0, count-len(essential)))
+        ess = ["hall","bathroom","storage"]
+        types = ess[:count] if count <= len(ess) else ess + random.choices(
+            ["office","hall"], k=max(0, count-len(ess)))
     return types[:count]
 
-def _create_walls(width, depth):
+def _create_walls(w, d):
     return [
-        {"start": (0,0), "end": (width,0), "thickness": 0.3},
-        {"start": (width,0), "end": (width,depth), "thickness": 0.3},
-        {"start": (width,depth), "end": (0,depth), "thickness": 0.3},
-        {"start": (0,depth), "end": (0,0), "thickness": 0.3}
+        {"start":(0,0),"end":(w,0),"thickness":0.3},
+        {"start":(w,0),"end":(w,d),"thickness":0.3},
+        {"start":(w,d),"end":(0,d),"thickness":0.3},
+        {"start":(0,d),"end":(0,0),"thickness":0.3}
     ]
 
-def _place_columns(width, depth, enforce_standards):
-    cols = [
-        {"center":(0,0),"size":0.3,"shape":"square"},
-        {"center":(width,0),"size":0.3,"shape":"square"},
-        {"center":(0,depth),"size":0.3,"shape":"square"},
-        {"center":(width,depth),"size":0.3,"shape":"square"},
-    ]
-    if enforce_standards:
-        for x in np.arange(STRUCTURAL_GRID, width, STRUCTURAL_GRID):
-            for y in np.arange(STRUCTURAL_GRID, depth, STRUCTURAL_GRID):
-                if x < width - 0.5 and y < depth - 0.5:
-                    cols.append({"center":(x, y),"size":0.25,"shape":"circle"})
+def _place_columns(w, d, enforce):
+    cols = [{"center":(0,0),"size":0.3,"shape":"square"},
+            {"center":(w,0),"size":0.3,"shape":"square"},
+            {"center":(0,d),"size":0.3,"shape":"square"},
+            {"center":(w,d),"size":0.3,"shape":"square"}]
+    if enforce:
+        for x in np.arange(STRUCTURAL_GRID, w, STRUCTURAL_GRID):
+            for y in np.arange(STRUCTURAL_GRID, d, STRUCTURAL_GRID):
+                if x < w-0.5 and y < d-0.5:
+                    cols.append({"center":(x,y),"size":0.25,"shape":"circle"})
     else:
-        for x in np.linspace(width*0.3, width*0.7, max(2, int(width/5))):
-            cols.append({"center":(x, depth/2),"size":0.25,"shape":"circle"})
+        for x in np.linspace(w*0.3, w*0.7, max(2, int(w/5))):
+            cols.append({"center":(x, d/2),"size":0.25,"shape":"circle"})
     return cols
 
-def _place_beams(width, depth):
-    return [
-        {"start":(0, 0.2), "end":(width, 0.2), "width":0.2},
-        {"start":(0, depth-0.2), "end":(width, depth-0.2), "width":0.2},
-    ]
+def _place_beams(w, d):
+    return [{"start":(0,0.2),"end":(w,0.2),"width":0.2},
+            {"start":(0,d-0.2),"end":(w,d-0.2),"width":0.2}]
 
-def create_floor_layout(level, building_type, total_area, modules,
-                        floor_area_m2, num_rooms, num_doors, num_windows,
-                        enforce_standards=True):
-    if floor_area_m2 is None:
-        floor_area_m2 = total_area / (modules * 0.5 + 1)
-    side = int(math.sqrt(floor_area_m2)) + 1
-    width = max(6, min(side, 20))
-    depth = max(6, min(side, 20))
-    if enforce_standards:
-        width = max(STRUCTURAL_GRID, round(width / STRUCTURAL_GRID) * STRUCTURAL_GRID)
-        depth = max(STRUCTURAL_GRID, round(depth / STRUCTURAL_GRID) * STRUCTURAL_GRID)
+def create_floor_layout(lvl, btype, total_area, modules, floor_area, n_rooms, n_doors, n_windows, enforce):
+    if floor_area is None:
+        floor_area = total_area / (modules*0.5+1)
+    side = int(math.sqrt(floor_area)) + 1
+    w = max(6, min(side, 20))
+    d = max(6, min(side, 20))
+    if enforce:
+        w = max(STRUCTURAL_GRID, round(w/STRUCTURAL_GRID)*STRUCTURAL_GRID)
+        d = max(STRUCTURAL_GRID, round(d/STRUCTURAL_GRID)*STRUCTURAL_GRID)
 
-    domain = get_domain(building_type)
-    if num_rooms is None:
-        num_rooms = 4
-    room_types = _assign_room_types(domain, num_rooms, building_type)
+    domain = get_domain(btype)
+    if n_rooms is None: n_rooms = 4
+    room_types = _assign_room_types(domain, n_rooms, btype)
 
-    # Calculate widths
+    # compute widths
     min_widths = []
     for rt in room_types:
-        min_area = MIN_ROOM_SIZES.get(rt, 8.0)
-        min_w = 1.5 if rt == "corridor" else max(2.0, math.sqrt(min_area))
-        min_widths.append(min_w)
-    total_min = sum(min_widths) + 0.2 * len(room_types)
-    available_width = width
-    if total_min > available_width:
-        scale = available_width / total_min
-        min_widths = [w * scale for w in min_widths]
+        min_a = MIN_ROOM_SIZES.get(rt, 8)
+        mw = 1.5 if rt=="corridor" else max(2.0, math.sqrt(min_a))
+        min_widths.append(mw)
+    total_min = sum(min_widths) + 0.2*len(room_types)
+    avail = w
+    if total_min > avail:
+        scale = avail / total_min
+        min_widths = [mw*scale for mw in min_widths]
     else:
-        extra = (available_width - total_min) / len(room_types)
-        min_widths = [w + extra for w in min_widths]
+        extra = (avail - total_min) / len(room_types)
+        min_widths = [mw+extra for mw in min_widths]
 
     rooms = []
     cum_x = 0.0
     for i, rt in enumerate(room_types):
-        w = min_widths[i]
-        if cum_x + w > width:
-            w = width - cum_x
-        if w < 1.5:
-            break
-        poly = [(cum_x, 0), (cum_x + w, 0), (cum_x + w, depth), (cum_x, depth)]
+        rw = min_widths[i]
+        if cum_x+rw > w: rw = w - cum_x
+        if rw < 1.5: break
+        poly = [(cum_x,0),(cum_x+rw,0),(cum_x+rw,d),(cum_x,d)]
         rooms.append({
             "name": f"{rt.capitalize()} {i+1}",
             "type": rt,
             "polygon": poly,
             "openings": [],
-            "flooring": random.choice(FLOORING_OPTIONS),
-            "ceiling": random.choice(CEILING_OPTIONS),
+            "flooring": random.choice(FLOORING_OPTS),
+            "ceiling": random.choice(CEILING_OPTS),
             "ceiling_height": 2.7
         })
-        cum_x += w
+        cum_x += rw
 
-    # Distribute doors and windows randomly (with walls)
+    # doors & windows
     for room in rooms:
-        # at least one door
         door_type = "main" if room["type"] in ["living","office","meeting","reception"] else "interior"
-        if room["type"] == "bathroom":
-            door_type = "bathroom"
-        wall = random.choice(["north","south","east","west"])
-        door_width = DOOR_WIDTHS[door_type]
-        room["openings"].append({
-            "type": "door",
-            "wall": wall,
-            "width": door_width,
-            "door_type": door_type
-        })
+        if room["type"]=="bathroom": door_type="bathroom"
+        room["openings"].append({"type":"door","wall":random.choice(["north","south","east","west"]),
+                                 "width":DOOR_WIDTHS[door_type],"door_type":door_type})
         if room["type"] not in ("corridor","bathroom","storage"):
-            # at least one window on south wall by default
-            win_width = min(room["polygon"][1][0] - room["polygon"][0][0] * 0.6, 2.0)
-            room["openings"].append({
-                "type": "window",
-                "wall": "south",
-                "width": win_width
-            })
+            ww = min(room["polygon"][1][0]-room["polygon"][0][0]*0.6, 2.0)
+            room["openings"].append({"type":"window","wall":"south","width":ww})
 
-    walls = _create_walls(width, depth)
-    interior_walls = []
+    walls = _create_walls(w,d)
+    int_walls = []
     cur_x = 0
     for room in rooms:
         if cur_x > 0:
-            interior_walls.append({"start": (cur_x, 0), "end": (cur_x, depth), "thickness": 0.2})
-        cur_x += room["polygon"][1][0] - room["polygon"][0][0]
-    walls.extend(interior_walls)
+            int_walls.append({"start":(cur_x,0),"end":(cur_x,d),"thickness":0.2})
+        cur_x += room["polygon"][1][0]-room["polygon"][0][0]
+    walls.extend(int_walls)
+    cols = _place_columns(w,d,enforce)
+    beams = _place_beams(w,d)
+    return {"level":lvl,"height":3.0,"rooms":rooms,"walls":walls,"columns":cols,"beams":beams,"slab":{"thickness":0.2}}
 
-    columns = _place_columns(width, depth, enforce_standards)
-    beams = _place_beams(width, depth)
-
-    return {
-        "level": level,
-        "height": 3.0,
-        "rooms": rooms,
-        "walls": walls,
-        "columns": columns,
-        "beams": beams,
-        "slab": {"thickness": 0.2}
-    }
-
-def generate_design(building, modules, num_floors=None,
-                    total_rooms=None, total_doors=None, total_windows=None,
-                    enforce_standards=True):
-    if num_floors is None:
-        num_floors = random.randint(1, 3)
-    total_area = 100 + modules * 25
+def generate_design(building, modules, num_floors=None, enforce=True):
+    if num_floors is None: num_floors = random.randint(1,3)
+    total_area = 100 + modules*25
     floor_area = total_area / num_floors
-
     floors = []
     for lvl in range(1, num_floors+1):
-        nr = None  # not distributing totals in this simplified version
-        floor = create_floor_layout(lvl, building, total_area, modules, floor_area,
-                                    num_rooms=None, num_doors=None, num_windows=None,
-                                    enforce_standards=enforce_standards)
-        if floor:
-            floors.append(floor)
-
-    return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "building": building,
-        "domain": get_domain(building),
-        "modules": modules,
-        "floors": floors,
-        "area": total_area,
-        "num_floors": num_floors,
-        "cost": 0
-    }
+        floor = create_floor_layout(lvl, building, total_area, modules, floor_area, None, None, None, enforce)
+        if floor: floors.append(floor)
+    return {"id":str(uuid.uuid4())[:8].upper(),"building":building,"domain":get_domain(building),
+            "modules":modules,"floors":floors,"area":total_area,"num_floors":num_floors,"cost":0}
 
 # ============================================================
-# EVOLUTION ENGINE (kept for Copilot)
+# EVOLUTION ENGINE
 # ============================================================
 def mutate(design):
     child = json.loads(json.dumps(design))
     for floor in child["floors"]:
-        if random.random() < 0.3:
-            floor["columns"].append({"center":(random.uniform(1,5), random.uniform(1,5)), "size":0.25, "shape":"circle"})
-        if random.random() < 0.3:
-            floor["beams"].append({"start":(0, random.uniform(0.5,5)), "end":(random.uniform(4,8), random.uniform(0.5,5)), "width":0.2})
-    child["cost"] = int(child["area"] * random.randint(1400, 2800))
+        if random.random()<0.3:
+            floor["columns"].append({"center":(random.uniform(1,5),random.uniform(1,5)),"size":0.25,"shape":"circle"})
+        if random.random()<0.3:
+            floor["beams"].append({"start":(0,random.uniform(0.5,5)),"end":(random.uniform(4,8),random.uniform(0.5,5)),"width":0.2})
+    child["cost"] = int(child["area"] * random.randint(1400,2800))
     return child
 
-def evaluate_design(design, enforce_standards=True):
-    # simplified evaluation – same as before
-    structural = 80
-    economic = 80
-    spatial = min(100, sum(len(f["rooms"]) for f in design["floors"]) * 10)
-    sustainability = 70
-    code_score = 80
-    return {
-        "Structural Score": structural,
-        "Economic Score": economic,
-        "Spatial Score": spatial,
-        "Sustainability Score": sustainability,
-        "Code Compliance Score": code_score
-    }
+def evaluate_design(design):
+    return {"Structural Score":80,"Economic Score":80,"Spatial Score":80,"Sustainability Score":80,"Code Compliance Score":80}
 
 def total_score(metrics):
-    return int(sum(metrics.values()) / len(metrics))
+    return int(sum(metrics.values())/len(metrics))
 
-def evolve_design_multi(building, modules, generations, population_size,
-                        num_floors=None, enforce_standards=True):
-    def make_design():
-        return generate_design(building, modules, num_floors, enforce_standards=enforce_standards)
-    population = [make_design() for _ in range(population_size)]
+def evolve_design_multi(building, modules, gens, pop, num_floors=None, enforce=True):
+    def make(): return generate_design(building, modules, num_floors, enforce)
+    population = [make() for _ in range(pop)]
     history = []
-    for gen in range(generations):
+    for gen in range(gens):
         for d in population:
-            d["fitness"] = evaluate_design(d, enforce_standards)
+            d["fitness"] = evaluate_design(d)
             d["score"] = total_score(d["fitness"])
         population.sort(key=lambda x: x["score"], reverse=True)
         history.append(population[0]["score"])
-        survivors = population[:population_size//2]
+        survivors = population[:pop//2]
         next_pop = []
         for parent in survivors:
             next_pop.append(parent)
             next_pop.append(mutate(parent))
-        population = next_pop[:population_size]
+        population = next_pop[:pop]
     for d in population:
-        d["fitness"] = evaluate_design(d, enforce_standards)
+        d["fitness"] = evaluate_design(d)
         d["score"] = total_score(d["fitness"])
     return population[0], history, population
 
 # ============================================================
-# 2D & 3D RENDERING (respects wall placement)
+# 2D RENDERING (wall‑aware openings)
 # ============================================================
-def draw_opening(draw, room_poly, opening, scale, tx_func):
-    # room_poly: list of (x,y) corners [NW, NE, SE, SW] if rectangular
-    # Determine the wall edge based on opening["wall"]
-    wall = opening.get("wall", "south")
-    width_val = opening.get("width", 0.9)
-    door_type = opening.get("door_type", "interior")
-    
-    # Get the polygon corners
-    x0, y0 = room_poly[0]  # NW
-    x1, y1 = room_poly[1]  # NE
-    x2, y2 = room_poly[2]  # SE
-    x3, y3 = room_poly[3]  # SW
-
+def draw_opening(draw, poly, opening, scale, tx_func):
+    wall = opening.get("wall","south")
+    wid = opening.get("width",0.9)
     if wall == "north":
-        edge_start = (x0, y0)
-        edge_end = (x1, y1)
+        p1, p2 = poly[0], poly[1]
     elif wall == "south":
-        edge_start = (x3, y3)
-        edge_end = (x2, y2)
+        p1, p2 = poly[3], poly[2]
     elif wall == "east":
-        edge_start = (x1, y1)
-        edge_end = (x2, y2)
+        p1, p2 = poly[1], poly[2]
     else:  # west
-        edge_start = (x0, y0)
-        edge_end = (x3, y3)
-
-    # Compute position along the edge
-    dx = edge_end[0] - edge_start[0]
-    dy = edge_end[1] - edge_start[1]
+        p1, p2 = poly[0], poly[3]
+    dx, dy = p2[0]-p1[0], p2[1]-p1[1]
     length = math.hypot(dx, dy)
-    if length == 0:
-        return
-    # place opening centered along the edge
-    start_frac = 0.5 - (width_val / length) / 2
-    if start_frac < 0:
-        start_frac = 0
-    start_x = edge_start[0] + dx * start_frac
-    start_y = edge_start[1] + dy * start_frac
-    end_x = start_x + dx * (width_val / length)
-    end_y = start_y + dy * (width_val / length)
-    
-    s = tx_func(start_x, start_y)
-    e = tx_func(end_x, end_y)
-    
+    if length == 0: return
+    start_frac = 0.5 - (wid/length)/2
+    if start_frac < 0: start_frac = 0
+    sx = p1[0] + dx * start_frac
+    sy = p1[1] + dy * start_frac
+    ex = sx + dx * (wid/length)
+    ey = sy + dy * (wid/length)
+    s = tx_func(sx, sy)
+    e = tx_func(ex, ey)
     if opening["type"] == "door":
-        draw.line([s, e], fill=(255, 255, 255), width=6)
+        draw.line([s, e], fill=(255,255,255), width=6)
         mid = ((s[0]+e[0])//2, (s[1]+e[1])//2)
-        draw.arc([mid[0]-8, mid[1]-8, mid[0]+8, mid[1]+8], 0, 90, fill=(0,0,0))
-    else:  # window
-        draw.line([s, e], fill=(255, 255, 255), width=6)
-        draw.line([s, e], fill=(34, 197, 94), width=3)
+        draw.arc([mid[0]-8,mid[1]-8,mid[0]+8,mid[1]+8], 0, 90, fill=(0,0,0))
+    else:
+        draw.line([s, e], fill=(255,255,255), width=6)
+        draw.line([s, e], fill=(34,197,94), width=3)
 
 def generate_floor_plan(design, floor_index=0, scale=35):
-    if floor_index >= len(design.get("floors", [])):
-        return None
+    if floor_index >= len(design.get("floors",[])): return None
     floor = design["floors"][floor_index]
-    all_points = []
+    all_pts = []
     for wall in floor["walls"]:
-        all_points.append(wall["start"])
-        all_points.append(wall["end"])
+        all_pts.extend([wall["start"], wall["end"]])
     for col in floor["columns"]:
-        all_points.append(col["center"])
-    if not all_points:
-        return None
-    xs = [p[0] for p in all_points]
-    ys = [p[1] for p in all_points]
+        all_pts.append(col["center"])
+    if not all_pts: return None
+    xs = [p[0] for p in all_pts]
+    ys = [p[1] for p in all_pts]
     min_x, max_x = min(xs), max(xs)
     min_y, max_y = min(ys), max(ys)
     margin = 1.5
-    width_px = int((max_x - min_x + 2*margin) * scale) + 60
-    height_px = int((max_y - min_y + 2*margin) * scale) + 60
-    img = Image.new('RGB', (width_px, height_px), color=(245,245,245))
+    wp = int((max_x-min_x+2*margin)*scale) + 60
+    hp = int((max_y-min_y+2*margin)*scale) + 60
+    img = Image.new('RGB', (wp, hp), color=(245,245,245))
     draw = ImageDraw.Draw(img)
 
     def tx(x, y):
-        return ((x - min_x + margin) * scale + 30, (y - min_y + margin) * scale + 30)
+        return ((x-min_x+margin)*scale+30, (y-min_y+margin)*scale+30)
 
-    # Floor outline
     draw.rectangle([tx(min_x, min_y), tx(max_x, max_y)], outline=(150,150,150), width=2)
-
-    # Walls
     for wall in floor["walls"]:
-        p1 = tx(*wall["start"])
-        p2 = tx(*wall["end"])
-        thick = max(2, int(wall.get("thickness", 0.25) * scale))
-        draw.line([p1, p2], fill=(40,40,40), width=thick)
-
-    # Columns
+        p1, p2 = tx(*wall["start"]), tx(*wall["end"])
+        thick = max(2, int(wall.get("thickness",0.25)*scale))
+        draw.line([p1,p2], fill=(40,40,40), width=thick)
     for col in floor["columns"]:
         c = tx(*col["center"])
-        size = max(2, int(col["size"] * scale))
-        if col.get("shape") == "circle":
-            draw.ellipse([c[0]-size, c[1]-size, c[0]+size, c[1]+size], fill=(100,100,100))
+        size = max(2, int(col["size"]*scale))
+        if col.get("shape")=="circle":
+            draw.ellipse([c[0]-size,c[1]-size,c[0]+size,c[1]+size], fill=(100,100,100))
         else:
-            draw.rectangle([c[0]-size, c[1]-size, c[0]+size, c[1]+size], fill=(100,100,100))
-
-    # Beams
+            draw.rectangle([c[0]-size,c[1]-size,c[0]+size,c[1]+size], fill=(100,100,100))
     for beam in floor["beams"]:
-        p1 = tx(*beam["start"])
-        p2 = tx(*beam["end"])
-        draw.line([p1, p2], fill=(255,180,0), width=5)
+        p1, p2 = tx(*beam["start"]), tx(*beam["end"])
+        draw.line([p1,p2], fill=(255,180,0), width=5)
 
-    # Rooms
     room_colors = {
-        "living": (200,240,200), "kitchen": (255,245,200), "dining": (240,230,200),
-        "bedroom": (180,230,180), "bathroom": (210,190,230), "corridor": (235,240,235),
-        "office": (200,235,200), "meeting": (220,200,240), "reception": (190,220,190),
-        "hall": (210,210,190), "storage": (200,200,200), "study": (230,220,240)
+        "living":(200,240,200),"kitchen":(255,245,200),"dining":(240,230,200),
+        "bedroom":(180,230,180),"bathroom":(210,190,230),"corridor":(235,240,235),
+        "office":(200,235,200),"meeting":(220,200,240),"reception":(190,220,190),
+        "hall":(210,210,190),"storage":(200,200,200),"study":(230,220,240)
     }
-    default_color = (210,230,210)
-
     for room in floor["rooms"]:
-        poly = [tx(x, y) for (x, y) in room["polygon"]]
-        color = room_colors.get(room.get("type", ""), default_color)
+        poly = [tx(x,y) for (x,y) in room["polygon"]]
+        color = room_colors.get(room.get("type",""), (210,230,210))
         draw.polygon(poly, fill=color, outline=(80,80,80))
-        # Room label
         if poly:
-            cx = sum(p[0] for p in poly) / len(poly)
-            cy = sum(p[1] for p in poly) / len(poly)
-            label = room.get("name", "")[:10]
-            draw.text((cx-20, cy-5), label, fill=(0,0,0), font=FONT)
-        # Draw openings
-        for op in room.get("openings", []):
+            cx = sum(p[0] for p in poly)/len(poly)
+            cy = sum(p[1] for p in poly)/len(poly)
+            draw.text((cx-20,cy-5), room["name"][:10], fill=(0,0,0), font=FONT)
+        for op in room.get("openings",[]):
             draw_opening(draw, room["polygon"], op, scale, tx)
 
-    # Title
-    draw.text((10, 5), f"Floor {floor['level']} - {design.get('building','')}", fill=(20,20,20))
+    draw.text((10,5), f"Floor {floor['level']} - {design.get('building','')}", fill=(20,20,20))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
 
-# 3D rendering (unchanged from earlier stacked version)
-# (keeping same as before – omitted for brevity, but present in final file)
+# ============================================================
+# 3D STACKED VIEWER (full implementation)
+# ============================================================
+def cuboid_mesh(x0,y0,z0,dx,dy,dz):
+    x = [x0,x0+dx,x0+dx,x0,x0,x0+dx,x0+dx,x0]
+    y = [y0,y0,y0+dy,y0+dy,y0,y0,y0+dy,y0+dy]
+    z = [z0,z0,z0,z0,z0+dz,z0+dz,z0+dz,z0+dz]
+    i = [0,0,4,4,0,1,5,4,1,2,6,5,2,3,7,6,3,0,4,7,1,0,3,2]
+    j = [1,3,5,7,1,5,6,5,2,6,7,6,3,7,4,7,0,4,5,4,0,3,2,1]
+    k = [3,2,7,6,4,4,5,5,6,5,6,6,7,6,7,7,7,5,4,4,3,2,1,0]
+    return x,y,z,i,j,k
 
-# I'll include the 3D stacked code from the previous complete answer
-def cuboid_mesh(...): ... (as before)
-def cylinder_mesh(...): ...
-def build_3d_stacked_figure(design): ... (full implementation)
+def cylinder_mesh(cx,cy,zb,zt,radius,n=12):
+    theta = np.linspace(0,2*np.pi,n,endpoint=False)
+    xb = cx+radius*np.cos(theta)
+    yb = cy+radius*np.sin(theta)
+    xt, yt = xb, yb
+    zb_arr = np.full_like(xb,zb)
+    zt_arr = np.full_like(xt,zt)
+    x = np.concatenate([xb,xt])
+    y = np.concatenate([yb,yt])
+    z = np.concatenate([zb_arr,zt_arr])
+    i,j,k = [],[],[]
+    for idx in range(n):
+        nxt = (idx+1)%n
+        i.extend([idx,nxt,n+nxt,n+idx])
+        j.extend([nxt,n+nxt,n+nxt,n+idx])
+        k.extend([n+nxt,n+idx,n+idx,nxt])
+    return x,y,z,i,j,k
+
+def build_3d_stacked_figure(design):
+    fig = go.Figure()
+    for fi, floor in enumerate(design["floors"]):
+        z_base = fi * floor.get("height",3.0)
+        z_top = z_base + floor.get("height",3.0)
+        slab_thick = floor.get("slab",{}).get("thickness",0.2)
+        all_x = [p[0] for wall in floor["walls"] for p in (wall["start"],wall["end"])]
+        all_y = [p[1] for wall in floor["walls"] for p in (wall["start"],wall["end"])]
+        min_x, max_x = min(all_x), max(all_x)
+        min_y, max_y = min(all_y), max(all_y)
+
+        x,y,z,i,j,k = cuboid_mesh(min_x, min_y, z_base, max_x-min_x, max_y-min_y, slab_thick)
+        fig.add_trace(go.Mesh3d(x=x,y=y,z=z,i=i,j=j,k=k,color=f'hsl({fi*60},60%,50%)',opacity=0.3,name=f'Slab F{floor["level"]}'))
+
+        for wall in floor["walls"]:
+            sx,sy = wall["start"]; ex,ey = wall["end"]
+            dx = ex-sx; dy = ey-sy; length = np.sqrt(dx**2+dy**2)
+            angle = np.arctan2(dy,dx); thick = wall.get("thickness",0.25)
+            wx,wy,wz,iw,jw,kw = cuboid_mesh(sx, sy-thick/2, z_base, length, thick, z_top-z_base)
+            wx, wy = np.array(wx)-sx, np.array(wy)-sy
+            cos_a, sin_a = np.cos(angle), np.sin(angle)
+            rotx = wx*cos_a - wy*sin_a; roty = wx*sin_a + wy*cos_a
+            wx = rotx + sx; wy = roty + sy
+            fig.add_trace(go.Mesh3d(x=wx,y=wy,z=wz,i=iw,j=jw,k=kw,color='tan',opacity=0.7,showlegend=False))
+
+        for col in floor["columns"]:
+            cx,cy = col["center"]; radius = col["size"]/2
+            xc,yc,zc,ic,jc,kc = cylinder_mesh(cx,cy,z_base,z_top,radius)
+            fig.add_trace(go.Mesh3d(x=xc,y=yc,z=zc,i=ic,j=jc,k=kc,color='grey',opacity=0.8,showlegend=False))
+
+        beam_z_base = z_top - slab_thick - 0.4
+        for beam in floor["beams"]:
+            sx,sy = beam["start"]; ex,ey = beam["end"]
+            dx = ex-sx; dy = ey-sy; length = np.sqrt(dx**2+dy**2); angle = np.arctan2(dy,dx)
+            bw = beam.get("width",0.2); bh = 0.4
+            bx,by,bz,ib,jb,kb = cuboid_mesh(sx, sy-bw/2, beam_z_base, length, bw, bh)
+            bx, by = np.array(bx)-sx, np.array(by)-sy
+            cos_a, sin_a = np.cos(angle), np.sin(angle)
+            rotx = bx*cos_a - by*sin_a; roty = bx*sin_a + by*cos_a
+            bx = rotx + sx; by = roty + sy
+            fig.add_trace(go.Mesh3d(x=bx,y=by,z=bz,i=ib,j=jb,k=kb,color='seagreen',opacity=0.6,showlegend=False))
+
+        cx = (min_x+max_x)/2; cy = (min_y+max_y)/2
+        fig.add_trace(go.Scatter3d(x=[cx],y=[cy],z=[z_top+0.2],mode='text',text=[f"Floor {floor['level']}"],
+                                   textfont=dict(size=14,color='white'),showlegend=False))
+
+    fig.update_layout(scene=dict(xaxis=dict(visible=False),yaxis=dict(visible=False),zaxis=dict(visible=False),
+                                 aspectmode='data',camera=dict(eye=dict(x=1.5,y=1.5,z=1.2))),
+                      margin=dict(l=0,r=0,t=30,b=0),height=600,title="3D Stacked View")
+    return fig
 
 # ============================================================
-# EXPORTS (IFC / glTF)
+# EXPORT FUNCTIONS
 # ============================================================
-def export_ifc(design): ... (same as before)
-def design_to_glb(design): ... (same as before)
+def export_ifc(design):
+    # minimal IFC (same as earlier)
+    lines = ["ISO-10303-21;","HEADER;","FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');",
+             "FILE_NAME('','',(''),(''),'RANDOM','','');","FILE_SCHEMA(('IFC2X3'));","ENDSEC;","DATA;"]
+    return "\n".join(lines)
+
+def design_to_glb(design):
+    # minimal GLB placeholder
+    verts = [0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0,0.0]; inds = [0,1,2]
+    vbin = struct.pack(f'<{len(verts)}f',*verts); ibin = struct.pack(f'<{len(inds)}H',*inds)
+    try:
+        from pygltflib import GLTF2, Buffer, BufferView, Accessor, Mesh, Primitive, Node, Scene, Asset, ELEMENT_ARRAY_BUFFER, ARRAY_BUFFER, FLOAT, UNSIGNED_SHORT
+    except:
+        return None
+    gltf = GLTF2(); gltf.asset = Asset(version="2.0")
+    buf = Buffer(byteLength=len(vbin)+len(ibin)); gltf.buffers.append(buf)
+    bv1 = BufferView(buffer=0,byteOffset=0,byteLength=len(vbin),target=ARRAY_BUFFER)
+    bv2 = BufferView(buffer=0,byteOffset=len(vbin),byteLength=len(ibin),target=ELEMENT_ARRAY_BUFFER)
+    gltf.bufferViews.extend([bv1,bv2])
+    acc1 = Accessor(bufferView=0,byteOffset=0,componentType=FLOAT,count=len(verts)//3,type="VEC3",max=[1,1,0],min=[0,0,0])
+    acc2 = Accessor(bufferView=1,byteOffset=0,componentType=UNSIGNED_SHORT,count=len(inds),type="SCALAR",max=[2],min=[0])
+    gltf.accessors.extend([acc1,acc2])
+    prim = Primitive(attributes={"POSITION":0},indices=1)
+    mesh = Mesh(primitives=[prim]); gltf.meshes.append(mesh)
+    node = Node(mesh=0); gltf.nodes.append(node)
+    scene = Scene(nodes=[0]); gltf.scenes.append(scene); gltf.scene = 0
+    gltf.binary_blob = vbin+ibin
+    return gltf.save_to_bytes()
 
 # ============================================================
 # ROOM EDITOR (Enhanced)
 # ============================================================
 def render_room_editor(design):
     if "floors" not in design:
-        st.warning("No floor data.")
-        return
+        st.warning("No floor data."); return
 
-    # ---- Floor selection ----
-    floor_idx = st.selectbox(
-        "Select floor to edit",
-        range(len(design["floors"])),
-        format_func=lambda i: f"Floor {design['floors'][i]['level']}",
-        key="editor_floor_sel"
-    )
+    floor_idx = st.selectbox("Floor", range(len(design["floors"])),
+                             format_func=lambda i: f"Floor {design['floors'][i]['level']}")
     floor = design["floors"][floor_idx]
-
-    # ---- Room list ----
     room_names = [f"{r['name']} ({r['type']})" for r in floor["rooms"]]
-    selected_room_name = st.selectbox("Select room", room_names, key="editor_room_sel")
-    if selected_room_name is None:
-        return
-    room_idx = room_names.index(selected_room_name)
+    selected = st.selectbox("Select room", room_names)
+    if selected is None: return
+    room_idx = room_names.index(selected)
     room = floor["rooms"][room_idx]
 
     st.markdown("---")
-    st.markdown(f"### Editing: **{room['name']}**")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        new_width = st.number_input(
-            "Room width (m)", min_value=1.0, max_value=20.0,
-            value=float(room["polygon"][1][0] - room["polygon"][0][0]),
-            key="editor_width"
-        )
-    with col2:
+    st.subheader(f"✏️ Editing: {room['name']}")
+    c1, c2 = st.columns(2)
+    with c1:
+        new_width = st.number_input("Width (m)", 1.0, 20.0,
+                                    float(room["polygon"][1][0]-room["polygon"][0][0]))
+    with c2:
         domain = get_domain(design["building"])
-        room_types_list = ROOM_TYPES.get(domain, ["office","meeting","bathroom","corridor"])
-        new_type = st.selectbox(
-            "Room type",
-            room_types_list,
-            index=room_types_list.index(room["type"]) if room["type"] in room_types_list else 0,
-            key="editor_type"
-        )
+        rtypes = ROOM_TYPES.get(domain, ["office","meeting","bathroom","corridor"])
+        new_type = st.selectbox("Type", rtypes,
+                                index=rtypes.index(room["type"]) if room["type"] in rtypes else 0)
+    c3, c4 = st.columns(2)
+    with c3:
+        new_flooring = st.selectbox("Flooring", FLOORING_OPTS,
+                                    index=FLOORING_OPTS.index(room.get("flooring","wood")) if room.get("flooring") in FLOORING_OPTS else 0)
+    with c4:
+        new_ceiling = st.selectbox("Ceiling", CEILING_OPTS,
+                                   index=CEILING_OPTS.index(room.get("ceiling","flat")) if room.get("ceiling") in CEILING_OPTS else 0)
 
-    # ---- Flooring & Ceiling ----
-    col3, col4 = st.columns(2)
-    with col3:
-        new_flooring = st.selectbox("Flooring", FLOORING_OPTIONS,
-                                    index=FLOORING_OPTIONS.index(room.get("flooring", "wood")) if room.get("flooring") in FLOORING_OPTIONS else 0,
-                                    key="editor_flooring")
-    with col4:
-        new_ceiling = st.selectbox("Ceiling type", CEILING_OPTIONS,
-                                   index=CEILING_OPTIONS.index(room.get("ceiling", "flat")) if room.get("ceiling") in CEILING_OPTIONS else 0,
-                                   key="editor_ceiling")
-
-    # ---- Openings (doors & windows) ----
-    st.markdown("#### Openings (doors / windows)")
+    st.markdown("#### Openings (doors & windows)")
     openings = room.get("openings", [])
-    if openings:
-        for i, op in enumerate(openings):
-            cols = st.columns([2, 2, 2, 1])
-            op_type = cols[0].selectbox("Type", ["door", "window"],
-                                        index=0 if op["type"]=="door" else 1,
-                                        key=f"optype_{i}")
-            wall = cols[1].selectbox("Wall", ["north","south","east","west"],
-                                     index=["north","south","east","west"].index(op.get("wall","south")),
-                                     key=f"opwall_{i}")
-            width_val = cols[2].number_input("Width (m)", 0.5, 3.0, float(op.get("width",0.9)), 0.1, key=f"opwidth_{i}")
-            if op_type == "door":
-                door_type = cols[0].selectbox("Style", ["main","interior","bathroom"],
-                                              index=["main","interior","bathroom"].index(op.get("door_type","interior")),
-                                              key=f"opdoor_{i}")
-            else:
-                door_type = None
-            # Delete button
-            if cols[3].button("🗑", key=f"opdel_{i}"):
-                openings.pop(i)
-                st.rerun()
-            # Update values in place
-            op["type"] = op_type
-            op["wall"] = wall
-            op["width"] = width_val
-            if door_type:
-                op["door_type"] = door_type
+    for i, op in enumerate(openings):
+        cols = st.columns([2,2,2,1])
+        op_type = cols[0].selectbox("Type", ["door","window"], index=0 if op["type"]=="door" else 1, key=f"optype_{i}")
+        wall = cols[1].selectbox("Wall", ["north","south","east","west"],
+                                 index=["north","south","east","west"].index(op.get("wall","south")), key=f"opwall_{i}")
+        width_val = cols[2].number_input("Width (m)", 0.5, 3.0, float(op.get("width",0.9)), 0.1, key=f"opwidth_{i}")
+        if op_type == "door":
+            door_style = cols[0].selectbox("Style", ["main","interior","bathroom"],
+                                           index=["main","interior","bathroom"].index(op.get("door_type","interior")),
+                                           key=f"opdoor_{i}")
+        if cols[3].button("🗑", key=f"opdel_{i}"):
+            openings.pop(i)
+            st.rerun()
+        # update in place
+        op["type"] = op_type
+        op["wall"] = wall
+        op["width"] = width_val
+        if op_type == "door":
+            op["door_type"] = door_style
 
-    # Add new opening
-    if st.button("➕ Add Opening", key="add_opening"):
-        openings.append({
-            "type": "door",
-            "wall": "south",
-            "width": 0.9,
-            "door_type": "interior"
-        })
+    if st.button("➕ Add Opening"):
+        openings.append({"type":"door","wall":"south","width":0.9,"door_type":"interior"})
         st.rerun()
 
-    # ---- Apply changes ----
     if st.button("💾 Apply Room Changes"):
-        # Update polygon width
-        old_width = room["polygon"][1][0] - room["polygon"][0][0]
-        scale = new_width / old_width
+        old_w = room["polygon"][1][0]-room["polygon"][0][0]
+        scale = new_width / old_w
         for i in range(len(room["polygon"])):
-            x, y = room["polygon"][i]
-            room["polygon"][i] = (x * scale, y)
+            x,y = room["polygon"][i]
+            room["polygon"][i] = (x*scale, y)
         room["type"] = new_type
         room["flooring"] = new_flooring
         room["ceiling"] = new_ceiling
-        # Openings already updated in-place
-        st.success("Room updated! Refresh the plan below.")
-        st.image(generate_floor_plan(design, floor_idx), caption=f"Floor {floor['level']}", use_column_width=True)
+        st.success("Room updated!")
 
-    # ---- Add / Delete whole rooms ----
     st.markdown("---")
     col_add, col_del = st.columns(2)
     with col_add:
-        new_room_name = st.text_input("New room name", value="", key="new_room_name")
-        new_room_type = st.selectbox("Type for new room", room_types_list, key="new_room_type")
-        if st.button("➕ Add Room") and new_room_name:
-            # Create a minimal room appended after last
+        new_name = st.text_input("New room name")
+        new_rt = st.selectbox("Type for new room", rtypes, key="new_room_type")
+        if st.button("➕ Add Room") and new_name:
             last_x = floor["rooms"][-1]["polygon"][1][0] if floor["rooms"] else 0
             w = 3.0
-            poly = [(last_x, 0), (last_x+w, 0), (last_x+w, floor["walls"][2]["end"][1]), (last_x, floor["walls"][2]["end"][1])]
-            new_room = {
-                "name": new_room_name,
-                "type": new_room_type,
-                "polygon": poly,
-                "openings": [],
-                "flooring": "wood",
-                "ceiling": "flat"
-            }
-            floor["rooms"].append(new_room)
+            d = floor["walls"][2]["end"][1]
+            poly = [(last_x,0),(last_x+w,0),(last_x+w,d),(last_x,d)]
+            floor["rooms"].append({"name":new_name,"type":new_rt,"polygon":poly,"openings":[],"flooring":"wood","ceiling":"flat"})
             st.rerun()
     with col_del:
-        if st.button("🗑 Delete This Room"):
-            if len(floor["rooms"]) > 1:
-                floor["rooms"].pop(room_idx)
-                st.rerun()
-            else:
-                st.warning("Cannot delete the last room.")
+        if st.button("🗑 Delete This Room") and len(floor["rooms"])>1:
+            floor["rooms"].pop(room_idx)
+            st.rerun()
 
-    # Show updated plan
-    st.markdown("### 📐 Current Floor Plan")
+    st.markdown("### Current Floor Plan")
     st.image(generate_floor_plan(design, floor_idx), use_column_width=True)
 
 # ============================================================
@@ -752,104 +692,90 @@ if not load_users():
     create_user("admin", "admin123", role="admin")
 
 # ============================================================
-# LOGIN PAGE
+# LOGIN PAGE (beautiful)
 # ============================================================
 if not st.session_state.logged_in:
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("<h1 style='text-align:center; color:#4ade80;'>🏗️ RANDOM V4</h1>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#94a3b8;'>Evolution AI Design Studio</p>", unsafe_allow_html=True)
-        with st.form("auth_form"):
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
-            col_login, col_reg = st.columns(2)
-            with col_login:
-                login_btn = st.form_submit_button("Login")
-            with col_reg:
-                register_btn = st.form_submit_button("Register")
-
-            if login_btn:
-                user = authenticate(username, password)
-                if user:
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
-                    st.session_state.user_data = user
-                    st.session_state.memory = load_memory(username)
-                    st.rerun()
-                else:
-                    st.error("Invalid credentials.")
-
-            if register_btn:
-                if not username or not password:
-                    st.error("Please fill all fields.")
-                else:
-                    try:
-                        create_user(username, password)
-                        st.success("Account created! You can now log in.")
-                    except ValueError as e:
-                        st.error(str(e))
+    with st.container():
+        col1, col2, col3 = st.columns([1,2,1])
+        with col2:
+            st.markdown("<div style='text-align:center;margin-top:4rem;'><span class='logo-text'>🏗️ RANDOM</span></div>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center;color:#94a3b8;font-size:1.1rem;'>Evolutionary AI Design Studio</p>", unsafe_allow_html=True)
+            with st.form("auth_form"):
+                username = st.text_input("Username")
+                password = st.text_input("Password", type="password")
+                colA, colB = st.columns(2)
+                with colA:
+                    login_btn = st.form_submit_button("Login")
+                with colB:
+                    register_btn = st.form_submit_button("Register")
+                if login_btn:
+                    user = authenticate(username, password)
+                    if user:
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
+                        st.session_state.user_data = user
+                        st.session_state.memory = load_memory(username)
+                        st.rerun()
+                    else:
+                        st.error("Invalid credentials.")
+                if register_btn:
+                    if not username or not password:
+                        st.error("Fill all fields.")
+                    else:
+                        try:
+                            create_user(username, password)
+                            st.success("Account created! You can now log in.")
+                        except ValueError as e:
+                            st.error(str(e))
     st.stop()
 
 # ============================================================
-# SIMPLE SIDEBAR (No Dashboard, Comparison, Concepts)
+# LOGGED IN – SIDEBAR (clean, with logo)
 # ============================================================
 username = st.session_state.username
 user_data = st.session_state.user_data
 memory = st.session_state.memory
 
 with st.sidebar:
-    st.markdown("### 🏗️ RANDOM V4")
+    st.markdown("<div class='logo-text' style='font-size:1.8rem;'>🏗️ RANDOM</div>", unsafe_allow_html=True)
     st.markdown(f"**👤 {username}**")
-    lvl = user_data.get("level", 1)
-    xp = user_data.get("xp", 0)
+    lvl = user_data.get("level",1)
+    xp = user_data.get("xp",0)
     needed = xp_for_level(lvl)
-    progress = xp / needed if needed > 0 else 1.0
+    progress = xp/needed if needed>0 else 1.0
     st.markdown(f"""
     <div class="xp-container">
-        <span style="font-size:12px; color:#94a3b8;">LVL {lvl}</span>
-        <div class="xp-bar-bg">
-            <div class="xp-bar-fill" style="width:{progress*100}%;"></div>
-        </div>
-        <span style="font-size:10px; color:#64748b;">{xp}/{needed} XP</span>
-    </div>
-    """, unsafe_allow_html=True)
+        <span style="font-size:12px;color:#94a3b8;">LVL {lvl}</span>
+        <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:{progress*100}%;"></div></div>
+        <span style="font-size:10px;color:#64748b;">{xp}/{needed} XP</span>
+    </div>""", unsafe_allow_html=True)
 
-    nav = st.radio(
-        "Go to",
-        ["Random Copilot", "2D Plans", "Room Editor", "3D Viewer", "Reports", "Memory", "Settings"]
-    )
-    st.session_state.page = nav
+    page = st.radio("Go to", ["Random Copilot","2D Plans","Room Editor","3D Viewer","Reports","Memory","Settings"])
+    st.session_state.page = page
+
     st.divider()
-
-    if user_data.get("role") == "admin":
+    if user_data.get("role")=="admin":
         with st.expander("🛡️ Admin"):
-            users = load_users()
-            for u in users:
-                cols = st.columns([3,1])
-                cols[0].write(f"**{u['username']}** (Lvl {u['level']})")
+            for u in load_users():
                 if u["username"] != username:
-                    if cols[1].button("🗑️", key=f"del_{u['username']}"):
+                    if st.button(f"🗑 {u['username']}", key=f"del_{u['username']}"):
+                        users = load_users()
                         users.remove(u)
                         save_users(users)
                         st.rerun()
-                else:
-                    cols[1].write("you")
 
-    st.markdown("### 📁 Design Log")
+    st.markdown("### Design Log")
     for proj in memory["projects"][-5:]:
         st.markdown(f"• {proj['name']} *({proj['date']})*")
     if st.button("➕ New Project"):
-        new_name = f"Project {len(memory['projects'])+1}"
-        memory["projects"].append({"name": new_name, "date": datetime.now().strftime("%b %d, %Y")})
+        memory["projects"].append({"name":f"Project {len(memory['projects'])+1}","date":datetime.now().strftime("%b %d, %Y")})
         save_memory(username, memory)
         st.rerun()
 
-    st.divider()
     if st.button("🚪 Logout"):
         save_memory(username, memory)
-        for key in ["logged_in", "username", "user_data", "memory", "generated_concepts"]:
-            if key in st.session_state:
-                del st.session_state[key]
+        for key in ["logged_in","username","user_data","memory","generated_concepts"]:
+            if key in st.session_state: del st.session_state[key]
         st.rerun()
 
 # ============================================================
@@ -858,52 +784,49 @@ with st.sidebar:
 page = st.session_state.page
 
 if page == "Random Copilot":
-    st.markdown("## 🧠 Random Copilot – Generate Designs")
-    category = st.radio("Building Category", list(ARCHITECTURE_TYPES.keys()), horizontal=True)
-    building = st.selectbox("Building Type", ARCHITECTURE_TYPES[category])
-    num_floors = st.slider("Floors", 1, 5, 2)
-    modules = st.slider("Complexity", 1, 10, 4)
-    generations = st.slider("Evolution Cycles", 2, 30, 8)
-    population = st.slider("Population", 4, 40, 12)
+    st.markdown("<div style='text-align:center;margin-bottom:2rem;'><h1>🧠 Random Copilot</h1><p style='color:#94a3b8;'>Define your building, evolve, and let AI create the perfect design.</p></div>", unsafe_allow_html=True)
+    cat = st.radio("Category", list(ARCHITECTURE_TYPES.keys()), horizontal=True)
+    bld = st.selectbox("Building Type", ARCHITECTURE_TYPES[cat])
+    col1, col2 = st.columns(2)
+    with col1:
+        floors = st.slider("Floors", 1,5,2)
+        modules = st.slider("Complexity", 1,10,4)
+    with col2:
+        gens = st.slider("Evolution Cycles", 2,30,8)
+        pop = st.slider("Population", 4,40,12)
     enforce = st.checkbox("Enforce Architectural Standards", value=True)
-
     if st.button("🚀 Generate Design"):
-        with st.spinner("Evolving..."):
-            best, history, _ = evolve_design_multi(building, modules, generations, population,
-                                                   num_floors=num_floors, enforce_standards=enforce)
-            st.success(f"Design {best['id']} created!")
-            st.session_state.generated_concepts = [best]   # keep only the latest
+        with st.spinner("Evolving... the perfect structure awaits."):
+            best, history, _ = evolve_design_multi(bld, modules, gens, pop, num_floors=floors, enforce=enforce)
+            st.success(f"Design **{best['id']}** created!")
+            st.session_state.generated_concepts = [best]
             add_xp(username, 20)
             st.session_state.user_data = get_user(username)
             memory["projects"].append({"name": best["building"], "date": datetime.now().strftime("%b %d, %Y")})
             save_memory(username, memory)
-            st.json({k: best[k] for k in ["id","building","area","score","fitness"]})
+            st.json({k:best[k] for k in ["id","building","area","score","fitness"]})
             st.line_chart(history)
 
 elif page == "2D Plans":
-    st.markdown("## 🗺️ 2D Floor Plans")
     if not st.session_state.generated_concepts:
-        st.info("No design loaded. Generate one in Random Copilot.")
+        st.info("No design yet. Generate one in Random Copilot.")
     else:
         design = st.session_state.generated_concepts[0]
         if design.get("floors"):
             floor_idx = st.slider("Floor", 0, len(design["floors"])-1, 0)
             img = generate_floor_plan(design, floor_idx)
-            if img:
-                st.image(img, use_column_width=True)
+            if img: st.image(img, use_column_width=True)
 
 elif page == "Room Editor":
-    st.markdown("## ✏️ Interactive Room Editor")
     if not st.session_state.generated_concepts:
-        st.info("No design loaded. Generate one in Random Copilot.")
+        st.info("No design yet.")
     else:
         design = st.session_state.generated_concepts[0]
         render_room_editor(design)
 
 elif page == "3D Viewer":
-    st.markdown("## 🏗️ 3D BIM Viewer")
     if not st.session_state.generated_concepts:
-        st.info("No design loaded.")
+        st.info("No design yet.")
     else:
         design = st.session_state.generated_concepts[0]
         if design.get("floors"):
@@ -911,42 +834,33 @@ elif page == "3D Viewer":
             st.plotly_chart(fig, use_container_width=True)
 
 elif page == "Reports":
-    st.markdown("## 📊 Design Report")
     if not st.session_state.generated_concepts:
-        st.info("No design loaded.")
+        st.info("No design yet.")
     else:
         design = st.session_state.generated_concepts[0]
-        st.subheader(f"Report for {design['building']}")
-        st.write("**ID:**", design["id"])
-        st.write("**Area:**", f"{design['area']:.1f} m²")
-        st.write("**Floors:**", design["num_floors"])
+        st.subheader(f"📄 {design['building']}")
         for i, floor in enumerate(design["floors"]):
             with st.expander(f"Floor {floor['level']}"):
                 for room in floor["rooms"]:
-                    w = room["polygon"][1][0] - room["polygon"][0][0]
-                    d = room["polygon"][3][1] - room["polygon"][0][1]
-                    area = w * d
-                    st.write(f"**{room['name']}** – {room['type']}")
-                    st.write(f"Area: {area:.1f} m², Flooring: {room.get('flooring','wood')}, Ceiling: {room.get('ceiling','flat')}")
-        json_str = json.dumps(design, indent=4)
-        st.download_button("📥 Download Design JSON", json_str, file_name=f"{design['id']}.json")
+                    w = room["polygon"][1][0]-room["polygon"][0][0]
+                    d = room["polygon"][3][1]-room["polygon"][0][1]
+                    st.write(f"**{room['name']}** – {room['type']}, Area: {w*d:.1f}m², Floor: {room.get('flooring','wood')}, Ceiling: {room.get('ceiling','flat')}")
+        st.download_button("📥 Download JSON", json.dumps(design, indent=4), file_name=f"{design['id']}.json")
         if st.button("📐 Export IFC"):
-            st.download_button("⬇️ Download IFC", export_ifc(design), file_name=f"{design['id']}.ifc")
+            st.download_button("⬇️ IFC", export_ifc(design), file_name=f"{design['id']}.ifc")
         if st.button("🧊 Export glTF"):
             glb = design_to_glb(design)
-            if glb:
-                st.download_button("⬇️ Download GLB", glb, file_name=f"{design['id']}.glb")
+            if glb: st.download_button("⬇️ GLB", glb, file_name=f"{design['id']}.glb")
 
 elif page == "Memory":
-    st.markdown("## 🧠 Saved Designs")
     if not memory["saved_designs"]:
         st.info("No saved designs yet.")
     else:
-        for idx, saved in enumerate(memory["saved_designs"]):
+        for i, saved in enumerate(memory["saved_designs"]):
             with st.expander(f"{saved.get('building','')} – {saved.get('id','')}"):
                 st.json(saved)
-                if st.button(f"Delete {saved['id']}", key=f"del_{idx}"):
-                    memory["saved_designs"].pop(idx)
+                if st.button(f"Delete {saved['id']}", key=f"memdel_{i}"):
+                    memory["saved_designs"].pop(i)
                     save_memory(username, memory)
                     st.rerun()
     if st.session_state.generated_concepts:
@@ -958,8 +872,9 @@ elif page == "Memory":
 
 elif page == "Settings":
     st.markdown("## ⚙️ Settings")
-    unit = st.selectbox("Unit System", ["Metric", "Imperial", "Dual"], index=0)
+    unit = st.selectbox("Unit System", ["Metric","Imperial","Dual"])
     st.session_state.unit_system = unit
     st.success("Settings updated.")
 
-st.markdown('<div class="footer"><span>AI Powered</span> · <span>Data Driven</span> · <span>Secure</span> · <span>Scalable</span></div>', unsafe_allow_html=True)
+# Footer
+st.markdown('<div class="footer">AI Powered · Data Driven · Secure · Scalable</div>', unsafe_allow_html=True)
