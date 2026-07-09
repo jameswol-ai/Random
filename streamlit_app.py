@@ -1,6 +1,5 @@
 # ============================================================
-# RANDOM – Project‑Centric AEC Studio (Final Fixed)
-# Features: AEC save per tab, fixed materials, smarter Ram
+# RANDOM – Single‑Project AEC Studio (No Projects, Fixed)
 # ============================================================
 import streamlit as st
 import json, uuid, hashlib, math, random, base64
@@ -13,12 +12,9 @@ st.set_page_config(page_title="RANDOM Studio", page_icon="⚡", layout="wide")
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 USER_FILE = DATA_DIR / "users.json"
-PROJECTS_FILE = DATA_DIR / "projects.json"
 PRICES_FILE = DATA_DIR / "material_prices.json"
 XP_PER_LEVEL = 100
 
-if not PROJECTS_FILE.exists():
-    PROJECTS_FILE.write_text("[]")
 if not PRICES_FILE.exists():
     default_prices = {
         "Cement (50kg bag)": {"USD":8,"UGX":29000,"KES":1100,"TZS":20000,"RWF":9000,"SSP":12000},
@@ -127,20 +123,15 @@ def add_xp(uname,amount):
     update_user_data(uname,{"level":u["level"],"xp":u["xp"],"badges":u["badges"]})
     return u["level"]>old
 
-# ---------- MEMORY & PROJECTS ----------
-def load_projects():
-    return json.loads(PROJECTS_FILE.read_text())
-def save_projects(projects):
-    PROJECTS_FILE.write_text(json.dumps(projects, indent=2))
-def get_default_project():
-    return {
-        "id": str(uuid.uuid4())[:8].upper(),
-        "name": "New Project",
-        "created": datetime.now().isoformat(),
-        "spec": get_default_spec()
-    }
-def get_default_spec():
-    return {
+# ---------- SESSION INIT ----------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in=False; st.session_state.username=None
+    st.session_state.user_data=None; st.session_state.page="Dashboard"
+    st.session_state.unit_system="Metric"
+    st.session_state.theme = "Warm Amber"
+    st.session_state.chat_history = []
+    # Single spec in session state (no projects)
+    st.session_state.spec = {
         "building_name": "Project Name",
         "category": "Residential",
         "shape": "Rectangle",
@@ -186,19 +177,6 @@ def get_default_spec():
         "labour_rate_per_day": 15,
     }
 
-# ---------- SESSION INIT ----------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in=False; st.session_state.username=None
-    st.session_state.user_data=None; st.session_state.page="Dashboard"
-    st.session_state.unit_system="Metric"
-    st.session_state.theme = "Warm Amber"
-    st.session_state.projects = load_projects()
-    if not st.session_state.projects:
-        st.session_state.projects = [get_default_project()]
-        save_projects(st.session_state.projects)
-    st.session_state.active_project_id = st.session_state.projects[0]["id"]
-    st.session_state.chat_history = []
-
 if not load_users():
     create_user("admin","admin123",role="admin")
 
@@ -207,7 +185,7 @@ if not st.session_state.logged_in:
     col1,col2,col3=st.columns([1,2,1])
     with col2:
         st.markdown("<div class='logo-text' style='text-align:center;margin-top:4rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center;color:#e0d7ff;'>Project‑Centric AEC Studio</p>",unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center;color:#e0d7ff;'>Single‑Project AEC Studio</p>",unsafe_allow_html=True)
         with st.form("auth"):
             uname=st.text_input("Username"); pw=st.text_input("Password",type="password")
             colA,colB=st.columns(2)
@@ -230,7 +208,7 @@ if not st.session_state.logged_in:
 
 st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 
-# ---------- SIDEBAR ----------
+# ---------- SIDEBAR (simplified, no projects) ----------
 uname=st.session_state.username; user_data=st.session_state.user_data
 with st.sidebar:
     st.markdown("<div class='logo-text' style='font-size:1.8rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
@@ -241,15 +219,7 @@ with st.sidebar:
     <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:{progress*100}%;"></div></div>
     <span style="font-size:10px;color:#9b8ec4;">{xp}/{needed} XP</span></div>""",unsafe_allow_html=True)
 
-    project_names = [p["name"] for p in st.session_state.projects]
-    selected_project_name = st.selectbox("📁 Active Project", project_names,
-                                         index=project_names.index(next(p["name"] for p in st.session_state.projects if p["id"]==st.session_state.active_project_id)))
-    for p in st.session_state.projects:
-        if p["name"] == selected_project_name:
-            st.session_state.active_project_id = p["id"]
-            break
-
-    page = st.radio("Navigate", ["Dashboard", "Ram Assistant", "Materials & Cost", "BOQ & Export", "Projects", "Settings"])
+    page = st.radio("Navigate", ["Dashboard", "Ram Assistant", "Materials & Cost", "BOQ & Export", "Settings"])
     st.session_state.page = page
     st.divider()
     if user_data.get("role")=="admin":
@@ -259,7 +229,7 @@ with st.sidebar:
                     if st.button(f"🗑 {u['username']}",key=f"del_{u['username']}"):
                         users=load_users(); users.remove(u); save_users(users); st.rerun()
     if st.button("🚪 Logout"):
-        for k in ["logged_in","username","user_data","projects","active_project_id","chat_history"]:
+        for k in ["logged_in","username","user_data","spec","chat_history"]:
             if k in st.session_state: del st.session_state[k]
         st.rerun()
 
@@ -370,10 +340,9 @@ def export_ifc(spec):
     lines.append("END-ISO-10303-21;")
     return "\n".join(lines)
 
-# ---------- SMART RAM (enhanced architectural AI) ----------
+# ---------- SMART RAM ----------
 def ram_advisor(query, spec, history):
     q = query.lower()
-    # Provide context-aware advice using spec data
     if "news" in q or "archdaily" in q or "designboom" in q:
         return "🌐 I’ve embedded live streams from ArchDaily & Designboom below. Stay inspired!"
     if "floorplan" in q or "layout" in q:
@@ -435,31 +404,15 @@ def generate_floorplan_text(spec, seed=None):
                 if placed: break
     return "\n".join([" ".join(row) for row in plan])
 
-# ---------- ACTIVE PROJECT ----------
-def get_active_project():
-    for p in st.session_state.projects:
-        if p["id"] == st.session_state.active_project_id:
-            return p
-    return st.session_state.projects[0]
-
-def save_active_project(spec_updates=None):
-    for p in st.session_state.projects:
-        if p["id"] == st.session_state.active_project_id:
-            if spec_updates: p["spec"].update(spec_updates)
-            break
-    save_projects(st.session_state.projects)
-    st.success("Project saved successfully!")
-
 # ============================================================
 # PAGE ROUTING
 # ============================================================
 page = st.session_state.page
 unit = st.session_state.unit_system
-active_project = get_active_project()
-spec = active_project["spec"]
+spec = st.session_state.spec   # single spec
 
 if page == "Dashboard":
-    st.title(f"⚡ {active_project['name']}")
+    st.title(f"⚡ {spec['building_name']}")
     st.markdown("### Unified Architecture · Engineering · Construction Dashboard")
 
     tab1, tab2, tab3 = st.tabs(["🏛️ Architecture", "⚙️ Engineering", "🚧 Construction"])
@@ -600,7 +553,7 @@ if page == "Dashboard":
 
         # Save Architecture tab
         if st.button("💾 Save Architecture", key="save_arch"):
-            save_active_project()
+            st.success("Architecture parameters saved. (All data is held in session)")
 
     with tab2:
         col1, col2 = st.columns(2)
@@ -613,7 +566,7 @@ if page == "Dashboard":
         spec["roof_material"] = st.selectbox("Roof Material", ["Concrete Tiles","Clay Tiles","Metal Sheets","Thatch","Green Roof","Slate"])
         spec["roof_pitch"] = st.slider("Roof Pitch (degrees)", 0, 60, spec.get("roof_pitch",30))
         if st.button("💾 Save Engineering", key="save_eng"):
-            save_active_project()
+            st.success("Engineering parameters saved.")
 
     with tab3:
         labour = st.number_input("Labour Rate (USD/day)", 5,100, spec.get("labour_rate_per_day",15))
@@ -623,8 +576,15 @@ if page == "Dashboard":
         st.metric("Est. Construction Cost (USD)", f"${est_cost:,.0f}")
         months = spec["floors"] * 5
         st.write(f"🕒 Schedule: **{months} months** (rough estimate)")
+
+        # Live BOQ summary from current spec
+        boq_items = compute_boq(spec)
+        total_boq_cost = sum(item["qty"] * get_price(item["item"], spec.get("east_africa_country","Uganda")) for item in boq_items)
+        st.markdown("---")
+        st.subheader("📋 Live BOQ Cost Summary")
+        st.metric(f"Total BOQ Cost ({spec.get('east_africa_country','Uganda')})", f"{total_boq_cost:,.0f}")
         if st.button("💾 Save Construction", key="save_const"):
-            save_active_project()
+            st.success("Construction parameters saved.")
 
 elif page == "Ram Assistant":
     st.title("🤖 Creative AI – Ram (enhanced architectural advice)")
@@ -649,17 +609,14 @@ elif page == "Materials & Cost":
     prices = load_prices()
     country = st.selectbox("Country", ["Uganda","Kenya","Tanzania","Rwanda","South Sudan","USD"])
     st.subheader("Update Prices")
-    # Use a form with session state to ensure updates work
     if "price_form_data" not in st.session_state:
         st.session_state.price_form_data = {}
     with st.form("price_update_form"):
         for mat in prices:
             col1, col2 = st.columns([3,1])
-            base = prices[mat]
-            # Use session state to preserve edited values across reruns
             key = f"price_{mat}"
             if key not in st.session_state.price_form_data:
-                st.session_state.price_form_data[key] = base.get(country, 0)
+                st.session_state.price_form_data[key] = prices[mat].get(country, 0)
             new_price = col2.number_input(mat, value=st.session_state.price_form_data[key], step=1.0, key=key)
         if st.form_submit_button("Update Prices"):
             for mat in prices:
@@ -693,25 +650,8 @@ elif page == "BOQ & Export":
     st.subheader("IFC Export")
     ifc_text = export_ifc(spec)
     st.download_button("📥 Download IFC File", ifc_text, file_name=f"{spec['building_name']}.ifc", mime="text/plain")
-
-elif page == "Projects":
-    st.title("📁 Project Management")
-    for i, proj in enumerate(st.session_state.projects):
-        col1, col2 = st.columns([4,1])
-        with col1:
-            new_name = st.text_input("Project Name", proj["name"], key=f"pname_{i}")
-            proj["name"] = new_name
-        with col2:
-            if st.button("🗑", key=f"pdel_{i}"):
-                st.session_state.projects.pop(i)
-                save_projects(st.session_state.projects)
-                st.rerun()
-    if st.button("➕ Create New Project"):
-        new_proj = get_default_project()
-        new_proj["name"] = f"Project {len(st.session_state.projects)+1}"
-        st.session_state.projects.append(new_proj)
-        save_projects(st.session_state.projects)
-        st.rerun()
+    st.subheader("Download Spec as JSON")
+    st.download_button("📥 Download Spec JSON", json.dumps(spec, indent=2), file_name=f"{spec['building_name']}.json")
 
 elif page == "Settings":
     st.title("⚙️ Settings")
@@ -721,9 +661,52 @@ elif page == "Settings":
     if theme != st.session_state.theme:
         st.session_state.theme = theme
         st.rerun()
-    if st.button("Delete All Projects"):
-        st.session_state.projects = []
-        save_projects([])
-        st.success("All projects cleared.")
+    if st.button("Reset Specification to Default"):
+        st.session_state.spec = {
+            "building_name": "Project Name",
+            "category": "Residential",
+            "shape": "Rectangle",
+            "floors": 2,
+            "floor_height": 3.0,
+            "plot_length": 30.0,
+            "plot_width": 25.0,
+            "setback_front": 5.0,
+            "setback_back": 3.0,
+            "setback_left": 2.0,
+            "setback_right": 2.0,
+            "overall_length": 20.0,
+            "overall_width": 15.0,
+            "grid": {"spacing_x":6.0,"spacing_y":6.0,"column_size":0.4,"gridline_ref":"Centerline"},
+            "exterior_wall": "Cavity Brick (280mm)",
+            "interior_wall": "Brick Partition (115mm)",
+            "plaster_exterior": "Cement Plaster + Paint (20mm)",
+            "plaster_interior": "Gypsum Plaster + Paint (15mm)",
+            "foundation": "Strip Foundation",
+            "foundation_depth": 1.2,
+            "soil_type": "Clay",
+            "column_type": "RC Rectangular 300x300mm",
+            "beam_type": "RC 230x300mm",
+            "roof_type": "Pitched",
+            "roof_material": "Concrete Tiles",
+            "roof_pitch": 30,
+            "flooring": "tiles",
+            "ceiling": "flat",
+            "rooms": [
+                {"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,
+                 "flooring":"wood","ceiling":"flat","bulbs":4,"sockets":6,"switches":2,
+                 "furniture":[{"item":"Sofa","w":2.0,"d":1.0,"h":0.9}]}
+            ],
+            "doors": [{"type":"Main Entrance","width":1.0,"height":2.1,"wall":"south","height_above_floor":0.0,"material":"Wood"}],
+            "windows": [{"type":"Sliding","width":1.5,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"}],
+            "stairs":{"count":1,"type":"U-shaped","width":1.2},
+            "lifts":{"count":0,"type":"Passenger","capacity":8},
+            "hvac": "Natural Ventilation",
+            "orientation": "South",
+            "wind_direction": "North",
+            "mep_details":{"plumbing_fixtures_per_floor":4,"electrical_load_per_sqm":50},
+            "east_africa_country": "Uganda",
+            "labour_rate_per_day": 15,
+        }
+        st.success("Specification reset to default.")
 
 st.markdown('<div style="text-align:center;padding:1.5rem 0;color:#9b8ec4;font-size:0.8rem;border-top:1px solid rgba(255,255,255,0.05);">⚡ RANDOM · AI Powered · Data Driven · Secure</div>', unsafe_allow_html=True)
