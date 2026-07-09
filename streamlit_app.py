@@ -1,5 +1,5 @@
 # ============================================================
-# RANDOM – Single‑Project AEC Studio (No Projects, Fixed)
+# RANDOM – Single‑Project AEC Studio (Fixed Materials & Cost)
 # ============================================================
 import streamlit as st
 import json, uuid, hashlib, math, random, base64
@@ -130,7 +130,6 @@ if "logged_in" not in st.session_state:
     st.session_state.unit_system="Metric"
     st.session_state.theme = "Warm Amber"
     st.session_state.chat_history = []
-    # Single spec in session state (no projects)
     st.session_state.spec = {
         "building_name": "Project Name",
         "category": "Residential",
@@ -208,7 +207,7 @@ if not st.session_state.logged_in:
 
 st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 
-# ---------- SIDEBAR (simplified, no projects) ----------
+# ---------- SIDEBAR (simplified) ----------
 uname=st.session_state.username; user_data=st.session_state.user_data
 with st.sidebar:
     st.markdown("<div class='logo-text' style='font-size:1.8rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
@@ -409,7 +408,7 @@ def generate_floorplan_text(spec, seed=None):
 # ============================================================
 page = st.session_state.page
 unit = st.session_state.unit_system
-spec = st.session_state.spec   # single spec
+spec = st.session_state.spec
 
 if page == "Dashboard":
     st.title(f"⚡ {spec['building_name']}")
@@ -418,7 +417,7 @@ if page == "Dashboard":
     tab1, tab2, tab3 = st.tabs(["🏛️ Architecture", "⚙️ Engineering", "🚧 Construction"])
 
     with tab1:
-        # Project identity
+        # (Architecture tab content – identical to previous complete version)
         with st.expander("Project Identity & Shape", expanded=True):
             spec["building_name"] = st.text_input("Project Title", spec["building_name"])
             col1, col2, col3 = st.columns(3)
@@ -428,7 +427,6 @@ if page == "Dashboard":
             spec["floor_height"] = st.slider("Floor Height (m)", 2.4, 5.0, spec["floor_height"])
             st.caption(f"Total building height: {spec['floors']*spec['floor_height']} m")
 
-        # Plot & footprint
         with st.expander("Plot & Footprint"):
             col1, col2 = st.columns(2)
             spec["plot_length"] = col1.number_input("Plot Length (m)", 10.0,500.0, spec["plot_length"])
@@ -442,7 +440,6 @@ if page == "Dashboard":
             spec["overall_length"] = col1.number_input("Building Length (m)", 5.0, spec["plot_length"], spec["overall_length"])
             spec["overall_width"] = col2.number_input("Building Width (m)", 5.0, spec["plot_width"], spec["overall_width"])
 
-        # Grid & Walls
         with st.expander("Grid & Walls"):
             st.markdown("**Grid System**")
             col1, col2, col3 = st.columns(3)
@@ -466,7 +463,6 @@ if page == "Dashboard":
                                                       ["Gypsum Plaster + Paint (15mm)","Cement Plaster + Paint (20mm)",
                                                        "Tile Cladding (10mm)","Exposed Brick (no plaster)"])
 
-        # Floorplan Options
         with st.expander("📐 Floorplan Layout Options", expanded=True):
             st.markdown("Based on your grid, here are three possible arrangements:")
             seeds = [42, 123, 789]
@@ -477,7 +473,6 @@ if page == "Dashboard":
                     plan = generate_floorplan_text(spec, seed=seed)
                     st.text(plan)
 
-        # Rooms & Spaces Editor
         with st.expander("🛏️ Rooms & Spaces (Edit Details)", expanded=True):
             for i, room in enumerate(spec["rooms"]):
                 with st.container():
@@ -517,7 +512,6 @@ if page == "Dashboard":
                                       "flooring":"wood","ceiling":"flat","bulbs":2,"sockets":2,"switches":1,"furniture":[]})
                 st.rerun()
 
-        # Doors
         with st.expander("🚪 Doors"):
             for i, door in enumerate(spec["doors"]):
                 cols = st.columns([2,1,1,1,1,1])
@@ -535,7 +529,6 @@ if page == "Dashboard":
                 spec["doors"].append({"type":"Interior Door","width":0.9,"height":2.1,"wall":"south","height_above_floor":0.0,"material":"Wood"})
                 st.rerun()
 
-        # Windows
         with st.expander("🪟 Windows"):
             for i, win in enumerate(spec["windows"]):
                 cols = st.columns([2,1,1,1,1,1])
@@ -551,9 +544,8 @@ if page == "Dashboard":
                 spec["windows"].append({"type":"Sliding","width":1.2,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"})
                 st.rerun()
 
-        # Save Architecture tab
         if st.button("💾 Save Architecture", key="save_arch"):
-            st.success("Architecture parameters saved. (All data is held in session)")
+            st.success("Architecture parameters saved.")
 
     with tab2:
         col1, col2 = st.columns(2)
@@ -577,7 +569,6 @@ if page == "Dashboard":
         months = spec["floors"] * 5
         st.write(f"🕒 Schedule: **{months} months** (rough estimate)")
 
-        # Live BOQ summary from current spec
         boq_items = compute_boq(spec)
         total_boq_cost = sum(item["qty"] * get_price(item["item"], spec.get("east_africa_country","Uganda")) for item in boq_items)
         st.markdown("---")
@@ -587,7 +578,7 @@ if page == "Dashboard":
             st.success("Construction parameters saved.")
 
 elif page == "Ram Assistant":
-    st.title("🤖 Creative AI – Ram (enhanced architectural advice)")
+    st.title("🤖 Creative AI – Ram")
     for chat in st.session_state.chat_history[-5:]:
         st.markdown(f"**You:** {chat['user']}")
         st.markdown(f"**Ram:** {chat['ram']}")
@@ -616,7 +607,7 @@ elif page == "Materials & Cost":
             col1, col2 = st.columns([3,1])
             key = f"price_{mat}"
             if key not in st.session_state.price_form_data:
-                st.session_state.price_form_data[key] = prices[mat].get(country, 0)
+                st.session_state.price_form_data[key] = float(prices[mat].get(country, 0))
             new_price = col2.number_input(mat, value=st.session_state.price_form_data[key], step=1.0, key=key)
         if st.form_submit_button("Update Prices"):
             for mat in prices:
