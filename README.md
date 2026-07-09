@@ -1,4 +1,4 @@
-# RANDOM V4 Evolution Studio
+# RANDOM Studio
 
 Multi‑objective AI‑powered architectural design exploration.
 Evolve building concepts, view 3D stacked models, edit rooms, export IFC/glTF.
