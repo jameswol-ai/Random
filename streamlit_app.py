@@ -1,677 +1,423 @@
-# ============================================================
-# RANDOM – AI Architectural Design Studio
-# (Standards: Metric Handbook, Architectural Graphic Standards)
-# ============================================================
-import streamlit as st, json, uuid, random, hashlib, math
+"""
+Random Architecture Intelligence Engine
+Evolutionary Spatial Layout Synthesis & Diagnostics
+Zero-Dependency Single-File Streamlit Implementation
+"""
+
+import streamlit as st
+import json
+import uuid
+import random
 from pathlib import Path
 from datetime import datetime
-import pandas as pd, plotly.graph_objects as go, plotly.express as px
-from PIL import Image, ImageDraw, ImageFont
-import io, numpy as np, base64, struct
 
-# ---------- CONFIG ----------
-st.set_page_config(page_title="RANDOM Studio", page_icon="⚡", layout="wide")
-DATA_DIR = Path("data"); DATA_DIR.mkdir(exist_ok=True)
-USER_FILE = DATA_DIR / "users.json"
-FONT = ImageFont.load_default()
-XP_PER_LEVEL = 100
+# -------------------------------
+# CONFIG & GLOBAL STUDIO STYLING
+# -------------------------------
 
-# ---------- THEME ----------
-st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-html,body,.stApp{background:radial-gradient(circle at top,#0a0f14,#05080c);font-family:'Inter',sans-serif;color:#e0e5eb}
-h1,h2,h3,h4,h5,h6{font-weight:600;color:#f0f4f8;letter-spacing:-0.5px}
-[data-testid="stSidebar"]{background:linear-gradient(180deg,#0f1319,#080b10);border-right:1px solid #2a2f38;box-shadow:inset -4px 0 12px rgba(0,0,0,0.3)}
-.logo-text{font-size:2.4rem;font-weight:700;background:linear-gradient(135deg,#fbbf24,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.5rem}
-.stButton>button{background:linear-gradient(135deg,#fbbf24,#f97316);color:#0f172a;border:none;border-radius:14px;padding:0.7rem 2rem;font-weight:600;transition:all 0.3s;box-shadow:0 6px 20px rgba(251,191,36,0.25)}
-.stButton>button:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(251,191,36,0.4)}
-.xp-container{display:flex;align-items:center;gap:10px;margin-bottom:1.2rem}
-.xp-bar-bg{flex:1;height:10px;background:#1e293b;border-radius:6px;overflow:hidden}
-.xp-bar-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f97316);border-radius:6px;box-shadow:0 0 10px #f97316}
-.footer{text-align:center;padding:1.5rem 0;color:#5f6b7a;font-size:0.8rem;border-top:1px solid #2a2f38}
-</style>""",unsafe_allow_html=True)
+st.set_page_config(
+    page_title="Random Studio Engine",
+    page_icon="📐",
+    layout="wide"
+)
 
-# ---------- AUTH ----------
-def hash_password(pw): return hashlib.sha256((pw+"rand_salt").encode()).hexdigest()
-def load_users():
-    if USER_FILE.exists():
-        try:
-            with open(USER_FILE) as f: return json.load(f)
-        except: return []
-    return []
-def save_users(users):
-    with open(USER_FILE,"w") as f: json.dump(users,f,indent=2)
-def get_user(uname):
-    for u in load_users():
-        if u["username"]==uname: return u
-    return None
-def create_user(uname,pw,role="user"):
-    users=load_users()
-    if get_user(uname): raise ValueError("Username exists")
-    user={"username":uname,"password_hash":hash_password(pw),"role":role,"level":1,"xp":0,"badges":[],"created":datetime.now().isoformat()}
-    users.append(user); save_users(users)
-    return user
-def authenticate(uname,pw):
-    u=get_user(uname)
-    if u and u["password_hash"]==hash_password(pw): return u
-    return None
-def update_user_data(uname,updates):
-    users=load_users()
-    for u in users:
-        if u["username"]==uname: u.update(updates); break
-    save_users(users)
-def xp_for_level(lvl): return lvl*XP_PER_LEVEL
-def add_xp(uname,amount):
-    u=get_user(uname)
-    if not u: return False
-    old=u["level"]; u["xp"]+=amount
-    while u["xp"]>=xp_for_level(u["level"]):
-        u["xp"]-=xp_for_level(u["level"]); u["level"]+=1
-        if u["level"]%5==0 and f"level_{u['level']}" not in u["badges"]:
-            u["badges"].append(f"level_{u['level']}")
-    update_user_data(uname,{"level":u["level"],"xp":u["xp"],"badges":u["badges"]})
-    return u["level"]>old
+MEMORY_FILE = Path("arc_memory.json")
 
-# ---------- MEMORY ----------
-def get_memory_path(uname): return DATA_DIR/f"{uname}_memory.json"
-DEFAULT_MEMORY={"projects":[],"saved_designs":[],"logs":[]}
-def load_memory(uname):
-    path=get_memory_path(uname)
-    if path.exists():
-        try:
-            with open(path,encoding="utf-8") as f: data=json.load(f)
-            for k in DEFAULT_MEMORY:
-                if k not in data: data[k]=DEFAULT_MEMORY[k]
-            return data
-        except: return DEFAULT_MEMORY.copy()
-    return DEFAULT_MEMORY.copy()
-def save_memory(uname,mem):
-    with open(get_memory_path(uname),"w",encoding="utf-8") as f: json.dump(mem,f,indent=4)
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;700&display=swap');
 
-# ---------- STANDARDS (Metric Handbook / Architectural Graphic Standards) ----------
-METRIC_STANDARDS = {
-    "residential": {"ceil_height":2.4,"bedroom":12,"living":20,"kitchen":10,"bathroom":5,"dining":12,"study":9,"corridor_width":1.2},
-    "commercial": {"ceil_height":3.0,"office":12,"meeting":15,"reception":12,"kitchen":15,"bathroom":6,"corridor_width":1.5},
-    "industrial": {"ceil_height":4.0,"hall":50,"storage":30,"office":12,"bathroom":6,"corridor_width":2.0}
+html, body, [data-testid="stSidebarNav"] {
+    font-family: 'Plus Jakarta Sans', sans-serif;
 }
-IMPERIAL_FACTOR = 10.7639   # m² → ft²
 
-# ---------- UNIT CONVERTER ----------
-def format_area(val, unit_sys="Metric"):
-    if unit_sys=="Imperial": return f"{val*IMPERIAL_FACTOR:.0f} ft²"
-    return f"{val:.1f} m²"
-def format_length(val, unit_sys="Metric"):
-    if unit_sys=="Imperial": return f"{val*3.28084:.1f} ft"
-    return f"{val:.2f} m"
-
-# ---------- ARCHITECTURE TYPES ----------
-ARCH_TYPES = {
-    "Residential": ["Luxury Villa","Modern Apartment","Townhouse"],
-    "Commercial": ["Boutique Office","Corporate Hub","Hotel Resort","Medical Clinic"],
-    "Industrial": ["Distribution Warehouse","Manufacturing Facility"]
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
-def get_domain(name):
-    for d,items in ARCH_TYPES.items():
-        if name in items: return d.lower()
-    return "commercial"
 
-FLOORING_OPTS = ["tiles","wood","concrete","carpet","marble"]
-CEILING_OPTS = ["flat","hanging","vaulted","exposed","coffered"]
+.arc-blueprint-canvas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #090d16;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px dashed #334155;
+    margin: 15px 0;
+}
 
-# ---------- DESIGN GENERATOR (refined with standards) ----------
-def create_floor(level, building_type, total_area, modules, floor_area, n_rooms, enforce):
-    domain = get_domain(building_type)
-    std = METRIC_STANDARDS[domain]
-    ceil_height = std["ceil_height"]
-    if floor_area is None: floor_area = total_area/(modules*0.5+1)
-    side = int(math.sqrt(floor_area))+1
-    w = max(6, min(side, 30))   # increased max width
-    d = max(6, min(side, 30))
-    # snap to 1.2 m modules (standard grid)
-    w = max(4, round(w/1.2)*1.2)
-    d = max(4, round(d/1.2)*1.2)
+.arc-room-module {
+    flex: 1 1 calc(33.333% - 16px);
+    min-width: 220px;
+    padding: 20px;
+    border-radius: 8px;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-    ess = {"residential":["living","kitchen","bathroom"],"commercial":["office","bathroom","corridor"],"industrial":["hall","bathroom","storage"]}
-    # ensure at least one corridor if more than 2 rooms
-    if n_rooms>2 and "corridor" not in ess[domain]:
-        ess[domain].append("corridor")
-    rtypes = ess[domain] + random.choices(
-        ["bedroom","study","dining","meeting","reception","office"],
-        k=max(0, n_rooms - len(ess[domain]))
-    )
-    rtypes = rtypes[:n_rooms]
+.arc-room-module:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
 
-    # compute required widths based on minimum areas (assumed depth of 5–8 m)
-    typical_depth = d if d<10 else 6   # assume 6m deep for residential, etc.
-    widths = []
-    for rt in rtypes:
-        min_area = std.get(rt, 10) if rt in std else 10
-        if rt == "corridor":
-            req_width = std["corridor_width"]
-        else:
-            # width = area / typical_depth
-            req_width = max(2.0, min_area / typical_depth)
-        widths.append(req_width)
-    total_req = sum(widths)
-    available_width = w - 0.2 * len(rtypes)  # subtract interior wall thickness
-    if total_req > available_width:
-        scale = available_width / total_req
-        widths = [ww*scale for ww in widths]
-    else:
-        extra = (available_width - total_req) / len(rtypes)
-        widths = [ww+extra for ww in widths]
+.room-meta {
+    font-family: 'Space Grotesk', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-top: 8px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-    rooms = []
-    x0 = 0.0
-    for i, rt in enumerate(rtypes):
-        rw = widths[i]
-        if rw < 1.5: continue
-        poly = [(x0,0),(x0+rw,0),(x0+rw,d),(x0,d)]
-        # openings – one door (may be edited later)
-        door_type = "main" if rt in ["living","office","meeting","reception"] else "interior"
-        if rt=="bathroom": door_type="bathroom"
-        openings = [{"type":"door","wall":"north","width":0.9,"door_type":door_type,"adjacent":None}]
-        if rt not in ("corridor","bathroom","storage"):
-            win_w = min(rw*0.6, 2.0)
-            openings.append({"type":"window","wall":"south","width":win_w})
-        room = {
-            "name": f"{rt.capitalize()} {i+1}",
-            "type": rt,
-            "polygon": poly,
-            "openings": openings,
-            "flooring": random.choice(FLOORING_OPTS),
-            "ceiling": random.choice(CEILING_OPTS),
-            "ceiling_height": ceil_height
-        }
-        rooms.append(room)
-        x0 += rw
+# -------------------------------
+# SYSTEM MEMORY MANAGEMENT
+# -------------------------------
 
-    walls = _create_walls(w,d)
-    # interior walls between rooms
-    int_walls = []
-    cur_x = 0
-    for room in rooms:
-        if cur_x > 0:
-            int_walls.append({"start":(cur_x,0),"end":(cur_x,d),"thickness":0.2})
-        cur_x += room["polygon"][1][0] - room["polygon"][0][0]
-    walls.extend(int_walls)
-    cols = _place_columns(w,d)
-    beams = _place_beams(w,d)
-    return {"level":level,"height":ceil_height,"rooms":rooms,"walls":walls,"columns":cols,"beams":beams,"slab":{"thickness":0.2}}
+DEFAULT_STATE = {
+    "projects": [],
+    "designs": [],
+    "logs": [],
+    "evolution": []
+}
 
-def _create_walls(w,d):
-    return [{"start":(0,0),"end":(w,0),"thickness":0.3},{"start":(w,0),"end":(w,d),"thickness":0.3},
-            {"start":(w,d),"end":(0,d),"thickness":0.3},{"start":(0,d),"end":(0,0),"thickness":0.3}]
-def _place_columns(w,d):
-    cols=[{"center":(0,0),"size":0.3,"shape":"square"},{"center":(w,0),"size":0.3,"shape":"square"},
-          {"center":(0,d),"size":0.3,"shape":"square"},{"center":(w,d),"size":0.3,"shape":"square"}]
-    for x in np.arange(4,w,4):
-        for y in np.arange(4,d,4):
-            if x<w-0.5 and y<d-0.5: cols.append({"center":(x,y),"size":0.25,"shape":"circle"})
-    return cols
-def _place_beams(w,d):
-    return [{"start":(0,0.2),"end":(w,0.2),"width":0.2},{"start":(0,d-0.2),"end":(w,d-0.2),"width":0.2}]
+def load_memory():
+    """Load application memory from file, or return a fresh copy."""
+    if MEMORY_FILE.exists():
+        try:
+            with open(MEMORY_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return DEFAULT_STATE.copy()
+    return DEFAULT_STATE.copy()
 
-def generate_design(building, modules, num_floors=2, n_rooms=4, enforce=True):
-    total_area = 100 + modules*25
-    floor_area = total_area/num_floors
-    floors = []
-    for lvl in range(1, num_floors+1):
-        fl = create_floor(lvl, building, total_area, modules, floor_area, n_rooms, enforce)
-        if fl: floors.append(fl)
-    return {"id":str(uuid.uuid4())[:8].upper(),"building":building,"domain":get_domain(building),
-            "modules":modules,"floors":floors,"area":total_area,"num_floors":num_floors,"cost":0}
-
-# ---------- 2D FLOOR PLAN ----------
-def draw_opening(draw, poly, opening, scale, tx_func, adjacent_name=None):
-    wall = opening.get("wall","south"); wid = opening.get("width",0.9)
-    if wall=="north": p1,p2 = poly[0],poly[1]
-    elif wall=="south": p1,p2 = poly[3],poly[2]
-    elif wall=="east": p1,p2 = poly[1],poly[2]
-    else: p1,p2 = poly[0],poly[3]
-    dx,dy = p2[0]-p1[0], p2[1]-p1[1]
-    length = math.hypot(dx,dy)
-    if length==0: return
-    frac = 0.5 - (wid/length)/2
-    if frac < 0: frac = 0
-    sx = p1[0]+dx*frac; sy = p1[1]+dy*frac
-    ex = sx+dx*(wid/length); ey = sy+dy*(wid/length)
-    s = tx_func(sx,sy); e = tx_func(ex,ey)
-    if opening["type"]=="door":
-        draw.line([s,e], fill=(255,255,255), width=6)
-        mid = ((s[0]+e[0])//2,(s[1]+e[1])//2)
-        draw.arc([mid[0]-8,mid[1]-8,mid[0]+8,mid[1]+8],0,90,fill=(0,0,0))
-        if adjacent_name:
-            draw.text((mid[0]-10,mid[1]-15), adjacent_name, fill=(255,0,0), font=FONT)
-    else:
-        draw.line([s,e], fill=(255,255,255), width=6)
-        draw.line([s,e], fill=(34,197,94), width=3)
-
-def generate_floor_plan(design, floor_idx=0, scale=35, show_adjacency=True):
-    if floor_idx>=len(design.get("floors",[])): return None
-    floor = design["floors"][floor_idx]
-    pts=[]
-    for wall in floor["walls"]: pts.extend([wall["start"],wall["end"]])
-    for col in floor["columns"]: pts.append(col["center"])
-    if not pts: return None
-    xs=[p[0] for p in pts]; ys=[p[1] for p in pts]
-    min_x,max_x=min(xs),max(xs); min_y,max_y=min(ys),max(ys)
-    margin=1.5
-    wp=int((max_x-min_x+2*margin)*scale)+60; hp=int((max_y-min_y+2*margin)*scale)+60
-    img=Image.new('RGB',(wp,hp),(245,245,245)); draw=ImageDraw.Draw(img)
-    def tx(x,y): return ((x-min_x+margin)*scale+30,(y-min_y+margin)*scale+30)
-
-    draw.rectangle([tx(min_x,min_y),tx(max_x,max_y)],outline=(150,150,150),width=2)
-    for wall in floor["walls"]:
-        p1,p2=tx(*wall["start"]),tx(*wall["end"])
-        thick=max(2,int(wall.get("thickness",0.25)*scale))
-        draw.line([p1,p2],fill=(40,40,40),width=thick)
-    for col in floor["columns"]:
-        c=tx(*col["center"]); size=max(2,int(col["size"]*scale))
-        if col.get("shape")=="circle": draw.ellipse([c[0]-size,c[1]-size,c[0]+size,c[1]+size],fill=(100,100,100))
-        else: draw.rectangle([c[0]-size,c[1]-size,c[0]+size,c[1]+size],fill=(100,100,100))
-    for beam in floor["beams"]:
-        p1,p2=tx(*beam["start"]),tx(*beam["end"]); draw.line([p1,p2],fill=(255,180,0),width=5)
-
-    room_colors = {"living":(200,240,200),"kitchen":(255,245,200),"dining":(240,230,200),
-                   "bedroom":(180,230,180),"bathroom":(210,190,230),"corridor":(235,240,235),
-                   "office":(200,235,200),"meeting":(220,200,240),"reception":(190,220,190),
-                   "hall":(210,210,190),"storage":(200,200,200),"study":(230,220,240)}
-    # adjacency display
-    for i in range(len(floor["rooms"])-1):
-        if abs(floor["rooms"][i]["polygon"][1][0] - floor["rooms"][i+1]["polygon"][0][0])<0.1:
-            # mark adjacency in openings (not ideal, but kept for visual)
-            pass
-    for idx, room in enumerate(floor["rooms"]):
-        poly = [tx(x,y) for (x,y) in room["polygon"]]
-        color = room_colors.get(room.get("type",""),(210,230,210))
-        draw.polygon(poly,fill=color,outline=(80,80,80))
-        if poly:
-            cx=sum(p[0] for p in poly)/len(poly); cy=sum(p[1] for p in poly)/len(poly)
-            draw.text((cx-20,cy-5),room["name"][:10],fill=(0,0,0),font=FONT)
-        for op in room.get("openings",[]):
-            adj_text = None
-            if show_adjacency and op["type"]=="door":
-                adj = op.get("adjacent")
-                if adj is not None and adj < len(floor["rooms"]):
-                    adj_text = floor["rooms"][adj]["name"][:6]
-            draw_opening(draw, room["polygon"], op, scale, tx, adj_text)
-    draw.text((10,5),f"Floor {floor['level']} - {design.get('building','')}",fill=(20,20,20))
-    buf=io.BytesIO(); img.save(buf,format="PNG"); return buf.getvalue()
-
-# ---------- 3D STACKED VIEW ----------
-def cuboid_mesh(x0,y0,z0,dx,dy,dz):
-    x=[x0,x0+dx,x0+dx,x0,x0,x0+dx,x0+dx,x0]
-    y=[y0,y0,y0+dy,y0+dy,y0,y0,y0+dy,y0+dy]
-    z=[z0,z0,z0,z0,z0+dz,z0+dz,z0+dz,z0+dz]
-    i=[0,0,4,4,0,1,5,4,1,2,6,5,2,3,7,6,3,0,4,7,1,0,3,2]
-    j=[1,3,5,7,1,5,6,5,2,6,7,6,3,7,4,7,0,4,5,4,0,3,2,1]
-    k=[3,2,7,6,4,4,5,5,6,5,6,6,7,6,7,7,7,5,4,4,3,2,1,0]
-    return x,y,z,i,j,k
-def cylinder_mesh(cx,cy,zb,zt,radius,n=12):
-    theta=np.linspace(0,2*np.pi,n,endpoint=False)
-    xb=cx+radius*np.cos(theta); yb=cy+radius*np.sin(theta)
-    xt,yt=xb,yb; zb_arr=np.full_like(xb,zb); zt_arr=np.full_like(xt,zt)
-    x=np.concatenate([xb,xt]); y=np.concatenate([yb,yt]); z=np.concatenate([zb_arr,zt_arr])
-    i,j,k=[],[],[]
-    for idx in range(n):
-        nxt=(idx+1)%n
-        i.extend([idx,nxt,n+nxt,n+idx]); j.extend([nxt,n+nxt,n+nxt,n+idx]); k.extend([n+nxt,n+idx,n+idx,nxt])
-    return x,y,z,i,j,k
-def build_3d_stacked_figure(design):
-    fig=go.Figure()
-    for fi,floor in enumerate(design["floors"]):
-        z_base = fi*floor.get("height",3.0); z_top = z_base+floor.get("height",3.0)
-        slab_thick = floor.get("slab",{}).get("thickness",0.2)
-        all_x=[p[0] for wall in floor["walls"] for p in (wall["start"],wall["end"])]
-        all_y=[p[1] for wall in floor["walls"] for p in (wall["start"],wall["end"])]
-        min_x,max_x=min(all_x),max(all_x); min_y,max_y=min(all_y),max(all_y)
-        x,y,z,i,j,k=cuboid_mesh(min_x,min_y,z_base,max_x-min_x,max_y-min_y,slab_thick)
-        fig.add_trace(go.Mesh3d(x=x,y=y,z=z,i=i,j=j,k=k,color=f'hsl({fi*60},60%,50%)',opacity=0.3,name=f'Slab F{floor["level"]}'))
-        for wall in floor["walls"]:
-            sx,sy=wall["start"]; ex,ey=wall["end"]; dx=ex-sx; dy=ey-sy; length=np.sqrt(dx**2+dy**2); angle=np.arctan2(dy,dx)
-            thick=wall.get("thickness",0.25)
-            wx,wy,wz,iw,jw,kw=cuboid_mesh(sx,sy-thick/2,z_base,length,thick,z_top-z_base)
-            wx,wy=np.array(wx)-sx,np.array(wy)-sy; cos_a,sin_a=np.cos(angle),np.sin(angle)
-            rotx=wx*cos_a-wy*sin_a; roty=wx*sin_a+wy*cos_a; wx=rotx+sx; wy=roty+sy
-            fig.add_trace(go.Mesh3d(x=wx,y=wy,z=wz,i=iw,j=jw,k=kw,color='tan',opacity=0.7,showlegend=False))
-        for col in floor["columns"]:
-            cx,cy=col["center"]; radius=col["size"]/2
-            xc,yc,zc,ic,jc,kc=cylinder_mesh(cx,cy,z_base,z_top,radius)
-            fig.add_trace(go.Mesh3d(x=xc,y=yc,z=zc,i=ic,j=jc,k=kc,color='grey',opacity=0.8,showlegend=False))
-        beam_z_base=z_top-slab_thick-0.4
-        for beam in floor["beams"]:
-            sx,sy=beam["start"]; ex,ey=beam["end"]; dx=ex-sx; dy=ey-sy; length=np.sqrt(dx**2+dy**2); angle=np.arctan2(dy,dx)
-            bw=beam.get("width",0.2); bh=0.4
-            bx,by,bz,ib,jb,kb=cuboid_mesh(sx,sy-bw/2,beam_z_base,length,bw,bh)
-            bx,by=np.array(bx)-sx,np.array(by)-sy; cos_a,sin_a=np.cos(angle),np.sin(angle)
-            rotx=bx*cos_a-by*sin_a; roty=bx*sin_a+by*cos_a; bx=rotx+sx; by=roty+sy
-            fig.add_trace(go.Mesh3d(x=bx,y=by,z=bz,i=ib,j=jb,k=kb,color='seagreen',opacity=0.6,showlegend=False))
-        cx=(min_x+max_x)/2; cy=(min_y+max_y)/2
-        fig.add_trace(go.Scatter3d(x=[cx],y=[cy],z=[z_top+0.2],mode='text',text=[f"Floor {floor['level']}"],
-                                   textfont=dict(size=14,color='white'),showlegend=False))
-    fig.update_layout(scene=dict(xaxis=dict(visible=False),yaxis=dict(visible=False),zaxis=dict(visible=False),
-                                 aspectmode='data',camera=dict(eye=dict(x=1.5,y=1.5,z=1.2))),
-                      margin=dict(l=0,r=0,t=30,b=0),height=600,title="3D Stacked View")
-    return fig
-
-# ---------- ELEVATIONS & SECTIONS (fixed) ----------
-def generate_elevation(design, direction='south'):
-    if not design.get("floors"):
-        return None
-    # gather all wall coordinates
-    all_x, all_y = [], []
-    for floor in design["floors"]:
-        for wall in floor["walls"]:
-            all_x.extend([wall["start"][0], wall["end"][0]])
-            all_y.extend([wall["start"][1], wall["end"][1]])
-    if not all_x:
-        return None
-    min_x, max_x = min(all_x), max(all_x)
-    min_y, max_y = min(all_y), max(all_y)
-    width = max_x - min_x
-    total_height = sum(f["height"] for f in design["floors"])
-    scale = 30
-    img_w = int(width * scale) + 60
-    img_h = int(total_height * scale) + 60
-    if img_w < 1 or img_h < 1:
-        return None
-    img = Image.new('RGB', (img_w, img_h), (255, 255, 255))
-    draw = ImageDraw.Draw(img)
-
-    def tx(x, y):
-        # x: horizontal position along building width, y: vertical height from ground
-        return (int((x - min_x) * scale) + 30, int(img_h - y * scale - 30))
-
-    # draw building outline
-    draw.rectangle([tx(min_x, 0), tx(max_x, total_height)], outline=(100, 100, 100), width=2)
-
-    # draw openings (windows/doors) that face the chosen direction
-    for floor in design["floors"]:
-        for room in floor["rooms"]:
-            for op in room["openings"]:
-                if (direction in ('north', 'south') and op["wall"] in ('north', 'south')) or \
-                   (direction in ('east', 'west') and op["wall"] in ('east', 'west')):
-                    poly = room["polygon"]
-                    # find opening coordinates on the projection plane
-                    if direction in ('north', 'south'):
-                        # use x range of the wall
-                        if direction == 'south':
-                            x1, x2 = poly[3][0], poly[2][0]  # south wall (bottom edge)
-                        else:
-                            x1, x2 = poly[0][0], poly[1][0]  # north wall (top edge)
-                        # opening width in metres
-                        op_w = op["width"]
-                        # position opening centered along the wall
-                        ox = (x1 + x2) / 2 - op_w / 2
-                        # sill height ~ 1 m above floor level (floor level = cum_z)
-                        cum_z = (floor["level"] - 1) * floor["height"]
-                        sill_y = cum_z + 1.0
-                        # clamp coordinates to building extent
-                        ox = max(min_x, min(ox, max_x - op_w))
-                        draw.rectangle([tx(ox, sill_y), tx(ox + op_w, sill_y + 1.2)],
-                                       fill=(200, 230, 240), outline=(0, 0, 0))
-                    else:
-                        # east/west: use y range of the wall projected onto x axis
-                        # For simplicity, we'll skip precise placement and draw a small mark
-                        pass  # you can expand this similarly with y-coordinates
-
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
-# ---------- EXPORTS (stub) ----------
-def export_ifc(design):
-    return "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nFILE_NAME('','',''),'RANDOM','');\nFILE_SCHEMA(('IFC2X3'));\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;"
-def design_to_glb(design):
-    v=[0,0,0,1,0,0,0,1,0]; i=[0,1,2]
-    vbin=struct.pack(f'<{len(v)}f',*v); ibin=struct.pack(f'<{len(i)}H',*i)
+def save_memory():
+    """Persist current in‑memory state to disk."""
     try:
-        from pygltflib import GLTF2, Buffer, BufferView, Accessor, Mesh, Primitive, Node, Scene, Asset, ELEMENT_ARRAY_BUFFER, ARRAY_BUFFER, FLOAT, UNSIGNED_SHORT
-        gltf=GLTF2(); gltf.asset=Asset(version="2.0")
-        buf=Buffer(byteLength=len(vbin)+len(ibin)); gltf.buffers.append(buf)
-        bv1=BufferView(buffer=0,byteOffset=0,byteLength=len(vbin),target=ARRAY_BUFFER)
-        bv2=BufferView(buffer=0,byteOffset=len(vbin),byteLength=len(ibin),target=ELEMENT_ARRAY_BUFFER)
-        gltf.bufferViews.extend([bv1,bv2])
-        acc1=Accessor(bufferView=0,byteOffset=0,componentType=FLOAT,count=len(v)//3,type="VEC3",max=[1,1,0],min=[0,0,0])
-        acc2=Accessor(bufferView=1,byteOffset=0,componentType=UNSIGNED_SHORT,count=len(i),type="SCALAR",max=[2],min=[0])
-        gltf.accessors.extend([acc1,acc2])
-        prim=Primitive(attributes={"POSITION":0},indices=1); mesh=Mesh(primitives=[prim]); gltf.meshes.append(mesh)
-        node=Node(mesh=0); gltf.nodes.append(node); scene=Scene(nodes=[0]); gltf.scenes.append(scene); gltf.scene=0
-        gltf.binary_blob=vbin+ibin; return gltf.save_to_bytes()
-    except: return None
+        with open(MEMORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.memory, f, indent=2)
+    except Exception:
+        pass
 
-# ---------- ROOM EDITOR ----------
-def render_room_editor(design):
-    if "floors" not in design: st.warning("No floors"); return
-    floor_idx = st.selectbox("Floor", range(len(design["floors"])),
-                             format_func=lambda i: f"Floor {design['floors'][i]['level']}")
-    floor = design["floors"][floor_idx]
-    room_names = [f"{r['name']} ({r['type']})" for r in floor["rooms"]]
-    selected = st.selectbox("Select room", room_names)
-    if selected is None: return
-    room_idx = room_names.index(selected)
-    room = floor["rooms"][room_idx]
+def log_event(msg: str):
+    """Record a timestamped log entry and persist."""
+    st.session_state.memory["logs"].append({
+        "time": datetime.now().isoformat(),
+        "msg": msg
+    })
+    save_memory()
+
+# Initialize session state
+if "memory" not in st.session_state:
+    st.session_state.memory = load_memory()
+
+if "active_design" not in st.session_state:
+    st.session_state.active_design = None
+
+if "active_history" not in st.session_state:
+    st.session_state.active_history = []
+
+mem = st.session_state.memory
+
+# -------------------------------
+# ARCHITECTURAL RULES & GENETICS
+# -------------------------------
+
+ARCH_DOMAINS = {
+    "Residential": ["Luxury Villa", "Modern Apartment", "Townhouse"],
+    "Commercial": ["Boutique Office", "Corporate Hub", "Hotel Resort", "Medical Clinic"],
+    "Industrial": ["Distribution Warehouse", "Advanced Manufacturing Plant"]
+}
+
+def get_domain(btype):
+    """Find the domain to which a building type belongs."""
+    for domain, types in ARCH_DOMAINS.items():
+        if btype in types:
+            return domain
+    return "Unknown"
+
+def generate_base_design(btype: str, bedrooms: int) -> dict:
+    """Create a random initial design based on typology and spatial modules."""
+    core_rooms = ["Living Room", "Gourmet Kitchen", "Primary Bathroom"] + \
+                 ["Flex Space"] * random.randint(1, 3)
+
+    est_area = 65 + 44 + (3 * 3) + (bedrooms * 18)
+
+    return {
+        "id": str(uuid.uuid4())[:8].upper(),
+        "type": btype,
+        "domain": get_domain(btype),
+        "bedrooms": bedrooms,
+        "rooms": core_rooms,
+        "area_sqm": est_area,
+        "structure": {
+            "columns": random.randint(14, 36),
+            "beams": random.randint(28, 72)
+        },
+        "cost": 0
+    }
+
+def mutate_design(design_ctx: dict) -> dict:
+    """Randomly perturb a design to explore adjacent solutions."""
+    d = json.loads(json.dumps(design_ctx))  # deep copy
+
+    d["structure"]["columns"] = max(
+        10,
+        d["structure"]["columns"] + random.randint(-2, 4)
+    )
+
+    d["structure"]["beams"] = max(
+        16,
+        d["structure"]["beams"] + random.randint(-4, 6)
+    )
+
+    if random.random() > 0.5:
+        d["rooms"].append("Adaptive Modular Terracing")
+        d["area_sqm"] += 20
+
+    d["cost"] = int(d["area_sqm"] * random.randint(1300, 2500))
+    return d
+
+def calculate_fitness(d: dict) -> dict:
+    """Compute individual fitness metrics for a design."""
+    structural_ratio = d["structure"]["beams"] / max(1, d["structure"]["columns"])
+    struct_score = max(0, 100 - int(abs(structural_ratio - 2.1) * 22))
+
+    cost_per_sqm = d["cost"] / max(1, d["area_sqm"])
+    cost_score = max(0, 100 - int(abs(cost_per_sqm - 1650) * 0.04))
+
+    complexity_score = min(100, len(d["rooms"]) * 9)
+
+    return {
+        "structural_integrity": struct_score,
+        "cost_efficiency": cost_score,
+        "spatial_complexity": complexity_score
+    }
+
+def calculate_aggregate_score(fit_dict: dict) -> int:
+    """Average the three fitness dimensions into one overall score."""
+    return int(sum(fit_dict.values()) / len(fit_dict))
+
+def run_evolutionary_loop(btype: str, bedrooms: int, generations: int, pop_size: int) -> tuple:
+    """Run a simple genetic algorithm and return the best design and its score history."""
+    population = [generate_base_design(btype, bedrooms) for _ in range(pop_size)]
+    history = []
+
+    for _ in range(generations):
+        scored_pop = []
+
+        for d in population:
+            fit = calculate_fitness(d)
+            d["fitness"] = fit
+            d["score"] = calculate_aggregate_score(fit)
+            scored_pop.append(d)
+
+        scored_pop.sort(key=lambda x: x["score"], reverse=True)
+        history.append(scored_pop[0]["score"])
+
+        survivors = scored_pop[:max(2, pop_size // 2)]
+
+        new_generation = []
+        for parent in survivors:
+            new_generation.append(parent)                # keep the elite
+            new_generation.append(mutate_design(parent))  # add a mutated offspring
+
+        population = new_generation[:pop_size]
+
+    return scored_pop[0], history
+
+def generate_floor_plan(design: dict) -> list:
+    """Produce a symbolic floor plan as a list of rooms with dimensions."""
+    rooms = [
+        {"name": "Grand Living Lounge", "w": 6.5, "h": 5.0, "color": "#1e3a8a"},
+        {"name": "Culinary Kitchen", "w": 4.5, "h": 4.0, "color": "#064e3b"},
+        {"name": "Central Powder Room", "w": 3.0, "h": 2.5, "color": "#78350f"}
+    ]
+
+    for i in range(design["bedrooms"]):
+        name = f"Master Suite {i+1}" if i == 0 else f"Standard Bedroom {i+1}"
+        w = 4.5 if i == 0 else 4.0
+        rooms.append({
+            "name": name,
+            "w": w,
+            "h": 4.0,
+            "color": "#4c1d95"
+        })
+
+    return rooms
+
+# -------------------------------
+# GRAPHICS CANVAS RENDERING ENGINE
+# -------------------------------
+
+def render_native_blueprint(plan: list):
+    """Render a visual representation of the floor plan using CSS flexbox."""
+    st.markdown("### 🗺️ Generative Layout Arrangement")
+
+    canvas_html = '<div class="arc-blueprint-canvas">'
+
+    for room in plan:
+        canvas_html += f"""
+        <div class="arc-room-module" style="background-color:{room['color']}">
+            <div style="font-size:1.15rem;font-weight:600;">
+                {room['name']}
+            </div>
+            <div class="room-meta">
+                📐 {room['w']}m × {room['h']}m Structural Deck
+            </div>
+        </div>
+        """
+
+    canvas_html += "</div>"
+    st.markdown(canvas_html, unsafe_allow_html=True)
+
+# -------------------------------
+# DESIGN METRICS & DIAGNOSTICS
+# -------------------------------
+
+def run_structural_review(d: dict) -> list:
+    """Perform a rule‑based structural audit and return alerts."""
+    alerts = []
+
+    if d["structure"]["columns"] < 16:
+        alerts.append("🔴 Structural Warning: Column density thin for load transfer")
+
+    if d["cost"] / d["area_sqm"] > 2300:
+        alerts.append("🟡 Financial Alert: Cost efficiency threshold exceeded")
+
+    if d["structure"]["beams"] / d["structure"]["columns"] < 1.9:
+        alerts.append("🔵 Beam-column ratio imbalance detected")
+
+    return alerts if alerts else ["🟢 Design structurally stable"]
+
+def calculate_material_takeoffs(d: dict) -> list:
+    """Estimate approximate material quantities based on structural parameters."""
+    return [
+        {
+            "Structural Asset Item": "High-Performance Concrete",
+            "Calculated Takeoff": f"{d['structure']['columns'] * 2.6:.1f} m³"
+        },
+        {
+            "Structural Asset Item": "Tensile Steel Rebar",
+            "Calculated Takeoff": f"{d['structure']['beams'] * 0.48:.2f} MT"
+        },
+        {
+            "Structural Asset Item": "CMU Blocks",
+            "Calculated Takeoff": f"{int(d['area_sqm'] * 42):,} Units"
+        },
+        {
+            "Structural Asset Item": "Dead Load Base",
+            "Calculated Takeoff": f"{int(d['structure']['columns'] * 13.2):,} kN"
+        }
+    ]
+
+# -------------------------------
+# UI WORKSPACE
+# -------------------------------
+
+st.sidebar.title("📐 Arc Studio")
+
+page = st.sidebar.radio(
+    "Studio Workspace",
+    ["Dashboard Control", "Design Synthesis Lab", "Memory Repositories"]
+)
+
+# Flatten building type list for the selectbox
+ARCH_FLAT = sum(ARCH_DOMAINS.values(), [])
+
+input_type = st.sidebar.selectbox("Design Typology Target", ARCH_FLAT)
+input_bedrooms = st.sidebar.slider("Target Spatial Modules", 1, 8, 3)
+input_generations = st.sidebar.slider("Genetic Epoch Cycles", 2, 20, 6)
+input_pop = st.sidebar.slider("Population Bounds", 4, 30, 10)
+
+# -------------------------------
+# DASHBOARD
+# -------------------------------
+
+if page == "Dashboard Control":
+    st.title("📐 Studio Control Dashboard")
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Tracked Space Profiles", len(mem["projects"]))
+    col2.metric("Evolved Blueprint Seeds", len(mem["designs"]))
+    col3.metric("Total Parametric Compute Loops", len(mem["evolution"]))
+
     st.markdown("---")
-    st.subheader(f"✏️ {room['name']}")
-    col1,col2=st.columns(2)
-    with col1:
-        new_width = st.number_input("Width (m)",1.0,20.0,float(room["polygon"][1][0]-room["polygon"][0][0]))
-    with col2:
-        domain = get_domain(design["building"])
-        rtypes = list(METRIC_STANDARDS[domain].keys())[:5]
-        new_type = st.selectbox("Type", rtypes, index=rtypes.index(room["type"]) if room["type"] in rtypes else 0)
-    col3,col4=st.columns(2)
-    with col3:
-        new_flooring = st.selectbox("Flooring", FLOORING_OPTS, index=FLOORING_OPTS.index(room.get("flooring","wood")) if room.get("flooring") in FLOORING_OPTS else 0)
-    with col4:
-        new_ceiling = st.selectbox("Ceiling", CEILING_OPTS, index=CEILING_OPTS.index(room.get("ceiling","flat")) if room.get("ceiling") in CEILING_OPTS else 0)
-    st.markdown("#### Openings")
-    openings = room.get("openings",[])
-    for i,op in enumerate(openings):
-        cols = st.columns([2,2,2,2,1])
-        op_type = cols[0].selectbox("Type",["door","window"],index=0 if op["type"]=="door" else 1,key=f"optype_{i}")
-        wall = cols[1].selectbox("Wall",["north","south","east","west"],
-                                 index=["north","south","east","west"].index(op.get("wall","south")),key=f"opwall_{i}")
-        width_val = cols[2].number_input("Width (m)",0.5,3.0,float(op.get("width",0.9)),0.1,key=f"opwidth_{i}")
-        if op_type=="door":
-            door_style = cols[0].selectbox("Style",["main","interior","bathroom"],
-                                           index=["main","interior","bathroom"].index(op.get("door_type","interior")),
-                                           key=f"opdoor_{i}")
-            adj_options = [("None",None)] + [(f"{floor['rooms'][j]['name']}",j) for j in range(len(floor["rooms"])) if j!=room_idx]
-            current_adj = op.get("adjacent")
-            adj_idx = 0
-            for k,(_,val) in enumerate(adj_options):
-                if val==current_adj: adj_idx=k; break
-            adj_choice = cols[3].selectbox("Connects to",[opt[0] for opt in adj_options],index=adj_idx,key=f"opadj_{i}")
-            op["adjacent"] = adj_options[[opt[0] for opt in adj_options].index(adj_choice)][1]
-        if cols[4].button("🗑",key=f"opdel_{i}"):
-            openings.pop(i); st.rerun()
-        op["type"]=op_type; op["wall"]=wall; op["width"]=width_val
-    if st.button("➕ Add Opening"):
-        openings.append({"type":"door","wall":"south","width":0.9,"door_type":"interior","adjacent":None})
+    st.subheader("Engine Operational Telemetry Logs")
+
+    if mem["logs"]:
+        for log in reversed(mem["logs"][-6:]):
+            st.caption(f"⏱️ {log['time'][11:19]} — {log['msg']}")
+    else:
+        st.info("System logs are currently empty.")
+
+# -------------------------------
+# DESIGN LAB
+# -------------------------------
+
+elif page == "Design Synthesis Lab":
+    st.title("🌍 Algorithmic Design Lab")
+
+    if st.button("Run Generative Architectural Evolution Pipeline", type="primary"):
+        with st.spinner("Evolving structural system..."):
+            best, history = run_evolutionary_loop(
+                input_type,
+                input_bedrooms,
+                input_generations,
+                input_pop
+            )
+
+            best["plan"] = generate_floor_plan(best)
+
+            mem["designs"].append(best)
+            mem["evolution"].append({
+                "id": str(uuid.uuid4())[:6],
+                "best_id": best["id"],
+                "peak_score": best["score"],
+                "timestamp": datetime.now().isoformat()
+            })
+
+            st.session_state.active_design = best
+            st.session_state.active_history = history
+
+            log_event(f"Generated design {best['id']}")
+
+    if st.session_state.active_design:
+        d = st.session_state.active_design
+
+        st.subheader(f"⚡ Design {d['id']}")
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Score", d["score"])
+        c2.metric("Area", d["area_sqm"])
+        c3.metric("Cost", d["cost"])
+
+        tab1, tab2 = st.tabs(["Blueprint", "Diagnostics"])
+
+        with tab1:
+            render_native_blueprint(d["plan"])
+
+        with tab2:
+            for a in run_structural_review(d):
+                st.write(a)
+
+# -------------------------------
+# MEMORY VIEW
+# -------------------------------
+
+elif page == "Memory Repositories":
+    st.title("🧠 Engine Memory Cache")
+
+    st.json(mem)
+
+    if st.button("Reset Memory"):
+        st.session_state.memory = DEFAULT_STATE.copy()
+        st.session_state.active_design = None
+        st.session_state.active_history = []
+        save_memory()
         st.rerun()
-    if st.button("💾 Apply Room Changes"):
-        old_w = room["polygon"][1][0]-room["polygon"][0][0]; scale = new_width/old_w
-        for i in range(len(room["polygon"])):
-            x,y=room["polygon"][i]; room["polygon"][i]=(x*scale,y)
-        room["type"]=new_type; room["flooring"]=new_flooring; room["ceiling"]=new_ceiling
-        st.success("Room updated!")
-    st.markdown("---")
-    col_add,col_del=st.columns(2)
-    with col_add:
-        new_name = st.text_input("New room name")
-        new_rt = st.selectbox("Type", rtypes, key="new_rt")
-        if st.button("➕ Add Room") and new_name:
-            last_x = floor["rooms"][-1]["polygon"][1][0] if floor["rooms"] else 0
-            w=3.0; d=floor["walls"][2]["end"][1]
-            poly=[(last_x,0),(last_x+w,0),(last_x+w,d),(last_x,d)]
-            floor["rooms"].append({"name":new_name,"type":new_rt,"polygon":poly,"openings":[],"flooring":"wood","ceiling":"flat","ceiling_height":floor["height"]})
-            st.rerun()
-    with col_del:
-        if st.button("🗑 Delete This Room") and len(floor["rooms"])>1:
-            floor["rooms"].pop(room_idx); st.rerun()
-    st.markdown("### Current Floor Plan")
-    st.image(generate_floor_plan(design, floor_idx, show_adjacency=True), use_column_width=True)
-
-# ============================================================
-# SESSION INIT
-# ============================================================
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in=False; st.session_state.username=None
-    st.session_state.user_data=None; st.session_state.memory=DEFAULT_MEMORY.copy()
-    st.session_state.page="Random Copilot"; st.session_state.generated_concepts=[]
-    st.session_state.unit_system="Metric"
-
-if not load_users():
-    create_user("admin","admin123",role="admin")
-
-# ---------- LOGIN ----------
-if not st.session_state.logged_in:
-    col1,col2,col3=st.columns([1,2,1])
-    with col2:
-        st.markdown("<div class='logo-text' style='text-align:center;margin-top:4rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center;color:#94a3b8;'>AI Architectural Design Studio</p>",unsafe_allow_html=True)
-        with st.form("auth"):
-            uname=st.text_input("Username"); pw=st.text_input("Password",type="password")
-            colA,colB=st.columns(2)
-            with colA: login_btn=st.form_submit_button("Login")
-            with colB: reg_btn=st.form_submit_button("Register")
-            if login_btn:
-                user=authenticate(uname,pw)
-                if user:
-                    st.session_state.logged_in=True; st.session_state.username=uname
-                    st.session_state.user_data=user; st.session_state.memory=load_memory(uname)
-                    st.rerun()
-                else: st.error("Invalid credentials")
-            if reg_btn:
-                if not uname or not pw: st.error("Fill all fields")
-                else:
-                    try:
-                        create_user(uname,pw); st.success("Account created!")
-                    except ValueError as e: st.error(str(e))
-    st.stop()
-
-# ---------- SIDEBAR ----------
-uname=st.session_state.username; user_data=st.session_state.user_data; memory=st.session_state.memory
-with st.sidebar:
-    st.markdown("<div class='logo-text' style='font-size:1.8rem;'>⚡ RANDOM</div>",unsafe_allow_html=True)
-    st.markdown(f"**👤 {uname}**")
-    lvl=user_data["level"]; xp=user_data["xp"]; needed=xp_for_level(lvl)
-    progress=xp/needed if needed>0 else 1.0
-    st.markdown(f"""<div class="xp-container"><span style="font-size:12px;color:#94a3b8;">LVL {lvl}</span>
-    <div class="xp-bar-bg"><div class="xp-bar-fill" style="width:{progress*100}%;"></div></div>
-    <span style="font-size:10px;color:#64748b;">{xp}/{needed} XP</span></div>""",unsafe_allow_html=True)
-    page = st.radio("Go to",["Random Copilot","2D Plans","Room Editor","Sections & Elevations","3D Viewer","Reports","Memory","Settings"])
-    st.session_state.page=page
-    st.divider()
-    if user_data.get("role")=="admin":
-        with st.expander("🛡️ Admin"):
-            for u in load_users():
-                if u["username"]!=uname:
-                    if st.button(f"🗑 {u['username']}",key=f"del_{u['username']}"):
-                        users=load_users(); users.remove(u); save_users(users); st.rerun()
-    st.markdown("### 📁 Recent")
-    for proj in memory["projects"][-5:]:
-        st.markdown(f"• {proj['name']} *({proj['date']})*")
-    if st.button("➕ New Project"):
-        memory["projects"].append({"name":f"Project {len(memory['projects'])+1}","date":datetime.now().strftime("%b %d, %Y")})
-        save_memory(uname,memory); st.rerun()
-    if st.button("🚪 Logout"):
-        save_memory(uname,memory)
-        for k in ["logged_in","username","user_data","memory","generated_concepts"]:
-            if k in st.session_state: del st.session_state[k]
-        st.rerun()
-
-# ============================================================
-# PAGE ROUTING
-# ============================================================
-page = st.session_state.page
-
-if page == "Random Copilot":
-    st.markdown("<div style='text-align:center;margin-bottom:2rem;'><h1>🧠 Random Copilot</h1><p style='color:#94a3b8;'>Instant architectural generation.</p></div>",unsafe_allow_html=True)
-    cat = st.radio("Category",list(ARCH_TYPES.keys()),horizontal=True)
-    bld = st.selectbox("Building Type",ARCH_TYPES[cat])
-    col1,col2 = st.columns(2)
-    with col1:
-        floors = st.slider("Floors",1,10,2)
-        rooms_per_floor = st.slider("Rooms per floor",1,8,4)
-    with col2:
-        modules = st.slider("Complexity (modules)",1,10,5)
-    enforce = st.checkbox("Use architectural standards",True)
-    if st.button("⚡ Generate Design"):
-        design = generate_design(bld, modules, floors, rooms_per_floor, enforce)
-        st.session_state.generated_concepts = [design]
-        add_xp(uname,10); st.session_state.user_data=get_user(uname)
-        memory["projects"].append({"name":design["building"],"date":datetime.now().strftime("%b %d, %Y")})
-        save_memory(uname,memory)
-        st.success(f"Design **{design['id']}** ready!")
-        st.json({k:design[k] for k in ["id","building","area","num_floors","cost"]})
-
-elif page == "2D Plans":
-    if not st.session_state.generated_concepts: st.info("No design yet.")
-    else:
-        design = st.session_state.generated_concepts[0]
-        if not design.get("floors"): st.info("No floors data.")
-        else:
-            floor_idx = st.slider("Floor",0,len(design["floors"])-1,0)
-            img = generate_floor_plan(design, floor_idx, show_adjacency=True)
-            if img: st.image(img, use_column_width=True)
-
-elif page == "Room Editor":
-    if not st.session_state.generated_concepts: st.info("No design yet.")
-    else: render_room_editor(st.session_state.generated_concepts[0])
-
-elif page == "Sections & Elevations":
-    if not st.session_state.generated_concepts: st.info("No design yet.")
-    else:
-        design = st.session_state.generated_concepts[0]
-        direction = st.selectbox("View",["north","south","east","west"])
-        img = generate_elevation(design, direction)
-        if img: st.image(img, caption=f"{direction.capitalize()} Elevation", use_column_width=True)
-
-elif page == "3D Viewer":
-    if not st.session_state.generated_concepts: st.info("No design yet.")
-    else:
-        design = st.session_state.generated_concepts[0]
-        if design.get("floors"):
-            fig = build_3d_stacked_figure(design)
-            st.plotly_chart(fig, use_column_width=True)
-
-elif page == "Reports":
-    if not st.session_state.generated_concepts: st.info("No design yet.")
-    else:
-        design = st.session_state.generated_concepts[0]
-        st.subheader(f"📄 {design['building']}")
-        for floor in design["floors"]:
-            with st.expander(f"Floor {floor['level']}"):
-                for room in floor["rooms"]:
-                    w = room["polygon"][1][0]-room["polygon"][0][0]; d = room["polygon"][3][1]-room["polygon"][0][1]
-                    area = w*d
-                    st.write(f"**{room['name']}** – {room['type']}, Area: {format_area(area,st.session_state.unit_system)}, Floor: {room.get('flooring','wood')}, Ceiling: {room.get('ceiling','flat')}")
-        st.download_button("📥 Download JSON",json.dumps(design,indent=4),file_name=f"{design['id']}.json")
-        if st.button("📐 Export IFC"): st.download_button("⬇️ IFC",export_ifc(design),file_name=f"{design['id']}.ifc")
-        if st.button("🧊 Export glTF"):
-            glb = design_to_glb(design)
-            if glb: st.download_button("⬇️ GLB",glb,file_name=f"{design['id']}.glb")
-
-elif page == "Memory":
-    if not memory["saved_designs"]: st.info("No saved designs.")
-    else:
-        for i,saved in enumerate(memory["saved_designs"]):
-            with st.expander(f"{saved.get('building','')} – {saved.get('id','')}"):
-                st.json(saved)
-                if st.button(f"Delete {saved['id']}",key=f"memdel_{i}"):
-                    memory["saved_designs"].pop(i); save_memory(uname,memory); st.rerun()
-    if st.session_state.generated_concepts:
-        best = st.session_state.generated_concepts[0]
-        if st.button(f"Save {best['id']} to Memory"):
-            memory["saved_designs"].append(best); save_memory(uname,memory); st.success("Saved!")
-
-elif page == "Settings":
-    st.markdown("## ⚙️ Settings")
-    unit = st.selectbox("Unit System",["Metric","Imperial","Dual"],index=0)
-    st.session_state.unit_system = unit
-    st.success("Settings updated.")
-
-st.markdown('<div class="footer">AI Powered · Data Driven · Secure · Scalable</div>',unsafe_allow_html=True)
