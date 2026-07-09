@@ -1,0 +1,35 @@
+random_v4/
+├── README.md
+├── requirements.txt
+├── packages.txt
+├── app.py                          ← entry point
+├── .streamlit/
+│   └── config.toml
+├── src/
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── memory.py
+│   ├── knowledge_base.py
+│   ├── design_generator.py
+│   ├── evolution.py
+│   ├── rendering_2d.py
+│   ├── rendering_3d.py
+│   ├── ifc_export.py
+│   ├── gltf_export.py              ← NEW
+│   ├── room_editor.py
+│   └── utils.py
+├── pages/
+│   ├── 01_Dashboard.py
+│   ├── 02_Copilot.py
+│   ├── 03_Concepts.py
+│   ├── 04_Comparison.py
+│   ├── 05_2D_Plans.py
+│   ├── 06_Room_Editor.py
+│   ├── 07_3D_Viewer.py
+│   ├── 08_Reports.py
+│   ├── 09_Memory.py
+│   └── 10_Settings.py
+├── tests/
+│   ├── test_evolution.py
+│   └── test_export.py
+└── data/                          ← auto‑created, git‑ignored
