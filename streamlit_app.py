@@ -9,6 +9,20 @@ import pandas as pd
 
 # ---------- CONFIG ----------
 st.set_page_config(page_title="RANDOM Studio", page_icon="⚡", layout="wide")
+
+# ---------- VERCEL SPEED INSIGHTS ----------
+# Inject Vercel Speed Insights for performance monitoring
+speed_insights_script = """
+<script type="module">
+import { injectSpeedInsights } from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1/dist/index.mjs';
+injectSpeedInsights({
+    framework: 'streamlit',
+    debug: false
+});
+</script>
+"""
+st.html(speed_insights_script, unsafe_allow_javascript=True)
+
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 USER_FILE = DATA_DIR / "users.json"

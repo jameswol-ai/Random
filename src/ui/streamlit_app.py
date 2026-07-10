@@ -3,6 +3,19 @@
 import streamlit as st
 from core.engine import WorkflowEngine
 
+# ---------- VERCEL SPEED INSIGHTS ----------
+# Inject Vercel Speed Insights for performance monitoring
+speed_insights_script = """
+<script type="module">
+import { injectSpeedInsights } from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1/dist/index.mjs';
+injectSpeedInsights({
+    framework: 'streamlit',
+    debug: false
+});
+</script>
+"""
+st.html(speed_insights_script, unsafe_allow_javascript=True)
+
 st.title("🧬 Random Dual-Layer Mode")
 
 if st.button("Run Engine"):
