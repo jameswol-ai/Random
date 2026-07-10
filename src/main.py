@@ -17,3 +17,18 @@ if __name__ == "__main__":
     })
 
     print(result)
+
+{
+  "builds": [
+    {
+      "src": "src/main.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "src/main.py"
+    }
+  ]
+}
