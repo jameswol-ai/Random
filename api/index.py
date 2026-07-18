@@ -22,6 +22,9 @@ except ImportError:
     ENGINE_AVAILABLE = False
     print("Warning: Engine modules not found. Running in mock mode.")
 
+# Force mock mode until engine is fixed
+ENGINE_AVAILABLE = False
+
 # ---------- Models ----------
 class EvolveRequest(BaseModel):
     type: str = "Residential"
