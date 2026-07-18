@@ -6,14 +6,26 @@ from engine.fitness import calculate_fitness, score
 from engine.generator import generate_base_design, mutate_design
 
 
-def run_evolution(btype="Residential", bedrooms=3, gens=5, pop_size=20):
-    gens = min(gens, 5)          # never more than 5
-    pop_size = min(pop_size, 15) # never more than 15
-    # ... rest of code
-    # Generate initial population
-    population = []
-    for _ in range(pop_size):
-        d = generate_base_design(btype, bedrooms)
+from engine.generator import generate_base_design, mutate_design
+
+def run_evolution(btype="Residential", bedrooms=3, gens=2, pop_size=5):
+    gens = min(gens, 5)
+    pop_size = min(pop_size, 15)
+    population = [generate_base_design(btype, bedrooms) for _ in range(pop_size)]
+    for _ in range(gens):
+        for d in population:
+            f = calculate_fitness(d)
+            d["score"] = score(f)
+        population.sort(key=lambda x: x["score"], reverse=True)
+        survivors = population[:max(2, pop_size // 2)]
+        next_gen = survivors.copy()
+        while len(next_gen) < pop_size:
+            parent = random.choice(survivors)
+            child = mutate_design(parent)
+            next_gen.append(child)
+        population = next_gen[:pop_size]
+    best = max(population, key=lambda x: x["score"])
+    return best, [d["score"] for d in population] generate_base_design(btype, bedrooms)
         population.append(d)
     
     history = []
