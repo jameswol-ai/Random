@@ -1,2 +1,5 @@
 [tool.vercel]
 entrypoint = "app:app"
+
+[tool.vercel]
+entrypoint = "src.main:app"
