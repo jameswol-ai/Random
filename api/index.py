@@ -198,3 +198,9 @@ async def get_3d(design_id: str):
 #         raise HTTPException(404, "Design or plan not found")
 #     data = generate_gltf(design["plan"])
 #     return PlainTextResponse(data, media_type="model/gltf-binary")
+
+class EvolveRequest(BaseModel):
+    type: str = "Residential"
+    bedrooms: int = 3
+    generations: int = 2   # ← lowered
+    population: int = 5    # ← lowered
