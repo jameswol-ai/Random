@@ -80,6 +80,10 @@ h1,h2,h3,h4,h5,h6 {{ font-family: 'Outfit', sans-serif; font-weight: 700; color:
 .xp-bar-fill {{ height: 100%; background: {t['btn_gradient']}; border-radius: 6px; box-shadow: 0 0 10px {t['accent']}; }}
 .logo-text {{ font-family: 'Outfit', sans-serif; font-size: 2.4rem; font-weight: 800; background: {t['btn_gradient']}; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }}
 </style>
+<script>
+  window.si = window.si || function () {{ (window.siq = window.siq || []).push(arguments); }};
+</script>
+<script defer src="/_vercel/speed-insights/script.js"></script>
 """
 
 # ---------- AUTH ----------
