@@ -3,21 +3,204 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Streamlit Style</title>
-  <link rel="stylesheet" href="style.css">
+  <title>AI Random Generator</title>
+  <style>
+    /* ========== Streamlit Light Theme (exact match) ========== */
+    :root {
+      --primary: #ff4b4b;
+      --background: #ffffff;
+      --secondary-bg: #f0f2f6;
+      --text: #262730;
+      --border: #e6e9ef;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--background);
+      color: var(--text);
+      font-family: "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+      line-height: 1.5;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .main-container {
+      max-width: 700px;
+      width: 100%;
+    }
+
+    /* App title */
+    h1 {
+      font-weight: 600;
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    /* Input area (Streamlit text input) */
+    .stTextInput {
+      margin-bottom: 1rem;
+    }
+    .stTextInput label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.3rem;
+      color: var(--text);
+    }
+    .stTextInput input {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.25rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background: white;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    .stTextInput input:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    /* Button - exact Streamlit style */
+    .stButton button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 0.25rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      width: auto;
+      min-width: 120px;
+    }
+    .stButton button:hover {
+      background-color: #e04040;
+    }
+    .stButton button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    /* Spinner (when generating) */
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Output box */
+    .output-box {
+      background: var(--secondary-bg);
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      min-height: 60px;
+      color: var(--text);
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+    .output-box:empty::before {
+      content: "Your random output will appear here...";
+      color: #8e8e93;
+    }
+  </style>
 </head>
 <body>
-  <!-- Streamlit-like layout: main content -->
-  <div class="main">
-    <div class="block-container">
-      <h1>Your App</h1>
-      <p>This looks like a fresh Streamlit app.</p>
-      <button class="stButton">Click me</button>
-      <div class="stTextInput">
-        <label>Enter text</label>
-        <input type="text" placeholder="Type here...">
-      </div>
+  <div class="main-container">
+    <h1>🤖 AI Random Generator</h1>
+
+    <!-- Input prompt -->
+    <div class="stTextInput">
+      <label>Your prompt</label>
+      <input type="text" id="promptInput" placeholder="Enter a topic (e.g., 'space facts')" value="random thought">
     </div>
+
+    <!-- Generate button -->
+    <div class="stButton">
+      <button id="generateBtn">
+        <span class="spinner" id="spinner" style="display:none;"></span>
+        Generate
+      </button>
+    </div>
+
+    <!-- Output -->
+    <div class="output-box" id="output"></div>
   </div>
+
+  <script>
+    // ========== Simulate AI random response (like the Streamlit app) ==========
+    const mockResponses = [
+      "The meaning of life is 42, but the real question is: what is the question?",
+      "Quantum mechanics suggests that a cat can be both alive and dead until observed.",
+      "In an alternate universe, chocolate is a vegetable and broccoli is dessert.",
+      "The shortest war in history lasted 38 minutes. A sneeze can last longer.",
+      "If you shuffle a deck of cards, chances are that exact order has never existed before.",
+      "Octopuses have three hearts, and two of them stop beating when they swim.",
+      "Bananas are berries, but strawberries aren't. Go figure.",
+      "A day on Venus is longer than a year on Venus because it rotates so slowly.",
+      "Cows have best friends and get stressed when separated from them.",
+      "The Eiffel Tower can grow up to 6 inches in summer due to thermal expansion."
+    ];
+
+    function getRandomResponse(prompt) {
+      // In reality, this would call an AI API. For exact Streamlit functionality,
+      // just return a random sentence from the list.
+      const randomIndex = Math.floor(Math.random() * mockResponses.length);
+      return mockResponses[randomIndex];
+    }
+
+    // Optional: if you want to use a real AI API, uncomment and configure:
+    /*
+    async function getAIResponse(prompt) {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await response.json();
+      return data.text;
+    }
+    */
+
+    // UI interaction
+    const generateBtn = document.getElementById('generateBtn');
+    const spinner = document.getElementById('spinner');
+    const outputDiv = document.getElementById('output');
+    const promptInput = document.getElementById('promptInput');
+
+    generateBtn.addEventListener('click', async () => {
+      const prompt = promptInput.value.trim() || 'random thought';
+
+      // Show spinner, disable button
+      spinner.style.display = 'inline-block';
+      generateBtn.disabled = true;
+
+      // Simulate AI processing delay (like Streamlit's spinner)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const result = getRandomResponse(prompt);
+      outputDiv.textContent = result;
+
+      // Reset button
+      spinner.style.display = 'none';
+      generateBtn.disabled = false;
+    });
+  </script>
 </body>
 </html>
