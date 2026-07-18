@@ -1,7 +1,11 @@
 import random 
 from core.utils import uid 
-from core.config import ARCH_DOMAINS 
-
+# from core.config import ARCH_DOMAINS
+ARCH_DOMAINS = {
+    "Residential": ["Villa", "Apartment", "Townhouse"],
+    "Commercial": ["Office", "Hotel", "Clinic"],
+    "Industrial": ["Warehouse", "Factory"]
+}
 def get_domain(btype): 
     for d, items in ARCH_DOMAINS.items(): 
         if btype in items: 
