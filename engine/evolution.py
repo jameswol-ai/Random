@@ -3,8 +3,13 @@
 import random
 from engine.generator import generate_base_design
 from engine.fitness import calculate_fitness, score
+from engine.generator import generate_base_design, mutate_design
+
 
 def run_evolution(btype="Residential", bedrooms=3, gens=5, pop_size=20):
+    gens = min(gens, 5)          # never more than 5
+    pop_size = min(pop_size, 15) # never more than 15
+    # ... rest of code
     # Generate initial population
     population = []
     for _ in range(pop_size):
