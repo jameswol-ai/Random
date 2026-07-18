@@ -1,21 +1,8 @@
-# api/index.py
-
 import sys
 import os
 import uuid
 import json
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return HTMLResponse("<h1>✅ It works!</h1><p>FastAPI is running on Vercel.</p>")
-
-@app.get("/ping")
-async def ping():
-    return {"status": "ok"}
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -24,13 +11,14 @@ from typing import Optional, List, Dict, Any
 # Add parent directory so we can import project modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import your engine functions
+# Import your engine functions (keep these if they exist and are lightweight)
 from engine.evolution import run_evolution
 from engine.planner import generate_floor_plan
 from visualization.svg_blueprint import generate_svg_blueprint
 from visualization.three_viewer import generate_threejs_html
-from engine.export_ifc import export_ifc
-from engine.export_gltf import generate_gltf
+# Commented out heavy ones for now
+# from engine.export_ifc import export_ifc
+# from engine.export_gltf import generate_gltf
 
 # ---------- Pydantic models ----------
 class EvolveRequest(BaseModel):
@@ -47,7 +35,7 @@ class DesignSummary(BaseModel):
     bedrooms: int
     rooms: int
 
-# ---------- App setup ----------
+# ---------- App setup (ONLY ONE) ----------
 app = FastAPI(
     title="RANDOM Studio API",
     description="Evolutionary architecture design generator",
@@ -62,7 +50,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory store (ephemeral – fine for demo)
+# In-memory store
 DESIGNS: Dict[str, Dict[str, Any]] = {}
 
 # ---------- Routes ----------
@@ -86,7 +74,6 @@ async def root():
             .btn-group button { background: #4a4a4a; }
             .btn-group button:hover { background: #2d2d2d; }
             .metric { display: inline-block; margin-right: 20px; }
-            iframe { border: none; border-radius: 8px; width: 100%; height: 500px; background: white; }
             #result { margin-top: 20px; }
         </style>
     </head>
@@ -103,14 +90,12 @@ async def root():
             </div>
         </div>
         <div id="result"></div>
-
         <script>
         async function evolve() {
             const type = document.getElementById('type').value;
             const bedrooms = parseInt(document.getElementById('bedrooms').value);
             const gens = parseInt(document.getElementById('gens').value);
             const pop = parseInt(document.getElementById('pop').value);
-
             const res = await fetch('/evolve', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -127,8 +112,9 @@ async def root():
                     <div class="btn-group">
                         <button onclick="window.open('/blueprint/${data.id}')">📐 Blueprint</button>
                         <button onclick="window.open('/3d/${data.id}')">🏛️ 3D Viewer</button>
-                        <button onclick="window.open('/export/ifc/${data.id}')">📄 IFC</button>
-                        <button onclick="window.open('/export/gltf/${data.id}')">🔷 glTF</button>
+                        <!-- Export buttons commented out for now -->
+                        <!-- <button onclick="window.open('/export/ifc/${data.id}')">📄 IFC</button> -->
+                        <!-- <button onclick="window.open('/export/gltf/${data.id}')">🔷 glTF</button> -->
                     </div>
                 </div>
             `;
@@ -141,26 +127,18 @@ async def root():
 @app.post("/evolve", response_model=DesignSummary)
 async def evolve(request: EvolveRequest):
     """Run evolutionary optimisation and return the best design."""
-    # Call your evolution function
     best, history = run_evolution(
         btype=request.type,
         bedrooms=request.bedrooms,
         gens=request.generations,
         pop_size=request.population
     )
-
-    # Generate floor plan (adds x,y coordinates to rooms)
     best["plan"] = generate_floor_plan(best)
-
-    # Ensure an ID
     design_id = best.get("id", str(uuid.uuid4())[:8])
     best["id"] = design_id
     DESIGNS[design_id] = best
-
-    # Calculate cost if not already done
     if "cost" not in best:
         best["cost"] = best.get("area_sqm", 0) * 800
-
     return DesignSummary(
         id=design_id,
         score=best.get("score", 0.0),
@@ -172,14 +150,12 @@ async def evolve(request: EvolveRequest):
 
 @app.get("/design/{design_id}")
 async def get_design(design_id: str):
-    """Retrieve full design data."""
     if design_id not in DESIGNS:
         raise HTTPException(404, "Design not found")
     return DESIGNS[design_id]
 
 @app.get("/blueprint/{design_id}", response_class=HTMLResponse)
 async def get_blueprint(design_id: str):
-    """Render the 2D SVG blueprint."""
     design = DESIGNS.get(design_id)
     if not design or "plan" not in design:
         raise HTTPException(404, "Design or plan not found")
@@ -200,27 +176,25 @@ async def get_blueprint(design_id: str):
 
 @app.get("/3d/{design_id}", response_class=HTMLResponse)
 async def get_3d(design_id: str):
-    """Render the 3D Three.js viewer."""
     design = DESIGNS.get(design_id)
     if not design or "plan" not in design:
         raise HTTPException(404, "Design or plan not found")
     html = generate_threejs_html(design["plan"])
     return html
 
-@app.get("/export/ifc/{design_id}", response_class=PlainTextResponse)
-async def export_ifc(design_id: str):
-    """Download IFC file."""
-    design = DESIGNS.get(design_id)
-    if not design or "plan" not in design:
-        raise HTTPException(404, "Design or plan not found")
-    data = export_ifc(design["plan"])
-    return PlainTextResponse(data, media_type="application/x-ifc")
+# Export endpoints commented out until dependencies are resolved
+# @app.get("/export/ifc/{design_id}", response_class=PlainTextResponse)
+# async def export_ifc(design_id: str):
+#     design = DESIGNS.get(design_id)
+#     if not design or "plan" not in design:
+#         raise HTTPException(404, "Design or plan not found")
+#     data = export_ifc(design["plan"])
+#     return PlainTextResponse(data, media_type="application/x-ifc")
 
-@app.get("/export/gltf/{design_id}", response_class=PlainTextResponse)
-async def export_gltf(design_id: str):
-    """Download glTF binary file."""
-    design = DESIGNS.get(design_id)
-    if not design or "plan" not in design:
-        raise HTTPException(404, "Design or plan not found")
-    data = generate_gltf(design["plan"])
-    return PlainTextResponse(data, media_type="model/gltf-binary")
+# @app.get("/export/gltf/{design_id}", response_class=PlainTextResponse)
+# async def export_gltf(design_id: str):
+#     design = DESIGNS.get(design_id)
+#     if not design or "plan" not in design:
+#         raise HTTPException(404, "Design or plan not found")
+#     data = generate_gltf(design["plan"])
+#     return PlainTextResponse(data, media_type="model/gltf-binary")
