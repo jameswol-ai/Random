@@ -1,0 +1,72 @@
+/* ===== Streamlit Light Theme Reset ===== */
+:root {
+  --primary: #ff4b4b;
+  --background: #ffffff;
+  --secondary-background: #f0f2f6;
+  --text-color: #262730;
+  --border-color: #e6e9ef;
+}
+
+body {
+  background: var(--background) !important;
+  color: var(--text-color) !important;
+  font-family: "Source Sans Pro", "Segoe UI", system-ui, -apple-system, sans-serif !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove any dark gradient classes */
+.gradient-bg, .bg-gradient, [class*="dark"] {
+  background: #ffffff !important;
+}
+
+/* Cards, containers, sections */
+.card, .container, section {
+  background: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 0.25rem !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar (if present) */
+.sidebar, aside {
+  background: var(--secondary-background) !important;
+  border-right: 1px solid var(--border-color) !important;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6, p, label, span, a:not(.button) {
+  color: var(--text-color) !important;
+  text-shadow: none !important;
+}
+
+/* Buttons – Streamlit primary red */
+button, .button, a.button {
+  background-color: #ff4b4b !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 0.25rem !important;
+  padding: 0.5rem 1rem !important;
+  font-weight: 400 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  transition: background-color 0.2s;
+}
+button:hover, .button:hover {
+  background-color: #e04040 !important;
+  transform: none !important;
+}
+
+/* Form inputs */
+input, textarea, select {
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 0.25rem !important;
+  color: var(--text-color) !important;
+}
+
+/* Remove all shadows globally */
+*, *::before, *::after {
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
