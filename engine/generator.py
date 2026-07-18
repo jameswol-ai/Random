@@ -28,3 +28,19 @@ def generate_base_design(btype, bedrooms):
         }, 
         "cost": 0 
     }
+
+def mutate_design(d):
+    import random
+    d = d.copy()
+    d["columns"] += random.randint(-2, 2)
+    d["beams"] += random.randint(-4, 4)
+    d["area_sqm"] += random.randint(-20, 40)
+    d["area_sqm"] = max(50, d["area_sqm"])
+    if "rooms" in d:
+        for room in d["rooms"]:
+            if random.random() < 0.1:
+                room["w"] += random.gauss(0, 0.5)
+                room["h"] += random.gauss(0, 0.5)
+                room["w"] = max(2.0, min(10.0, room["w"]))
+                room["h"] = max(2.0, min(10.0, room["h"]))
+    return d
