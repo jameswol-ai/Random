@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset to Streamlit light theme */
+body {
+  background-color: #ffffff !important;
+  color: #262730 !important;
+}
+button, .button {
+  background-color: #ff4b4b !important;
+  color: #fff !important;
+  border-radius: 0.25rem !important;
+  box-shadow: none !important;
+}
+/* etc. (use the full CSS from Section 1 if Tailwind classes aren't enough) */
