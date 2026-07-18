@@ -26,3 +26,18 @@ def generate_base_design(btype, bedrooms):
         },
         "cost": 0
     }
+
+def generate_base_design(btype="standard", bedrooms=3):
+    area = 65 + 44 + (bedrooms * 18)  # rough area formula
+    columns = random.randint(14, 36)
+    beams = random.randint(28, 72)
+    rooms = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3)
+    return {
+        "type": btype,
+        "bedrooms": bedrooms,
+        "area": area,
+        "columns": columns,
+        "beams": beams,
+        "rooms": rooms,
+        "cost": area * 800  # from cost engine
+    }
