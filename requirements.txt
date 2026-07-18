@@ -1,6 +1,5 @@
-streamlit>=1.28
-plotly>=5.17
+fastapi
+uvicorn
+ifcopenshell
+trimesh
 numpy
-pandas
-pillow
-pygltflib          # for glTF export
