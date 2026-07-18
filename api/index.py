@@ -8,24 +8,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-# Add parent directory so we can import project modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import your engine functions (keep these if they exist and are lightweight)
+# Engine imports – make sure these exist
 from engine.evolution import run_evolution
 from engine.planner import generate_floor_plan
 from visualization.svg_blueprint import generate_svg_blueprint
 from visualization.three_viewer import generate_threejs_html
-# Commented out heavy ones for now
+# If you have exports, uncomment later
 # from engine.export_ifc import export_ifc
 # from engine.export_gltf import generate_gltf
 
-# ---------- Pydantic models ----------
+# ---------- Models ----------
 class EvolveRequest(BaseModel):
     type: str = "Residential"
     bedrooms: int = 3
-    generations: int = 5
-    population: int = 20
+    generations: int = 2      # was 5 – Vercel-friendly
+    population: int = 5       # was 20
 
 class DesignSummary(BaseModel):
     id: str
@@ -35,13 +34,8 @@ class DesignSummary(BaseModel):
     bedrooms: int
     rooms: int
 
-# ---------- App setup (ONLY ONE) ----------
-app = FastAPI(
-    title="RANDOM Studio API",
-    description="Evolutionary architecture design generator",
-    version="1.0"
-)
-
+# ---------- App ----------
+app = FastAPI(title="RANDOM Studio API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,13 +44,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory store
 DESIGNS: Dict[str, Dict[str, Any]] = {}
 
 # ---------- Routes ----------
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    """Simple frontend to interact with the API."""
+    # (Keep your existing HTML – we'll improve the JS in a moment)
     return """
     <!DOCTYPE html>
     <html>
@@ -75,6 +68,8 @@ async def root():
             .btn-group button:hover { background: #2d2d2d; }
             .metric { display: inline-block; margin-right: 20px; }
             #result { margin-top: 20px; }
+            #loading { display: none; margin: 10px 0; font-weight: bold; }
+            #error { display: none; color: red; margin: 10px 0; }
         </style>
     </head>
     <body>
@@ -84,40 +79,66 @@ async def root():
             <div class="row">
                 <div><label>Type</label><select id="type"><option>Residential</option><option>Commercial</option></select></div>
                 <div><label>Bedrooms</label><input id="bedrooms" type="number" value="3" min="1" max="5"></div>
-                <div><label>Generations</label><input id="gens" type="number" value="5" min="1" max="20"></div>
-                <div><label>Population</label><input id="pop" type="number" value="20" min="5" max="50"></div>
-                <button onclick="evolve()">🚀 Evolve</button>
+                <div><label>Generations</label><input id="gens" type="number" value="2" min="1" max="5"></div>
+                <div><label>Population</label><input id="pop" type="number" value="5" min="3" max="10"></div>
+                <button onclick="evolve()" id="evolveBtn">🚀 Evolve</button>
             </div>
+            <div id="loading">⏳ Evolving... (may take a few seconds)</div>
+            <div id="error"></div>
         </div>
         <div id="result"></div>
+
         <script>
         async function evolve() {
+            const btn = document.getElementById('evolveBtn');
+            const loader = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const resultDiv = document.getElementById('result');
+            
+            btn.disabled = true;
+            loader.style.display = 'block';
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            resultDiv.innerHTML = '';
+
             const type = document.getElementById('type').value;
             const bedrooms = parseInt(document.getElementById('bedrooms').value);
             const gens = parseInt(document.getElementById('gens').value);
             const pop = parseInt(document.getElementById('pop').value);
-            const res = await fetch('/evolve', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type, bedrooms, generations: gens, population: pop })
-            });
-            const data = await res.json();
-            document.getElementById('result').innerHTML = `
-                <div class="card">
-                    <h3>Design ${data.id}</h3>
-                    <div class="metric">Score: <strong>${data.score.toFixed(2)}</strong></div>
-                    <div class="metric">Area: <strong>${data.area_sqm} m²</strong></div>
-                    <div class="metric">Cost: <strong>$${data.cost.toLocaleString()}</strong></div>
-                    <div class="metric">Rooms: <strong>${data.rooms}</strong></div>
-                    <div class="btn-group">
-                        <button onclick="window.open('/blueprint/${data.id}')">📐 Blueprint</button>
-                        <button onclick="window.open('/3d/${data.id}')">🏛️ 3D Viewer</button>
-                        <!-- Export buttons commented out for now -->
-                        <!-- <button onclick="window.open('/export/ifc/${data.id}')">📄 IFC</button> -->
-                        <!-- <button onclick="window.open('/export/gltf/${data.id}')">🔷 glTF</button> -->
+
+            try {
+                const res = await fetch('/evolve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type, bedrooms, generations: gens, population: pop })
+                });
+                if (!res.ok) {
+                    const text = await res.text();
+                    throw new Error(text || `HTTP ${res.status}`);
+                }
+                const data = await res.json();
+                resultDiv.innerHTML = `
+                    <div class="card">
+                        <h3>Design ${data.id}</h3>
+                        <div class="metric">Score: <strong>${data.score.toFixed(2)}</strong></div>
+                        <div class="metric">Area: <strong>${data.area_sqm} m²</strong></div>
+                        <div class="metric">Cost: <strong>$${data.cost.toLocaleString()}</strong></div>
+                        <div class="metric">Rooms: <strong>${data.rooms}</strong></div>
+                        <div class="btn-group">
+                            <button onclick="window.open('/blueprint/${data.id}')">📐 Blueprint</button>
+                            <button onclick="window.open('/3d/${data.id}')">🏛️ 3D Viewer</button>
+                            <!-- <button onclick="window.open('/export/ifc/${data.id}')">📄 IFC</button> -->
+                            <!-- <button onclick="window.open('/export/gltf/${data.id}')">🔷 glTF</button> -->
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } catch (err) {
+                errorDiv.textContent = 'Error: ' + err.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loader.style.display = 'none';
+            }
         }
         </script>
     </body>
@@ -126,27 +147,29 @@ async def root():
 
 @app.post("/evolve", response_model=DesignSummary)
 async def evolve(request: EvolveRequest):
-    """Run evolutionary optimisation and return the best design."""
-    best, history = run_evolution(
-        btype=request.type,
-        bedrooms=request.bedrooms,
-        gens=request.generations,
-        pop_size=request.population
-    )
-    best["plan"] = generate_floor_plan(best)
-    design_id = best.get("id", str(uuid.uuid4())[:8])
-    best["id"] = design_id
-    DESIGNS[design_id] = best
-    if "cost" not in best:
-        best["cost"] = best.get("area_sqm", 0) * 800
-    return DesignSummary(
-        id=design_id,
-        score=best.get("score", 0.0),
-        area_sqm=best["area_sqm"],
-        cost=best["cost"],
-        bedrooms=best.get("bedrooms", 3),
-        rooms=len(best.get("plan", []))
-    )
+    try:
+        best, history = run_evolution(
+            btype=request.type,
+            bedrooms=request.bedrooms,
+            gens=request.generations,
+            pop_size=request.population
+        )
+        best["plan"] = generate_floor_plan(best)
+        design_id = best.get("id", str(uuid.uuid4())[:8])
+        best["id"] = design_id
+        DESIGNS[design_id] = best
+        if "cost" not in best:
+            best["cost"] = best.get("area_sqm", 0) * 800
+        return DesignSummary(
+            id=design_id,
+            score=best.get("score", 0.0),
+            area_sqm=best["area_sqm"],
+            cost=best["cost"],
+            bedrooms=best.get("bedrooms", 3),
+            rooms=len(best.get("plan", []))
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/design/{design_id}")
 async def get_design(design_id: str):
@@ -182,25 +205,4 @@ async def get_3d(design_id: str):
     html = generate_threejs_html(design["plan"])
     return html
 
-# Export endpoints commented out until dependencies are resolved
-# @app.get("/export/ifc/{design_id}", response_class=PlainTextResponse)
-# async def export_ifc(design_id: str):
-#     design = DESIGNS.get(design_id)
-#     if not design or "plan" not in design:
-#         raise HTTPException(404, "Design or plan not found")
-#     data = export_ifc(design["plan"])
-#     return PlainTextResponse(data, media_type="application/x-ifc")
-
-# @app.get("/export/gltf/{design_id}", response_class=PlainTextResponse)
-# async def export_gltf(design_id: str):
-#     design = DESIGNS.get(design_id)
-#     if not design or "plan" not in design:
-#         raise HTTPException(404, "Design or plan not found")
-#     data = generate_gltf(design["plan"])
-#     return PlainTextResponse(data, media_type="model/gltf-binary")
-
-class EvolveRequest(BaseModel):
-    type: str = "Residential"
-    bedrooms: int = 3
-    generations: int = 2   # ← lowered
-    population: int = 5    # ← lowered
+# (Export endpoints commented out for now)
