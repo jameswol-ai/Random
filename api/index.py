@@ -4,7 +4,18 @@ import sys
 import os
 import uuid
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return HTMLResponse("<h1>✅ It works!</h1><p>FastAPI is running on Vercel.</p>")
+
+@app.get("/ping")
+async def ping():
+    return {"status": "ok"}
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
