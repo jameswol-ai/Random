@@ -9,13 +9,30 @@ def fitness(d):
     return (stability + density + efficiency) / 3
 
 
-def evolve(population, gens, pop_size, generator, mutate_fn):
-    history = []
-
-    for _ in range(gens):
+def evolve(population, gens=5, pop_size=20):
+    for gen in range(gens):
+        # 1. Evaluate fitness for every individual
         for d in population:
-            d["score"] = fitness(d)
-
+            d["score"] = calculate_fitness(d)
+        
+        # 2. Sort by score (highest first)
+        population.sort(key=lambda x: x["score"], reverse=True)
+        
+        # 3. Keep top 50% as survivors (elitism)
+        survivors = population[:pop_size // 2]
+        
+        # 4. Build next generation
+        next_gen = survivors.copy()
+        while len(next_gen) < pop_size:
+            # Pick two random survivors and mutate one
+            parent = random.choice(survivors)
+            child = parent.copy()
+            child = mutate_design(child)
+            next_gen.append(child)
+        
+        population = next_gen
+    
+    return population
         population.sort(key=lambda x: x["score"], reverse=True)
         history.append(population[0]["score"])
 
