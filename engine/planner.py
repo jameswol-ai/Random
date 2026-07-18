@@ -17,73 +17,76 @@ ROOM_COLORS = {
 }
 
 def generate_floor_plan(design):
-    """Generate rooms with positions, including a central corridor."""
+    """
+    Generate a floor plan with room positions.
+    Uses shelf packing algorithm.
+    """
+    rooms = design.get("rooms", [])
     bedrooms = design.get("bedrooms", 3)
-    rooms = []
+    
+    # Build room list with proper sizes
+    room_list = []
     
     # Core rooms
     for name in ["Living", "Kitchen", "Bathroom"]:
         w, h = ROOM_SIZES[name]
-        rooms.append({"name": name, "w": w, "h": h, "color": ROOM_COLORS[name]})
+        room_list.append({
+            "name": name,
+            "w": w,
+            "h": h,
+            "color": ROOM_COLORS[name]
+        })
     
     # Bedrooms
     for i in range(bedrooms):
         w, h = ROOM_SIZES["Bedroom"]
-        rooms.append({"name": f"Bedroom {i+1}", "w": w, "h": h, "color": ROOM_COLORS["Bedroom"]})
+        room_list.append({
+            "name": f"Bedroom {i+1}",
+            "w": w,
+            "h": h,
+            "color": ROOM_COLORS["Bedroom"]
+        })
     
     # Flex rooms
-    num_flex = random.randint(1, 3)
+    num_flex = max(1, len(rooms) - 3 - bedrooms)
+    num_flex = min(num_flex, 3)
     for i in range(num_flex):
         w, h = ROOM_SIZES["Flex"]
-        rooms.append({"name": f"Flex {i+1}", "w": w, "h": h, "color": ROOM_COLORS["Flex"]})
+        room_list.append({
+            "name": f"Flex {i+1}",
+            "w": w,
+            "h": h,
+            "color": ROOM_COLORS["Flex"]
+        })
     
-    # Pack with corridor
-    return pack_with_corridor(rooms, max_width=20.0)
+    # Pack them using shelf algorithm
+    return pack_rooms(room_list, max_width=20.0)
 
-def pack_with_corridor(rooms, max_width=20.0, corridor_width=1.2):
+def pack_rooms(rooms, max_width=20.0):
     """
-    Pack rooms on both sides of a central corridor.
-    Returns rooms with x, y assigned.
+    Pack rooms into a strip using shelf algorithm.
+    Returns rooms with x, y coordinates.
     """
-    # Sort rooms by height for balanced packing
-    rooms_sorted = sorted(rooms, key=lambda r: r["h"], reverse=True)
-    
-    # Split into left and right sides
-    left_side = []
-    right_side = []
-    total_width = 0
-    
-    for r in rooms_sorted:
-        if total_width + r["w"] <= max_width / 2:
-            left_side.append(r)
-        else:
-            right_side.append(r)
-        total_width += r["w"] + 0.3
-    
-    # Pack left side (starts at x=0)
-    left_packed = pack_shelf(left_side, start_x=0.5)
-    # Pack right side (starts after corridor)
-    right_packed = pack_shelf(right_side, start_x=corridor_width + 1.0)
-    
-    # Combine
-    return left_packed + right_packed
-
-def pack_shelf(rooms, start_x=0.0):
-    """Shelf packing starting from a given x offset."""
+    # Sort by width descending
+    rooms_sorted = sorted(rooms, key=lambda r: r["w"], reverse=True)
     packed = []
     y = 0.5
     row_height = 0.0
-    x = start_x
+    x = 0.5
     
-    for r in rooms:
-        if x + r["w"] > 10.0:  # max width per side
-            x = start_x
+    for r in rooms_sorted:
+        # Check if room fits on current row
+        if x + r["w"] > max_width:
+            x = 0.5
             y += row_height + 0.5
             row_height = 0.0
         
+        # Place room
         r["x"] = x
         r["y"] = y
         packed.append(r)
+        
+        # Update row height
         row_height = max(row_height, r["h"])
         x += r["w"] + 0.3
     
