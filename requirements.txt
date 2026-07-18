@@ -1,5 +1,2 @@
 fastapi
 uvicorn
-ifcopenshell
-trimesh
-numpy
