@@ -1,43 +1,26 @@
-import random
-from core.utils import uid
-from core.config import ARCH_DOMAINS
+import random 
+from core.utils import uid 
+from core.config import ARCH_DOMAINS 
 
-def get_domain(btype):
-    for d, items in ARCH_DOMAINS.items():
-        if btype in items:
-            return d
-    return "Unknown"
+def get_domain(btype): 
+    for d, items in ARCH_DOMAINS.items(): 
+        if btype in items: 
+            return d 
+    return "Unknown" 
 
-def generate_base_design(btype, bedrooms):
-    rooms = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3)
-
-    area = 65 + 44 + (bedrooms * 18)
-
+def generate_base_design(btype, bedrooms): 
+    rooms = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3) 
+    area = 65 + 44 + (bedrooms * 18) 
     return {
-        "id": uid(),
-        "type": btype,
-        "domain": get_domain(btype),
-        "bedrooms": bedrooms,
-        "rooms": rooms,
-        "area_sqm": area,
+        "id": uid(), 
+        "type": btype, 
+        "domain": get_domain(btype), 
+        "bedrooms": bedrooms, 
+        "rooms": rooms, 
+        "area_sqm": area, 
         "structure": {
-            "columns": random.randint(14, 36),
+            "columns": random.randint(14, 36), 
             "beams": random.randint(28, 72)
-        },
-        "cost": 0
-    }
-
-def generate_base_design(btype="standard", bedrooms=3):
-    area = 65 + 44 + (bedrooms * 18)  # rough area formula
-    columns = random.randint(14, 36)
-    beams = random.randint(28, 72)
-    rooms = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3)
-    return {
-        "type": btype,
-        "bedrooms": bedrooms,
-        "area": area,
-        "columns": columns,
-        "beams": beams,
-        "rooms": rooms,
-        "cost": area * 800  # from cost engine
+        }, 
+        "cost": 0 
     }
