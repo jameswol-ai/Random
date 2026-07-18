@@ -12,21 +12,24 @@ def get_domain(btype):
             return d 
     return "Unknown" 
 
-def generate_base_design(btype, bedrooms): 
-    rooms = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3) 
-    area = 65 + 44 + (bedrooms * 18) 
+def generate_base_design(btype="Residential", bedrooms=3):
+    import random
+    area = 65 + 44 + (bedrooms * 18)
+    columns = random.randint(14, 36)
+    beams = random.randint(28, 72)
+    # Build room list (flat for now – we'll generate plan later)
+    room_names = ["Living", "Kitchen", "Bathroom"] + ["Flex"] * random.randint(1, 3)
+    rooms = [{"name": n, "w": random.uniform(3, 6), "h": random.uniform(3, 5)} for n in room_names]
     return {
-        "id": uid(), 
-        "type": btype, 
-        "domain": get_domain(btype), 
-        "bedrooms": bedrooms, 
-        "rooms": rooms, 
-        "area_sqm": area, 
-        "structure": {
-            "columns": random.randint(14, 36), 
-            "beams": random.randint(28, 72)
-        }, 
-        "cost": 0 
+        "id": str(uuid.uuid4())[:8],
+        "type": btype,
+        "bedrooms": bedrooms,
+        "area_sqm": area,
+        "columns": columns,
+        "beams": beams,
+        "cost": area * 800,
+        "rooms": rooms,
+        "score": 0.0
     }
 
 def mutate_design(d):
