@@ -73,6 +73,41 @@ def run_mock_evolution(btype, bedrooms, gens, pop_size):
     }, [65, 72, 68, 70, 75]
 
 # ---------- Routes ----------
+
+@app.post("/evolve", response_model=DesignSummary)
+async def evolve(request: EvolveRequest):
+    try:
+        if ENGINE_AVAILABLE:
+            best, history = run_evolution(
+                btype=request.type,
+                bedrooms=request.bedrooms,
+                gens=request.generations,
+                pop_size=request.population
+            )
+            # Generate floor plan
+            best["plan"] = generate_floor_plan(best)
+        else:
+            best, history = run_mock_evolution(
+                request.type, request.bedrooms,
+                request.generations, request.population
+            )
+            
+        design_id = best.get("id", str(uuid.uuid4())[:8])
+        best["id"] = design_id
+        DESIGNS[design_id] = best
+
+        return DesignSummary(
+            id=design_id,
+            score=float(best.get("score", 0.0)),
+            area_sqm=float(best["area_sqm"]),
+            cost=float(best.get("cost", best["area_sqm"] * 800)),
+            bedrooms=int(best.get("bedrooms", 3)),
+            rooms=len(best.get("plan", best.get("rooms", [])))
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return """
