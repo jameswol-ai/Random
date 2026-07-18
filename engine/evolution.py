@@ -1,19 +1,40 @@
-import random 
-def fitness(d): 
-    r = d["structure"]["beams"] / max(1, d["structure"]["columns"]) 
-    stability = max(0, 100 - abs(r - 2.2) * 25) 
-    density = min(100, (d["structure"]["columns"] + d["structure"]["beams"]) / 1.2) 
-    efficiency = max(0, 100 - abs(d["area"] / 150 - 1) * 30) 
-    return (stability + density + efficiency) / 3 
+# engine/evolution.py (modified)
 
-def evolve(population, gens, pop_size, generator, mutate_fn): 
-    history = [] 
-    for _ in range(gens): 
-        for d in population: 
-            d["score"] = fitness(d) 
-        population.sort(key=lambda x: x["score"], reverse=True) 
-        history.append(population[0]["score"]) 
-        survivors = population[:max(2, pop_size // 2)] 
-        population = survivors + [mutate_fn(random.choice(survivors)) for _ in survivors] 
-        population = population[:pop_size] 
-    return population[0], history
+import random
+from engine.generator import generate_base_design
+from engine.fitness import calculate_fitness, score
+
+def run_evolution(btype="Residential", bedrooms=3, gens=5, pop_size=20):
+    # Generate initial population
+    population = []
+    for _ in range(pop_size):
+        d = generate_base_design(btype, bedrooms)
+        population.append(d)
+    
+    history = []
+    for _ in range(gens):
+        for d in population:
+            # Compute fitness and store in d
+            f = calculate_fitness(d)
+            d["score"] = score(f)
+        population.sort(key=lambda x: x["score"], reverse=True)
+        history.append(population[0]["score"])
+        survivors = population[:max(2, pop_size // 2)]
+        # Mutate survivors to fill the population
+        next_gen = survivors.copy()
+        while len(next_gen) < pop_size:
+            parent = random.choice(survivors)
+            child = parent.copy()
+            # Mutate (need a mutate function; we can use the one from genome or a simple random tweak)
+            # For simplicity, we'll call a mutate_design function
+            from engine.generator import mutate_design  # you'll need to implement this
+            child = mutate_design(child)
+            next_gen.append(child)
+        population = next_gen[:pop_size]
+    
+    best = population[0]
+    # Ensure it has an id
+    if "id" not in best:
+        import uuid
+        best["id"] = str(uuid.uuid4())[:8]
+    return best, history
