@@ -1,28 +1,22 @@
-import sys
-import os
-import uuid
-import random
-import json
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
+import uuid
+import random
+from typing import Dict, Any
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+app = FastAPI(title="RANDOM Studio API", version="1.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Try to import engine modules; fall back to mock if unavailable
-try:
-    from engine.evolution import run_evolution
-    from engine.planner import generate_floor_plan
-    from visualization.svg_blueprint import generate_svg_blueprint
-    from visualization.three_viewer import generate_threejs_html
-    ENGINE_AVAILABLE = True
-except ImportError:
-    ENGINE_AVAILABLE = False
-    print("⚠️ Engine modules not found — running in mock mode.")
+DESIGNS: Dict[str, Dict[str, Any]] = {}
 
-# ---------- Models ----------
 class EvolveRequest(BaseModel):
     type: str = "Residential"
     bedrooms: int = 3
@@ -37,36 +31,16 @@ class DesignSummary(BaseModel):
     bedrooms: int
     rooms: int
 
-# ---------- App ----------
-app = FastAPI(title="RANDOM Studio API", version="1.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-DESIGNS: Dict[str, Dict[str, Any]] = {}
-
-# ---------- Mock Evolution ----------
-def run_mock_evolution(btype, bedrooms, gens, pop_size):
+def generate_mock_design(btype, bedrooms):
     area = 80 + random.randint(0, 40)
     design_id = str(uuid.uuid4())[:8]
     rooms = [
-        {"name": "Living", "w": 6.0, "h": 5.0, "x": 0.5, "y": 0.5, "color": "#1a237e"},
-        {"name": "Kitchen", "w": 4.0, "h": 3.5, "x": 7.0, "y": 0.5, "color": "#1b5e20"},
-        {"name": "Bathroom", "w": 3.0, "h": 2.5, "x": 0.5, "y": 6.0, "color": "#4a148c"},
+        {"name": "Living", "w": 6.0, "h": 5.0, "x": 0.5, "y": 0.5},
+        {"name": "Kitchen", "w": 4.0, "h": 3.5, "x": 7.0, "y": 0.5},
+        {"name": "Bathroom", "w": 3.0, "h": 2.5, "x": 0.5, "y": 6.0},
     ]
     for i in range(bedrooms):
-        rooms.append({
-            "name": f"Bedroom {i+1}",
-            "w": 4.5,
-            "h": 4.0,
-            "x": 4.0 + i * 5.0,
-            "y": 6.0,
-            "color": "#0d47a1"
-        })
+        rooms.append({"name": f"Bedroom {i+1}", "w": 4.5, "h": 4.0, "x": 4.0 + i*5.0, "y": 6.0})
     return {
         "id": design_id,
         "type": btype,
@@ -76,9 +50,8 @@ def run_mock_evolution(btype, bedrooms, gens, pop_size):
         "score": round(random.uniform(50, 90), 2),
         "rooms": rooms,
         "plan": rooms
-    }, [65, 72, 68, 70, 75]
+    }
 
-# ---------- Routes ----------
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return """
@@ -90,7 +63,6 @@ async def root():
         <title>RANDOM Studio</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <style>
-            /* ─── Reset & Base ─── */
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -98,14 +70,11 @@ async def root():
                 color: #fafafa;
                 min-height: 100vh;
             }
-
-            /* ─── Scrollbar ─── */
             ::-webkit-scrollbar { width: 8px; height: 8px; }
             ::-webkit-scrollbar-track { background: #1e1e2a; }
             ::-webkit-scrollbar-thumb { background: #3d3d5c; border-radius: 4px; }
             ::-webkit-scrollbar-thumb:hover { background: #5a5a7a; }
 
-            /* ─── Top Bar ─── */
             .topbar {
                 background: #1e1e2a;
                 border-bottom: 1px solid #2d2d44;
@@ -156,7 +125,6 @@ async def root():
                 50% { opacity: 0.3; }
             }
 
-            /* ─── Layout ─── */
             .app {
                 display: flex;
                 max-width: 1440px;
@@ -166,7 +134,6 @@ async def root():
                 min-height: calc(100vh - 64px);
             }
 
-            /* ─── Sidebar ─── */
             .sidebar {
                 flex: 0 0 320px;
                 background: #1e1e2a;
@@ -284,13 +251,11 @@ async def root():
                 to { transform: rotate(360deg); }
             }
 
-            /* ─── Main ─── */
             .main {
                 flex: 1;
                 min-width: 0;
             }
 
-            /* ─── Design Card ─── */
             .design-card {
                 background: #1e1e2a;
                 border-radius: 16px;
@@ -367,7 +332,6 @@ async def root():
                 background: #3d3d5c;
             }
 
-            /* ─── Viewer Placeholder ─── */
             .viewer-placeholder {
                 background: #1e1e2a;
                 border-radius: 16px;
@@ -389,7 +353,6 @@ async def root():
                 opacity: 0.7;
             }
 
-            /* ─── Responsive ─── */
             @media (max-width: 900px) {
                 .app {
                     flex-direction: column;
@@ -418,8 +381,6 @@ async def root():
         </style>
     </head>
     <body>
-
-        <!-- ─── Top Bar ─── -->
         <header class="topbar">
             <div class="logo">
                 🏗️ RANDOM Studio
@@ -431,13 +392,9 @@ async def root():
             </div>
         </header>
 
-        <!-- ─── App ─── -->
         <div class="app">
-
-            <!-- ─── Sidebar ─── -->
             <aside class="sidebar">
                 <h2>⚙️ Controls</h2>
-
                 <div class="control-group">
                     <label for="type">Building Type</label>
                     <select id="type">
@@ -446,41 +403,31 @@ async def root():
                         <option value="Industrial">Industrial</option>
                     </select>
                 </div>
-
                 <div class="control-group">
                     <label for="bedrooms">Bedrooms</label>
                     <input type="number" id="bedrooms" value="3" min="1" max="5" />
                 </div>
-
                 <div class="control-group">
                     <label for="gens">Generations</label>
                     <input type="number" id="gens" value="2" min="1" max="5" />
                 </div>
-
                 <div class="control-group">
                     <label for="pop">Population</label>
                     <input type="number" id="pop" value="5" min="3" max="10" />
                 </div>
-
                 <button class="evolve-btn" id="evolveBtn">🚀 Evolve</button>
-
                 <div id="statusMsg" class="status-msg"></div>
                 <div class="spinner" id="spinner"></div>
             </aside>
 
-            <!-- ─── Main ─── -->
-            <main class="main" id="mainContent">
-
+            <main class="main">
                 <div id="resultContainer"></div>
-
                 <div class="viewer-placeholder" id="placeholder">
                     <div class="icon">🏛️</div>
                     <p><strong>No design yet</strong></p>
                     <p class="sub">Adjust the controls and click <strong>Evolve</strong> to generate a new architectural design.</p>
                 </div>
-
             </main>
-
         </div>
 
         <script>
@@ -502,7 +449,6 @@ async def root():
 
                 function renderDesign(data) {
                     placeholder.style.display = 'none';
-
                     const card = document.createElement('div');
                     card.className = 'design-card';
                     card.innerHTML = `
@@ -511,35 +457,19 @@ async def root():
                             <span class="badge">${data.rooms} rooms</span>
                         </div>
                         <div class="metrics">
-                            <div class="metric">
-                                <div class="label">Score</div>
-                                <div class="value">${data.score.toFixed(1)}</div>
-                            </div>
-                            <div class="metric">
-                                <div class="label">Area</div>
-                                <div class="value">${data.area_sqm} m²</div>
-                            </div>
-                            <div class="metric">
-                                <div class="label">Cost</div>
-                                <div class="value">$${data.cost.toLocaleString()}</div>
-                            </div>
-                            <div class="metric">
-                                <div class="label">Bedrooms</div>
-                                <div class="value">${data.bedrooms}</div>
-                            </div>
+                            <div class="metric"><div class="label">Score</div><div class="value">${data.score.toFixed(1)}</div></div>
+                            <div class="metric"><div class="label">Area</div><div class="value">${data.area_sqm} m²</div></div>
+                            <div class="metric"><div class="label">Cost</div><div class="value">$${data.cost.toLocaleString()}</div></div>
+                            <div class="metric"><div class="label">Bedrooms</div><div class="value">${data.bedrooms}</div></div>
                         </div>
                         <div class="actions">
                             <button onclick="window.open('/blueprint/${data.id}')">📐 Blueprint</button>
                             <button onclick="window.open('/3d/${data.id}')">🏛️ 3D Viewer</button>
                         </div>
                     `;
-
                     const existing = resultContainer.querySelector('.design-card');
-                    if (existing) {
-                        resultContainer.replaceChild(card, existing);
-                    } else {
-                        resultContainer.appendChild(card);
-                    }
+                    if (existing) resultContainer.replaceChild(card, existing);
+                    else resultContainer.appendChild(card);
                 }
 
                 async function evolve() {
@@ -556,23 +486,15 @@ async def root():
                         const res = await fetch('/evolve', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                type: type,
-                                bedrooms: bedrooms,
-                                generations: gens,
-                                population: pop
-                            })
+                            body: JSON.stringify({ type, bedrooms, generations: gens, population: pop })
                         });
-
                         if (!res.ok) {
                             const text = await res.text();
                             throw new Error(text || `HTTP ${res.status}`);
                         }
-
                         const data = await res.json();
                         renderDesign(data);
                         setStatus('✓ Design generated successfully!', 'success');
-
                     } catch (err) {
                         console.error('Evolution error:', err);
                         setStatus('✗ Error: ' + err.message, 'error');
@@ -583,12 +505,8 @@ async def root():
                 }
 
                 evolveBtn.addEventListener('click', evolve);
-
-                // Enter key support
                 document.querySelectorAll('.sidebar input, .sidebar select').forEach(el => {
-                    el.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') evolve();
-                    });
+                    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') evolve(); });
                 });
             })();
         </script>
@@ -596,47 +514,20 @@ async def root():
     </html>
     """
 
-# ---------- API Endpoints ----------
 @app.post("/evolve", response_model=DesignSummary)
 async def evolve(request: EvolveRequest):
-    try:
-        if ENGINE_AVAILABLE:
-            best, history = run_evolution(
-                btype=request.type,
-                bedrooms=request.bedrooms,
-                gens=request.generations,
-                pop_size=request.population
-            )
-            # Ensure plan exists
-            if "plan" not in best or not best["plan"]:
-                best["plan"] = generate_floor_plan(best)
-        else:
-            best, history = run_mock_evolution(
-                request.type,
-                request.bedrooms,
-                request.generations,
-                request.population
-            )
-
-        design_id = best.get("id", str(uuid.uuid4())[:8])
-        best["id"] = design_id
-        DESIGNS[design_id] = best
-
-        if "cost" not in best:
-            best["cost"] = best.get("area_sqm", 0) * 800
-
-        return DesignSummary(
-            id=design_id,
-            score=float(best.get("score", 0.0)),
-            area_sqm=float(best["area_sqm"]),
-            cost=float(best["cost"]),
-            bedrooms=int(best.get("bedrooms", 3)),
-            rooms=len(best.get("plan", best.get("rooms", [])))
-        )
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+    # Always use mock data – no engine imports
+    best = generate_mock_design(request.type, request.bedrooms)
+    design_id = best["id"]
+    DESIGNS[design_id] = best
+    return DesignSummary(
+        id=design_id,
+        score=best["score"],
+        area_sqm=best["area_sqm"],
+        cost=best["cost"],
+        bedrooms=best["bedrooms"],
+        rooms=len(best["rooms"])
+    )
 
 @app.get("/design/{design_id}")
 async def get_design(design_id: str):
@@ -649,55 +540,24 @@ async def get_blueprint(design_id: str):
     design = DESIGNS.get(design_id)
     if not design:
         raise HTTPException(404, "Design not found")
-
-    plan = design.get("plan")
-    if not plan:
-        plan = design.get("rooms", [])
-        if plan and not all("x" in r and "y" in r for r in plan):
-            try:
-                if ENGINE_AVAILABLE:
-                    plan = generate_floor_plan(design)
-                else:
-                    for i, r in enumerate(plan):
-                        r["x"] = (i % 3) * 5.0 + 0.5
-                        r["y"] = (i // 3) * 4.5 + 0.5
-            except:
-                for i, r in enumerate(plan):
-                    r["x"] = (i % 3) * 5.0 + 0.5
-                    r["y"] = (i // 3) * 4.5 + 0.5
-
-    if not plan:
-        raise HTTPException(404, "No plan data available")
-
-    try:
-        if generate_svg_blueprint is not None:
-            svg = generate_svg_blueprint(plan)
-        else:
-            raise ImportError("SVG blueprint module not available")
-    except Exception as e:
-        # Fallback SVG
-        svg = f'''
-        <svg width="700" height="500" xmlns="http://www.w3.org/2000/svg" style="background:#0e1117; border-radius:8px;">
-            <rect width="700" height="500" fill="#0e1117" rx="8"/>
-            <text x="350" y="250" text-anchor="middle" font-family="Inter, Arial" font-size="20" fill="#8b8fa7">Blueprint</text>
-            <text x="350" y="280" text-anchor="middle" font-family="Inter, Arial" font-size="14" fill="#5a5a7a">{len(plan)} rooms</text>
-        </svg>
-        '''
-
+    plan = design.get("plan", design.get("rooms", []))
+    # Simple SVG rendering
+    svg = f'''
+    <svg width="700" height="500" xmlns="http://www.w3.org/2000/svg" style="background:#0e1117; border-radius:8px;">
+        <rect width="700" height="500" fill="#0e1117" rx="8"/>
+        <text x="350" y="250" text-anchor="middle" font-family="Inter, Arial" font-size="20" fill="#8b8fa7">Blueprint</text>
+        <text x="350" y="280" text-anchor="middle" font-family="Inter, Arial" font-size="14" fill="#5a5a7a">{len(plan)} rooms</text>
+    </svg>
+    '''
     return f"""
     <!DOCTYPE html>
     <html>
-    <head>
-        <title>Blueprint – {design_id}</title>
-        <style>
-            body {{ background: #0e1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Inter', sans-serif; }}
-            .container {{ background: #1e1e2a; padding: 2rem; border-radius: 16px; border: 1px solid #2d2d44; max-width: 90vw; overflow: auto; }}
-            .container svg {{ display: block; max-width: 100%; height: auto; }}
-        </style>
+    <head><title>Blueprint – {design_id}</title>
+    <style>body{{background:#0e1117;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;font-family:'Inter',sans-serif;}}
+    .container{{background:#1e1e2a;padding:2rem;border-radius:16px;border:1px solid #2d2d44;max-width:90vw;overflow:auto;}}
+    .container svg{{display:block;max-width:100%;height:auto;}}</style>
     </head>
-    <body>
-        <div class="container">{svg}</div>
-    </body>
+    <body><div class="container">{svg}</div></body>
     </html>
     """
 
@@ -706,51 +566,19 @@ async def get_3d(design_id: str):
     design = DESIGNS.get(design_id)
     if not design:
         raise HTTPException(404, "Design not found")
-
-    plan = design.get("plan")
-    if not plan:
-        plan = design.get("rooms", [])
-        if plan and not all("x" in r and "y" in r for r in plan):
-            try:
-                if ENGINE_AVAILABLE:
-                    plan = generate_floor_plan(design)
-                else:
-                    for i, r in enumerate(plan):
-                        r["x"] = (i % 3) * 5.0 + 0.5
-                        r["y"] = (i // 3) * 4.5 + 0.5
-            except:
-                for i, r in enumerate(plan):
-                    r["x"] = (i % 3) * 5.0 + 0.5
-                    r["y"] = (i // 3) * 4.5 + 0.5
-
-    if not plan:
-        raise HTTPException(404, "No plan data available")
-
-    try:
-        if generate_threejs_html is not None:
-            html = generate_threejs_html(plan)
-            return html
-        else:
-            raise ImportError("3D viewer module not available")
-    except Exception as e:
-        # Fallback 3D viewer
-        return f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>3D Viewer – {design_id}</title>
-            <style>
-                body {{ margin: 0; background: #0e1117; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Inter', sans-serif; color: #fafafa; flex-direction: column; }}
-                .icon {{ font-size: 4rem; margin-bottom: 1rem; }}
-                p {{ color: #8b8fa7; }}
-                .sub {{ font-size: 0.8rem; color: #5a5a7a; }}
-            </style>
-        </head>
-        <body>
-            <div class="icon">🏛️</div>
-            <h2>3D Viewer</h2>
-            <p>Interactive 3D visualization</p>
-            <p class="sub">{len(plan)} rooms · drag to rotate</p>
-        </body>
-        </html>
-        """
+    plan = design.get("plan", design.get("rooms", []))
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head><title>3D Viewer – {design_id}</title>
+    <style>body{{margin:0;background:#0e1117;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Inter',sans-serif;color:#fafafa;flex-direction:column;}}
+    .icon{{font-size:4rem;margin-bottom:1rem;}} p{{color:#8b8fa7;}} .sub{{font-size:0.8rem;color:#5a5a7a;}}</style>
+    </head>
+    <body>
+        <div class="icon">🏛️</div>
+        <h2>3D Viewer</h2>
+        <p>Interactive 3D visualization</p>
+        <p class="sub">{len(plan)} rooms · drag to rotate</p>
+    </body>
+    </html>
+    """
