@@ -65,3 +65,55 @@ def render_design_lab(mem, log_event, state):
     
     else:
         st.info("👈 Click 'Evolve!' to generate your first design.")
+
+import streamlit as st
+from engine.evolution import run_evolution
+from engine.planner import generate_floor_plan
+from visualization.svg_blueprint import generate_svg_blueprint
+from visualization.three_viewer import generate_threejs_html
+from engine.export_ifc import export_ifc
+from engine.export_gltf import generate_gltf
+
+def render_design_lab(mem, log_event, state):
+    st.title("🏗️ Design Lab")
+    
+    # ... (keep existing controls and metrics code) ...
+    
+    # After displaying 2D and 3D, add export section
+    if state.get("active"):
+        d = state["active"]
+        
+        # Export section
+        st.subheader("📤 Export")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("📄 Export IFC", use_container_width=True):
+                if d.get("plan"):
+                    ifc_data = export_ifc(d["plan"])
+                    st.download_button(
+                        label="⬇️ Download IFC",
+                        data=ifc_data,
+                        file_name=f"{d['id']}.ifc",
+                        mime="application/x-ifc",
+                        key="ifc_download"
+                    )
+                else:
+                    st.warning("No plan data to export.")
+        
+        with col2:
+            if st.button("🔷 Export glTF", use_container_width=True):
+                if d.get("plan"):
+                    glb_data = generate_gltf(d["plan"])
+                    if glb_data and glb_data != b"GLB export requires trimesh. pip install trimesh":
+                        st.download_button(
+                            label="⬇️ Download glTF",
+                            data=glb_data,
+                            file_name=f"{d['id']}.glb",
+                            mime="model/gltf-binary",
+                            key="gltf_download"
+                        )
+                    else:
+                        st.warning("glTF export requires trimesh. pip install trimesh")
+                else:
+                    st.warning("No plan data to export.")
