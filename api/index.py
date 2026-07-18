@@ -1,30 +1,25 @@
 import sys
 import os
 import uuid
-import json
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Dict, Any
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Engine imports – make sure these exist
 from engine.evolution import run_evolution
 from engine.planner import generate_floor_plan
 from visualization.svg_blueprint import generate_svg_blueprint
 from visualization.three_viewer import generate_threejs_html
-# If you have exports, uncomment later
-# from engine.export_ifc import export_ifc
-# from engine.export_gltf import generate_gltf
 
 # ---------- Models ----------
 class EvolveRequest(BaseModel):
     type: str = "Residential"
     bedrooms: int = 3
-    generations: int = 2      # was 5 – Vercel-friendly
-    population: int = 5       # was 20
+    generations: int = 2
+    population: int = 5
 
 class DesignSummary(BaseModel):
     id: str
@@ -49,7 +44,6 @@ DESIGNS: Dict[str, Dict[str, Any]] = {}
 # ---------- Routes ----------
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    # (Keep your existing HTML – we'll improve the JS in a moment)
     return """
     <!DOCTYPE html>
     <html>
@@ -83,7 +77,7 @@ async def root():
                 <div><label>Population</label><input id="pop" type="number" value="5" min="3" max="10"></div>
                 <button onclick="evolve()" id="evolveBtn">🚀 Evolve</button>
             </div>
-            <div id="loading">⏳ Evolving... (may take a few seconds)</div>
+            <div id="loading">⏳ Evolving...</div>
             <div id="error"></div>
         </div>
         <div id="result"></div>
@@ -127,8 +121,6 @@ async def root():
                         <div class="btn-group">
                             <button onclick="window.open('/blueprint/${data.id}')">📐 Blueprint</button>
                             <button onclick="window.open('/3d/${data.id}')">🏛️ 3D Viewer</button>
-                            <!-- <button onclick="window.open('/export/ifc/${data.id}')">📄 IFC</button> -->
-                            <!-- <button onclick="window.open('/export/gltf/${data.id}')">🔷 glTF</button> -->
                         </div>
                     </div>
                 `;
@@ -204,5 +196,3 @@ async def get_3d(design_id: str):
         raise HTTPException(404, "Design or plan not found")
     html = generate_threejs_html(design["plan"])
     return html
-
-# (Export endpoints commented out for now)
