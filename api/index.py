@@ -6,24 +6,21 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 
-# Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import your engine modules (make sure these exist)
+# Force mock mode – use fake designs
+ENGINE_AVAILABLE = False
+
+# Optional imports (not used)
 try:
     from engine.evolution import run_evolution
     from engine.planner import generate_floor_plan
     from visualization.svg_blueprint import generate_svg_blueprint
     from visualization.three_viewer import generate_threejs_html
-    ENGINE_AVAILABLE = True
 except ImportError:
-    ENGINE_AVAILABLE = False
-    print("Warning: Engine modules not found. Running in mock mode.")
-
-# Force mock mode until engine is fixed
-ENGINE_AVAILABLE = False
+    pass
 
 # ---------- Models ----------
 class EvolveRequest(BaseModel):
@@ -52,7 +49,7 @@ app.add_middleware(
 
 DESIGNS: Dict[str, Dict[str, Any]] = {}
 
-# ---------- Helper: Mock Evolution (fallback) ----------
+# ---------- Mock Evolution ----------
 def run_mock_evolution(btype, bedrooms, gens, pop_size):
     """Generate a mock design when engine is not available."""
     area = 80 + random.randint(0, 40)
@@ -87,7 +84,6 @@ async def root():
         <title>RANDOM Studio</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <style>
-            /* (full CSS as in the previous Chinese version – I'll include it below) */
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: 'Inter', sans-serif; background: #f0f2f6; color: #1e1e1e; min-height: 100vh; }
             .topbar { background: white; border-bottom: 1px solid #e6e9ef; padding: 0 2rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
@@ -125,7 +121,6 @@ async def root():
             .design-card .actions button:hover { background: #f8f9fb; border-color: #b0b8c4; }
             .viewer-placeholder { background: white; border-radius: 16px; padding: 2rem; text-align: center; border: 1px solid #e6e9ef; color: #6c7a8d; }
             .viewer-placeholder .icon { font-size: 3rem; margin-bottom: 0.75rem; }
-            .viewer-placeholder p { font-size: 0.95rem; }
             .spinner { display: none; margin: 1rem auto 0; width: 28px; height: 28px; border: 3px solid #e6e9ef; border-top-color: #ff4b4b; border-radius: 50%; animation: spin 0.7s linear infinite; }
             .spinner.active { display: block; }
             @keyframes spin { to { transform: rotate(360deg); } }
@@ -134,17 +129,11 @@ async def root():
         </style>
     </head>
     <body>
-
-        <!-- Top Bar -->
         <header class="topbar">
             <div class="logo">🏗️ RANDOM Studio <span>BETA</span></div>
             <div class="status"><span class="dot"></span><span id="connectionStatus">Connected</span></div>
         </header>
-
-        <!-- App -->
         <div class="app">
-
-            <!-- Sidebar -->
             <aside class="sidebar">
                 <h2>⚙️ Controls</h2>
                 <div class="control-group">
@@ -167,8 +156,6 @@ async def root():
                 <div id="statusMsg" class="status-msg"></div>
                 <div class="spinner" id="spinner"></div>
             </aside>
-
-            <!-- Main -->
             <main class="main" id="mainContent">
                 <div id="resultContainer"></div>
                 <div class="viewer-placeholder" id="placeholder">
@@ -177,9 +164,7 @@ async def root():
                     <p style="font-size:0.85rem; margin-top:0.3rem;">Adjust the controls and click <strong>Evolve</strong> to generate a new architectural design.</p>
                 </div>
             </main>
-
         </div>
-
         <script>
             (function() {
                 const evolveBtn = document.getElementById('evolveBtn');
@@ -268,27 +253,13 @@ async def root():
 @app.post("/evolve", response_model=DesignSummary)
 async def evolve(request: EvolveRequest):
     try:
-        if ENGINE_AVAILABLE:
-            best, history = run_evolution(
-                btype=request.type,
-                bedrooms=request.bedrooms,
-                gens=request.generations,
-                pop_size=request.population
-            )
-            if "plan" not in best or not best["plan"]:
-                best["plan"] = generate_floor_plan(best)
-        else:
-            best, history = run_mock_evolution(
-                request.type, request.bedrooms,
-                request.generations, request.population
-            )
-
+        best, history = run_mock_evolution(
+            request.type, request.bedrooms,
+            request.generations, request.population
+        )
         design_id = best.get("id", str(uuid.uuid4())[:8])
         best["id"] = design_id
         DESIGNS[design_id] = best
-
-        if "cost" not in best:
-            best["cost"] = best.get("area_sqm", 0) * 800
 
         return DesignSummary(
             id=design_id,
@@ -319,20 +290,21 @@ async def get_blueprint(design_id: str):
     if not plan:
         plan = design.get("rooms", [])
         if plan and not all("x" in r and "y" in r for r in plan):
-            try:
-                plan = generate_floor_plan(design)
-            except:
-                for i, r in enumerate(plan):
-                    r["x"] = (i % 3) * 5.0 + 0.5
-                    r["y"] = (i // 3) * 4.5 + 0.5
+            # fallback positions
+            for i, r in enumerate(plan):
+                r["x"] = (i % 3) * 5.0 + 0.5
+                r["y"] = (i // 3) * 4.5 + 0.5
 
     if not plan:
         raise HTTPException(404, "No plan data available")
 
     try:
+        # Try to use real SVG generator if available
+        from visualization.svg_blueprint import generate_svg_blueprint
         svg = generate_svg_blueprint(plan)
-    except Exception as e:
-        svg = f'<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg"><rect width="600" height="400" fill="#f8f9fb"/><text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="18" fill="#6c7a8d">Blueprint unavailable</text></svg>'
+    except:
+        # Simple fallback SVG
+        svg = f'<svg width="600" height="400" xmlns="http://www.w3.org/2000/svg"><rect width="600" height="400" fill="#f8f9fb"/><text x="300" y="200" text-anchor="middle" font-family="Arial" font-size="18" fill="#6c7a8d">Blueprint</text></svg>'
 
     return f"""
     <!DOCTYPE html>
@@ -342,13 +314,10 @@ async def get_blueprint(design_id: str):
         <style>
             body {{ background: #f0f2f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Inter', sans-serif; }}
             .container {{ background: white; padding: 2rem; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 90vw; overflow: auto; }}
-            .container svg {{ display: block; max-width: 100%; height: auto; }}
         </style>
     </head>
     <body>
-        <div class="container">
-            {svg}
-        </div>
+        <div class="container">{svg}</div>
     </body>
     </html>
     """
@@ -363,36 +332,22 @@ async def get_3d(design_id: str):
     if not plan:
         plan = design.get("rooms", [])
         if plan and not all("x" in r and "y" in r for r in plan):
-            try:
-                plan = generate_floor_plan(design)
-            except:
-                for i, r in enumerate(plan):
-                    r["x"] = (i % 3) * 5.0 + 0.5
-                    r["y"] = (i // 3) * 4.5 + 0.5
+            for i, r in enumerate(plan):
+                r["x"] = (i % 3) * 5.0 + 0.5
+                r["y"] = (i // 3) * 4.5 + 0.5
 
     if not plan:
         raise HTTPException(404, "No plan data available")
 
     try:
+        from visualization.three_viewer import generate_threejs_html
         html = generate_threejs_html(plan)
         return html
-    except Exception as e:
-        return f"""
+    except:
+        return """
         <!DOCTYPE html>
         <html>
-        <head>
-            <title>3D Viewer – {design_id}</title>
-            <style>
-                body {{ margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Inter', sans-serif; color: white; flex-direction: column; }}
-                .icon {{ font-size: 4rem; margin-bottom: 1rem; }}
-                p {{ color: #8892a8; }}
-            </style>
-        </head>
-        <body>
-            <div class="icon">🏛️</div>
-            <h2>3D Viewer</h2>
-            <p>3D visualization is loading…</p>
-            <p style="font-size:0.8rem; color:#4a5568;">(Three.js renderer unavailable)</p>
-        </body>
+        <head><title>3D Viewer</title><style>body{margin:0;background:#1a1a2e;display:flex;justify-content:center;align-items:center;height:100vh;color:white;font-family:Inter,sans-serif;flex-direction:column;}</style></head>
+        <body><div style="font-size:4rem;">🏛️</div><h2>3D Viewer</h2><p style="color:#8892a8;">Three.js renderer unavailable</p></body>
         </html>
         """
