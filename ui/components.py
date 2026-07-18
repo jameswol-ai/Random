@@ -25,3 +25,11 @@ def render_blueprint(plan):
         svg += f'<text x="{x+w/2}" y="{y+h-10}" text-anchor="middle" font-family="Arial" font-size="10" fill="#555">{r["w"]:.1f}×{r["h"]:.1f}m</text>'
     svg += '</svg>'
     st.markdown(svg, unsafe_allow_html=True)
+
+ROOM_COLORS = {
+    "Living": "#e3f2fd",
+    "Kitchen": "#fff3e0",
+    "Bathroom": "#e8f5e9",
+    "Bedroom": "#f3e5f5",
+    "Flex": "#fce4ec"
+}
