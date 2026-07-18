@@ -1,83 +1,134 @@
-/* ===== Streamlit Light Theme ===== */
+/* Base theme – Warm Amber (can be swapped via JS) */
 :root {
-  --primary: #ff4b4b;
-  --background: #ffffff;
-  --secondary-background: #f0f2f6;
-  --text-color: #262730;
-  --border-color: #e6e9ef;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  --bg-gradient: radial-gradient(circle at top right, #2d1b34, #0f0f1a 60%);
+  --sidebar-bg: linear-gradient(180deg, #1a1025, #0c0714);
+  --btn-gradient: linear-gradient(135deg, #fbbf24, #f97316);
+  --accent: #fbbf24;
+  --card-bg: rgba(25, 20, 40, 0.65);
+  --text: #f5f0eb;
+  --border: rgba(255,255,255,0.08);
+  font-family: 'Inter', sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--text-color);
-  font-family: "Source Sans Pro", "Segoe UI", system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
+  margin: 0;
+  background: var(--bg-gradient);
+  color: var(--text);
+  min-height: 100vh;
 }
 
-/* Main container */
-.main {
-  max-width: 800px;
-  margin: 2rem auto;
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  border-radius: 28px;
   padding: 2rem;
-  background: var(--background);
-  border: 1px solid var(--border-color);
-  border-radius: 0.25rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 25px 45px rgba(0,0,0,0.5);
 }
 
-/* Typography */
-h1 {
-  color: var(--text-color);
-  font-weight: 600;
-  margin-bottom: 1rem;
+/* Login screen */
+.login-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
-p {
-  margin-bottom: 1rem;
+.login-card {
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
 }
-
-/* Buttons - Streamlit style */
-.stButton, button, .button {
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 0.25rem;
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.stButton:hover, button:hover {
-  background-color: #e04040;
+.login-card .logo-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  background: var(--btn-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
 }
 
-/* Input fields */
-.stTextInput {
-  margin-top: 1rem;
+/* Sidebar layout */
+.app-container {
+  display: flex;
+  height: 100vh;
 }
-.stTextInput label {
+.sidebar {
+  width: 260px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+/* XP bar */
+.xp-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 1rem 0;
+}
+.xp-bar {
+  flex: 1;
+  height: 8px;
+  background: #2e2340;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.xp-fill {
+  height: 100%;
+  background: var(--btn-gradient);
+  border-radius: 4px;
+  box-shadow: 0 0 10px var(--accent);
+}
+/* Nav buttons */
+.nav-btn {
   display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.9rem;
-  color: var(--text-color);
-}
-.stTextInput input {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-  background: white;
-  color: var(--text-color);
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.5rem;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.nav-btn.active, .nav-btn:hover {
+  background: rgba(255,255,255,0.05);
+}
+/* Form inputs */
+input, select, textarea {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--text);
+  padding: 0.6rem;
+  border-radius: 8px;
+  width: 100%;
+  margin-bottom: 1rem;
   font-family: inherit;
-  font-size: 1rem;
 }
-
-/* Remove any dark shadows or gradients */
-*, *::before, *::after {
-  text-shadow: none !important;
-  box-shadow: none !important;
+button {
+  background: var(--btn-gradient);
+  color: #0b0710;
+  border: none;
+  border-radius: 18px;
+  padding: 0.75rem 2rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 8px 25px rgba(var(--accent), 0.33);
 }
+button:hover {
+  transform: scale(1.03);
+  box-shadow: 0 14px 35px rgba(var(--accent), 0.53);
+}
+/* ... add more styles for tabs, cards, etc. */
