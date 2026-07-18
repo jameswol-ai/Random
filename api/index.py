@@ -14,6 +14,28 @@ from engine.planner import generate_floor_plan
 from visualization.svg_blueprint import generate_svg_blueprint
 from visualization.three_viewer import generate_threejs_html
 
+@app.post("/evolve", response_model=DesignSummary)
+async def evolve(request: EvolveRequest):
+    import random
+    design_id = str(uuid.uuid4())[:8]
+    area = 80 + random.randint(0, 40)
+    # Generate a fake floor plan (list of rooms with x,y,w,h)
+    rooms = [
+        {"name": "Living", "w": 6.0, "h": 5.0, "x": 0.5, "y": 0.5},
+        {"name": "Kitchen", "w": 4.0, "h": 3.5, "x": 7.0, "y": 0.5},
+        {"name": "Bathroom", "w": 3.0, "h": 2.5, "x": 0.5, "y": 6.0},
+    ]
+    for i in range(request.bedrooms):
+        rooms.append({"name": f"Bedroom {i+1}", "w": 4.5, "h": 4.0, "x": 4.0 + i*5.0, "y": 6.0})
+    return DesignSummary(
+        id=design_id,
+        score=round(random.uniform(50, 90), 2),
+        area_sqm=area,
+        cost=area * 800,
+        bedrooms=request.bedrooms,
+        rooms=len(rooms)
+    )
+
 # ---------- Models ----------
 class EvolveRequest(BaseModel):
     type: str = "Residential"
