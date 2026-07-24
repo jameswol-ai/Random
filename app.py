@@ -1,8 +1,7 @@
-from flask import Flask, render_template_string
+import json
+import random
 
-app = Flask(__name__)
-
-HTML_TEMPLATE = """
+HTML = """\
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -186,7 +185,6 @@ HTML_TEMPLATE = """
       resultDiv.textContent = numbers.join(', ');
     });
 
-    // initial generation on load
     window.addEventListener('load', () => {
       document.getElementById('generateBtn').click();
     });
@@ -195,9 +193,14 @@ HTML_TEMPLATE = """
 </html>
 """
 
-@app.route('/')
-def home():
-    return render_template_string(HTML_TEMPLATE)
+def handler(event, context):
+    return {
+        "statusCode": 200,
+        "headers": {"Content-Type": "text/html"},
+        "body": HTML
+    }
 
-# Vercel requires a callable named `app` (or you can configure in vercel.json)
-# The above Flask app will be detected automatically.
+# Vercel expects a variable named `app` for the Python runtime,
+# but with this simple function we need to map properly.
+# The following makes the handler available as `app` for Vercel.
+app = handler
