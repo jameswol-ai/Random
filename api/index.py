@@ -62,6 +62,10 @@ async def root():
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>RANDOM Studio</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <script>
+            window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
+        </script>
+        <script defer src="/_vercel/speed-insights/script.js"></script>
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
