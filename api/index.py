@@ -510,6 +510,12 @@ async def root():
                 });
             })();
         </script>
+        
+        <!-- Vercel Speed Insights -->
+        <script type="module">
+            import { injectSpeedInsights } from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1/+esm';
+            injectSpeedInsights();
+        </script>
     </body>
     </html>
     """
@@ -557,7 +563,15 @@ async def get_blueprint(design_id: str):
     .container{{background:#1e1e2a;padding:2rem;border-radius:16px;border:1px solid #2d2d44;max-width:90vw;overflow:auto;}}
     .container svg{{display:block;max-width:100%;height:auto;}}</style>
     </head>
-    <body><div class="container">{svg}</div></body>
+    <body>
+        <div class="container">{svg}</div>
+        
+        <!-- Vercel Speed Insights -->
+        <script type="module">
+            import {{ injectSpeedInsights }} from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1/+esm';
+            injectSpeedInsights();
+        </script>
+    </body>
     </html>
     """
 
@@ -579,6 +593,12 @@ async def get_3d(design_id: str):
         <h2>3D Viewer</h2>
         <p>Interactive 3D visualization</p>
         <p class="sub">{len(plan)} rooms · drag to rotate</p>
+        
+        <!-- Vercel Speed Insights -->
+        <script type="module">
+            import {{ injectSpeedInsights }} from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@1/+esm';
+            injectSpeedInsights();
+        </script>
     </body>
     </html>
     """

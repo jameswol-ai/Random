@@ -1,0 +1,17 @@
+{
+  "name": "random-studio",
+  "version": "1.0.0",
+  "description": "RANDOM Studio - Building design and evolution platform",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'No build step required for vanilla JS'",
+    "dev": "python -m uvicorn api.index:app --reload"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.12"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
