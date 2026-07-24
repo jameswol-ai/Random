@@ -32,6 +32,53 @@ if not PRICES_FILE.exists():
 if not PROJECTS_FILE.exists():
     PROJECTS_FILE.write_text(json.dumps([], indent=2))   # empty list
 
+# ---------- DEFAULT SPECIFICATION (NEW – MUST BE BEFORE SESSION INIT) ----------
+DEFAULT_SPEC = {
+    "building_name": "Project Name",
+    "category": "Residential",
+    "shape": "Rectangle",
+    "floors": 2,
+    "floor_height": 3.0,
+    "plot_length": 30.0,
+    "plot_width": 25.0,
+    "setback_front": 5.0,
+    "setback_back": 3.0,
+    "setback_left": 2.0,
+    "setback_right": 2.0,
+    "overall_length": 20.0,
+    "overall_width": 15.0,
+    "grid": {"spacing_x":6.0,"spacing_y":6.0,"column_size":0.4,"gridline_ref":"Centerline"},
+    "exterior_wall": "Cavity Brick (280mm)",
+    "interior_wall": "Brick Partition (115mm)",
+    "plaster_exterior": "Cement Plaster + Paint (20mm)",
+    "plaster_interior": "Gypsum Plaster + Paint (15mm)",
+    "foundation": "Strip Foundation",
+    "foundation_depth": 1.2,
+    "soil_type": "Clay",
+    "column_type": "RC Rectangular 300x300mm",
+    "beam_type": "RC 230x300mm",
+    "roof_type": "Pitched",
+    "roof_material": "Concrete Tiles",
+    "roof_pitch": 30,
+    "flooring": "tiles",
+    "ceiling": "flat",
+    "rooms": [
+        {"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,
+         "flooring":"wood","ceiling":"flat","bulbs":4,"sockets":6,"switches":2,
+         "furniture":[{"item":"Sofa","w":2.0,"d":1.0,"h":0.9}]}
+    ],
+    "doors": [{"type":"Main Entrance","width":1.0,"height":2.1,"wall":"south","height_above_floor":0.0,"material":"Wood"}],
+    "windows": [{"type":"Sliding","width":1.5,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"}],
+    "stairs":{"count":1,"type":"U-shaped","width":1.2},
+    "lifts":{"count":0,"type":"Passenger","capacity":8},
+    "hvac": "Natural Ventilation",
+    "orientation": "South",
+    "wind_direction": "North",
+    "mep_details":{"plumbing_fixtures_per_floor":4,"electrical_load_per_sqm":50},
+    "east_africa_country": "Uganda",
+    "labour_rate_per_day": 15,
+}
+
 # ---------- THEMES ----------
 THEMES = {
     "Warm Amber": {
@@ -140,14 +187,12 @@ def save_projects(projects):
 def save_current_project(name, spec):
     """Save or update a project by name."""
     projects = load_projects()
-    # Check if project exists
     for proj in projects:
         if proj["name"] == name:
             proj["spec"] = spec.copy()
             proj["date"] = datetime.now().isoformat()
             save_projects(projects)
             return True, f"Project '{name}' updated."
-    # New project
     projects.append({
         "name": name,
         "spec": spec.copy(),
@@ -157,7 +202,6 @@ def save_current_project(name, spec):
     return True, f"Project '{name}' saved."
 
 def load_project_by_name(name):
-    """Load spec of a saved project."""
     projects = load_projects()
     for proj in projects:
         if proj["name"] == name:
@@ -169,63 +213,19 @@ def delete_project_by_name(name):
     projects = [p for p in projects if p["name"] != name]
     save_projects(projects)
 
-# ---------- SESSION INIT ----------
+# ---------- SESSION INIT (now uses DEFAULT_SPEC) ----------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in=False; st.session_state.username=None
     st.session_state.user_data=None; st.session_state.page="Dashboard"
     st.session_state.unit_system="Metric"
     st.session_state.theme = "Warm Amber"
     st.session_state.chat_history = []
-    st.session_state.spec = {
-        "building_name": "Project Name",
-        "category": "Residential",
-        "shape": "Rectangle",
-        "floors": 2,
-        "floor_height": 3.0,
-        "plot_length": 30.0,
-        "plot_width": 25.0,
-        "setback_front": 5.0,
-        "setback_back": 3.0,
-        "setback_left": 2.0,
-        "setback_right": 2.0,
-        "overall_length": 20.0,
-        "overall_width": 15.0,
-        "grid": {"spacing_x":6.0,"spacing_y":6.0,"column_size":0.4,"gridline_ref":"Centerline"},
-        "exterior_wall": "Cavity Brick (280mm)",
-        "interior_wall": "Brick Partition (115mm)",
-        "plaster_exterior": "Cement Plaster + Paint (20mm)",
-        "plaster_interior": "Gypsum Plaster + Paint (15mm)",
-        "foundation": "Strip Foundation",
-        "foundation_depth": 1.2,
-        "soil_type": "Clay",
-        "column_type": "RC Rectangular 300x300mm",
-        "beam_type": "RC 230x300mm",
-        "roof_type": "Pitched",
-        "roof_material": "Concrete Tiles",
-        "roof_pitch": 30,
-        "flooring": "tiles",
-        "ceiling": "flat",
-        "rooms": [
-            {"name":"Living Room","type":"living","width":6.0,"length":5.0,"height":3.0,
-             "flooring":"wood","ceiling":"flat","bulbs":4,"sockets":6,"switches":2,
-             "furniture":[{"item":"Sofa","w":2.0,"d":1.0,"h":0.9}]}
-        ],
-        "doors": [{"type":"Main Entrance","width":1.0,"height":2.1,"wall":"south","height_above_floor":0.0,"material":"Wood"}],
-        "windows": [{"type":"Sliding","width":1.5,"height":1.2,"wall":"north","height_above_floor":0.9,"glazing":"Double"}],
-        "stairs":{"count":1,"type":"U-shaped","width":1.2},
-        "lifts":{"count":0,"type":"Passenger","capacity":8},
-        "hvac": "Natural Ventilation",
-        "orientation": "South",
-        "wind_direction": "North",
-        "mep_details":{"plumbing_fixtures_per_floor":4,"electrical_load_per_sqm":50},
-        "east_africa_country": "Uganda",
-        "labour_rate_per_day": 15,
-    }
+    st.session_state.spec = DEFAULT_SPEC.copy()   # <-- uses the constant
 
 if not load_users():
     create_user("admin","admin123",role="admin")
 
-# ---------- LOGIN ----------
+# ---------- LOGIN (unchanged) ----------
 if not st.session_state.logged_in:
     col1,col2,col3=st.columns([1,2,1])
     with col2:
@@ -450,7 +450,7 @@ def generate_floorplan_text(spec, seed=None):
     return "\n".join([" ".join(row) for row in plan])
 
 # ============================================================
-# PAGE ROUTING (with new Projects page)
+# PAGE ROUTING (with Projects page)
 # ============================================================
 page = st.session_state.page
 unit = st.session_state.unit_system
@@ -622,11 +622,10 @@ if page == "Dashboard":
         if st.button("💾 Save Construction", key="save_const"):
             st.success("Construction parameters saved.")
 
-# ---------- NEW PROJECTS PAGE ----------
+# ---------- PROJECTS PAGE ----------
 elif page == "Projects":
     st.title("📁 Project Management")
 
-    # --- Save current project ---
     with st.container():
         st.subheader("Save Current Project")
         col1, col2 = st.columns([3,1])
@@ -641,7 +640,6 @@ elif page == "Projects":
                 else:
                     st.error(msg)
 
-    # --- List existing projects ---
     st.subheader("Saved Projects")
     projects = load_projects()
     if not projects:
@@ -666,9 +664,8 @@ elif page == "Projects":
                     st.success(f"'{proj['name']}' updated with current specs.")
                     st.rerun()
 
-    # --- New project (reset) ---
     if st.button("✨ New Project (Reset Spec)"):
-        st.session_state.spec = DEFAULT_SPEC.copy()   # defined at the top as a constant
+        st.session_state.spec = DEFAULT_SPEC.copy()
         st.success("Specification reset to default.")
         st.rerun()
 
