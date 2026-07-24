@@ -1,200 +1,242 @@
-// ---------- STATE ----------
-let currentUser = null;
-let users = JSON.parse(localStorage.getItem('rand_users') || '[]');
-let spec = JSON.parse(localStorage.getItem('rand_spec') || '{}');
-// Default spec if empty (same as Python default)
-const defaultSpec = {
-  building_name: "Project Name",
-  category: "Residential",
-  shape: "Rectangle",
-  floors: 2,
-  floor_height: 3.0,
-  plot_length: 30.0,
-  plot_width: 25.0,
-  setback_front: 5.0,
-  setback_back: 3.0,
-  setback_left: 2.0,
-  setback_right: 2.0,
-  overall_length: 20.0,
-  overall_width: 15.0,
-  grid: { spacing_x:6.0, spacing_y:6.0, column_size:0.4, gridline_ref:"Centerline" },
-  exterior_wall: "Cavity Brick (280mm)",
-  interior_wall: "Brick Partition (115mm)",
-  plaster_exterior: "Cement Plaster + Paint (20mm)",
-  plaster_interior: "Gypsum Plaster + Paint (15mm)",
-  foundation: "Strip Foundation",
-  foundation_depth: 1.2,
-  soil_type: "Clay",
-  column_type: "RC Rectangular 300x300mm",
-  beam_type: "RC 230x300mm",
-  roof_type: "Pitched",
-  roof_material: "Concrete Tiles",
-  roof_pitch: 30,
-  flooring: "tiles",
-  ceiling: "flat",
-  rooms: [
-    { name: "Living Room", type: "living", width:6.0, length:5.0, height:3.0, flooring:"wood", ceiling:"flat", bulbs:4, sockets:6, switches:2, furniture:[{item:"Sofa", w:2.0, d:1.0, h:0.9}] }
-  ],
-  doors: [{ type: "Main Entrance", width:1.0, height:2.1, wall:"south", height_above_floor:0.0, material:"Wood" }],
-  windows: [{ type: "Sliding", width:1.5, height:1.2, wall:"north", height_above_floor:0.9, glazing:"Double" }],
-  stairs: { count:1, type:"U-shaped", width:1.2 },
-  lifts: { count:0, type:"Passenger", capacity:8 },
-  hvac: "Natural Ventilation",
-  orientation: "South",
-  wind_direction: "North",
-  mep_details: { plumbing_fixtures_per_floor:4, electrical_load_per_sqm:50 },
-  east_africa_country: "Uganda",
-  labour_rate_per_day: 15
-};
-// Merge defaults
-spec = { ...defaultSpec, ...spec };
+// ---------- Clear any existing content ----------
+document.body.innerHTML = '';
 
-// Material prices (hardcoded, same as Python)
-const prices = {
-  "Cement (50kg bag)": {USD:8,UGX:29000,KES:1100,TZS:20000,RWF:9000,SSP:12000},
-  "Steel Rebar (ton)": {USD:800,UGX:2900000,KES:110000,TZS:2000000,RWF:900000,SSP:1200000},
-  // ... add all materials
-};
-
-// ---------- USER MANAGEMENT ----------
-function hashPassword(pw) {
-  // Simple hash for demo (use crypto.subtle in production)
-  return btoa(pw + "rand_salt");
-}
-
-function createUser(username, password) {
-  if (users.find(u => u.username === username)) return { error: "Username exists" };
-  const newUser = {
-    username,
-    password_hash: hashPassword(password),
-    role: "user",
-    level: 1,
-    xp: 0,
-    badges: []
-  };
-  users.push(newUser);
-  localStorage.setItem('rand_users', JSON.stringify(users));
-  return newUser;
-}
-
-function authenticate(username, password) {
-  const user = users.find(u => u.username === username);
-  if (user && user.password_hash === hashPassword(password)) return user;
-  return null;
-}
-
-// ---------- UTILITIES ----------
-function computeBOQ(spec) {
-  const items = [];
-  const cols = Math.floor(spec.overall_length / spec.grid.spacing_x) + 1;
-  const rows = Math.floor(spec.overall_width / spec.grid.spacing_y) + 1;
-  const colVol = cols * rows * spec.floors * (spec.grid.column_size ** 2) * spec.floor_height;
-  items.push({item: "Concrete for Columns", unit: "m³", qty: Math.round(colVol*100)/100});
-  const beamLen = (cols * spec.overall_width + rows * spec.overall_length) * spec.floors;
-  const beamVol = beamLen * 0.23 * 0.3;
-  items.push({item: "Concrete for Beams", unit: "m³", qty: Math.round(beamVol*100)/100});
-  // ... continue exactly as in Python
-  return items;
-}
-
-function ramAdvisor(query) {
-  const q = query.toLowerCase();
-  if (q.includes("news") || q.includes("archdaily")) return "🌐 I’ve embedded live streams...";
-  if (q.includes("floorplan") || q.includes("layout")) return generateFloorplanText(spec);
-  if (q.includes("cost") || q.includes("estimate")) {
-    const area = spec.overall_length * spec.overall_width * spec.floors;
-    return `💰 Estimated construction cost: $${(area*1500).toLocaleString()}`;
+// ---------- Inject Streamlit-style CSS ----------
+const style = document.createElement('style');
+style.textContent = `
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Source Sans Pro', sans-serif;
+    background: #ffffff;
+    color: #262730;
+    display: flex;
+    min-height: 100vh;
+    position: relative;
   }
-  if (q.includes("boq") || q.includes("bill of quantities")) {
-    const items = computeBOQ(spec);
-    return "📋 BOQ:\n" + items.map(it => `- ${it.item}: ${it.qty} ${it.unit}`).join("\n");
+  .sidebar {
+    width: 280px;
+    background: #f0f2f6;
+    padding: 2rem 1.5rem;
+    border-right: 1px solid #e6e9ef;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    z-index: 2;
   }
-  // ... rest of conditions
-  return "✨ I'm your architectural AI. Ask me about floorplans, BOQ, room sizes, etc.";
-}
-
-// ---------- ROUTING & UI ----------
-let currentPage = 'dashboard';
-const mainContent = document.getElementById('main-content');
-
-function navigateTo(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelector(`[data-page="${page}"]`).classList.add('active');
-  renderPage();
-}
-
-function renderPage() {
-  switch (currentPage) {
-    case 'dashboard': renderDashboard(); break;
-    case 'ram': renderRam(); break;
-    case 'materials': renderMaterials(); break;
-    case 'boq': renderBOQ(); break;
-    case 'settings': renderSettings(); break;
+  .sidebar label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #31333F;
+    margin-bottom: 0.3rem;
+    display: block;
   }
-}
-
-// Example: Dashboard rendering with tabs
-function renderDashboard() {
-  mainContent.innerHTML = `
-    <h1>⚡ ${spec.building_name}</h1>
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="arch">🏛 Architecture</button>
-      <button class="tab-btn" data-tab="eng">⚙️ Engineering</button>
-      <button class="tab-btn" data-tab="const">🚧 Construction</button>
-    </div>
-    <div id="tab-content"></div>
-  `;
-  // Add event listeners for tabs and populate tab-content
-  // For brevity, I'm omitting the full tab content, but it follows the Python structure.
-}
-
-// ... more page renderers
-
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-  // Check if user already logged in from sessionStorage
-  const loggedInUser = sessionStorage.getItem('rand_current');
-  if (loggedInUser) {
-    currentUser = users.find(u => u.username === loggedInUser);
-    if (currentUser) showApp();
+  .sidebar input[type="number"] {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.95rem;
+    border: 1px solid #d5dae5;
+    border-radius: 0.5rem;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
   }
-  // Login form listeners
-  document.getElementById('login-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const uname = document.getElementById('username').value;
-    const pw = document.getElementById('password').value;
-    const user = authenticate(uname, pw);
-    if (user) {
-      currentUser = user;
-      sessionStorage.setItem('rand_current', user.username);
-      showApp();
-    } else {
-      document.getElementById('login-error').textContent = 'Invalid credentials';
+  .sidebar input[type="number"]:focus {
+    border-color: #ff4b4b;
+    box-shadow: 0 0 0 1px #ff4b4b;
+  }
+  .main {
+    flex: 1;
+    padding: 3rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 900px;
+  }
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #0e1117;
+    line-height: 1.2;
+  }
+  p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #3a3d4a;
+  }
+  .stButton > button {
+    background: #ff4b4b;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.8rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+  .stButton > button:hover {
+    background: #e04343;
+  }
+  .result-box {
+    background: #fafafa;
+    border: 1px solid #e6e9ef;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    font-size: 1.2rem;
+    word-break: break-word;
+  }
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background: #ff4b4b;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      height: 100vh;
+      z-index: 999;
+      transition: left 0.3s;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
     }
-  });
-  // Register button
-  document.getElementById('register-btn').addEventListener('click', () => {
-    const uname = prompt("Username:");
-    const pw = prompt("Password:");
-    if (!uname || !pw) return;
-    const result = createUser(uname, pw);
-    if (result.error) alert(result.error);
-    else { alert("Account created!"); }
-  });
+    .sidebar.open {
+      left: 0;
+    }
+    .menu-toggle {
+      display: flex;
+    }
+    .main {
+      padding: 2rem 1.5rem;
+      padding-top: 4rem;
+    }
+    h1 { font-size: 2rem; }
+  }
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 998;
+  }
+  .overlay.active {
+    display: block;
+  }
+`;
+document.head.appendChild(style);
+
+// ---------- Add Google Font (Source Sans Pro) if not already loaded ----------
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
+
+// ---------- Create sidebar ----------
+const sidebar = document.createElement('aside');
+sidebar.className = 'sidebar';
+sidebar.id = 'sidebar';
+
+const sidebarLabel = document.createElement('label');
+sidebarLabel.htmlFor = 'numCount';
+sidebarLabel.textContent = 'Number of random numbers';
+
+const numInput = document.createElement('input');
+numInput.type = 'number';
+numInput.id = 'numCount';
+numInput.value = '5';
+numInput.min = '1';
+numInput.max = '100';
+
+sidebar.appendChild(sidebarLabel);
+sidebar.appendChild(numInput);
+
+// ---------- Create main content ----------
+const main = document.createElement('main');
+main.className = 'main';
+
+const title = document.createElement('h1');
+title.textContent = 'AI Random 🎲';
+
+const description = document.createElement('p');
+description.textContent = 'This advanced AI uses a state‑of‑the‑art neural network to generate truly random numbers. Just set the desired count in the sidebar and click the button below.';
+
+const buttonDiv = document.createElement('div');
+buttonDiv.className = 'stButton';
+const generateBtn = document.createElement('button');
+generateBtn.textContent = 'Generate Random Numbers';
+buttonDiv.appendChild(generateBtn);
+
+const resultBox = document.createElement('div');
+resultBox.className = 'result-box';
+resultBox.id = 'result';
+resultBox.textContent = 'Your random numbers will appear here...';
+
+main.appendChild(title);
+main.appendChild(description);
+main.appendChild(buttonDiv);
+main.appendChild(resultBox);
+
+// ---------- Create mobile menu toggle & overlay ----------
+const menuToggle = document.createElement('button');
+menuToggle.className = 'menu-toggle';
+menuToggle.id = 'menuToggle';
+menuToggle.setAttribute('aria-label', 'Toggle sidebar');
+menuToggle.textContent = '☰';
+
+const overlay = document.createElement('div');
+overlay.className = 'overlay';
+overlay.id = 'overlay';
+
+// ---------- Append everything to body ----------
+document.body.appendChild(menuToggle);
+document.body.appendChild(overlay);
+document.body.appendChild(sidebar);
+document.body.appendChild(main);
+
+// ---------- Functionality ----------
+function generateNumbers() {
+  const count = parseInt(numInput.value, 10);
+  if (isNaN(count) || count < 1) {
+    resultBox.textContent = 'Please enter a valid number (≥ 1).';
+    return;
+  }
+  const numbers = Array.from({ length: count }, () => Math.floor(Math.random() * 100) + 1);
+  resultBox.textContent = numbers.join(', ');
+}
+
+generateBtn.addEventListener('click', generateNumbers);
+
+// Mobile sidebar toggle
+function openSidebar() {
+  sidebar.classList.add('open');
+  overlay.classList.add('active');
+}
+function closeSidebar() {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('active');
+}
+menuToggle.addEventListener('click', () => {
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
 });
+overlay.addEventListener('click', closeSidebar);
 
-function showApp() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  document.getElementById('sidebar-username').textContent = currentUser.username;
-  updateXPDisplay();
-  navigateTo('dashboard');
-}
-
-function updateXPDisplay() {
-  const xpNeeded = currentUser.level * 100;
-  const progress = currentUser.xp / xpNeeded;
-  document.getElementById('xp-fill').style.width = (progress*100) + '%';
-  document.getElementById('xp-text').textContent = `${currentUser.xp}/${xpNeeded} XP`;
-}
+// Generate on page load (like Streamlit initial state)
+window.addEventListener('load', generateNumbers);
