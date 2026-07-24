@@ -379,6 +379,10 @@ async def root():
                 }
             }
         </style>
+        <script type="module">
+            import { injectSpeedInsights } from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@2.0.0/dist/web.js';
+            injectSpeedInsights();
+        </script>
     </head>
     <body>
         <header class="topbar">
@@ -556,6 +560,10 @@ async def get_blueprint(design_id: str):
     <style>body{{background:#0e1117;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;font-family:'Inter',sans-serif;}}
     .container{{background:#1e1e2a;padding:2rem;border-radius:16px;border:1px solid #2d2d44;max-width:90vw;overflow:auto;}}
     .container svg{{display:block;max-width:100%;height:auto;}}</style>
+    <script type="module">
+        import {{ injectSpeedInsights }} from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@2.0.0/dist/web.js';
+        injectSpeedInsights();
+    </script>
     </head>
     <body><div class="container">{svg}</div></body>
     </html>
@@ -573,6 +581,10 @@ async def get_3d(design_id: str):
     <head><title>3D Viewer – {design_id}</title>
     <style>body{{margin:0;background:#0e1117;display:flex;justify-content:center;align-items:center;height:100vh;font-family:'Inter',sans-serif;color:#fafafa;flex-direction:column;}}
     .icon{{font-size:4rem;margin-bottom:1rem;}} p{{color:#8b8fa7;}} .sub{{font-size:0.8rem;color:#5a5a7a;}}</style>
+    <script type="module">
+        import {{ injectSpeedInsights }} from 'https://cdn.jsdelivr.net/npm/@vercel/speed-insights@2.0.0/dist/web.js';
+        injectSpeedInsights();
+    </script>
     </head>
     <body>
         <div class="icon">🏛️</div>
